@@ -1,0 +1,199 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{08CD4F69-F283-435F-9250-B867011423A0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Sub_Missions</RootNamespace>
+    <AssemblyName>Sub_Missions</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="0Harmony">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="0Nuterra.NativeOptions">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\0Nuterra.NativeOptions\0Nuterra.NativeOptions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="AcModHelper.Config">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\ModHelper.Config\AcModHelper.Config.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Assembly-CSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Assembly-CSharp-firstpass">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Assembly-CSharp-firstpass.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="BlockInjector">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\Nuterra.BlockInjector\BlockInjector.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Control Block">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\Control Block\Control Block.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="IncreasedRange">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\IncreasedRange\IncreasedRange.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="QModInstaller">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\QModInstaller.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="RandomAdditions">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\RandomAdditions\RandomAdditions.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="ScaleableTechs">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\Scale Techs\ScaleableTechs.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="TAC_AI">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\TACtical AI\TAC_AI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="TimeOfDay">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\TimeOfDay.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="TTQMM WeatherMod">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\WeatherMod\TTQMM WeatherMod.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.IMGUIModule">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.IMGUIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.JSONSerializeModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.Networking">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.Networking.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TextRenderingModule">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UI">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="WaterMod">
+      <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\Water Mod\WaterMod.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="ButtonAct.cs" />
+    <Compile Include="CustomSubMission.cs" />
+    <Compile Include="CustomSubMissionTree.cs" />
+    <Compile Include="EVaribleType.cs" />
+    <Compile Include="KickStart.cs" />
+    <Compile Include="ManWindows\GUIButtonWindow.cs" />
+    <Compile Include="ManWindows\GUIDualButton.cs" />
+    <Compile Include="ManWindows\GUIMessageSide.cs" />
+    <Compile Include="ManWindows\GUIScrollMessage.cs" />
+    <Compile Include="ManWindows\GUIMessage.cs" />
+    <Compile Include="ManWindows\GUISMissionsList.cs" />
+    <Compile Include="ManWindows\IGUIFormat.cs" />
+    <Compile Include="ManWindows\WindowManager.cs" />
+    <Compile Include="MissionChecklist.cs" />
+    <Compile Include="PatchBatch.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ManSubMissions.cs" />
+    <Compile Include="SMissionJSONLoader.cs" />
+    <Compile Include="Steps\SMissionStep.cs" />
+    <Compile Include="Steps\StepActRemove.cs" />
+    <Compile Include="Steps\StepActBoost.cs" />
+    <Compile Include="Steps\StepActOptions.cs" />
+    <Compile Include="Steps\StepActMessagePurge.cs" />
+    <Compile Include="Steps\StepCheckResources.cs" />
+    <Compile Include="Steps\StepCheckPlayerDist.cs" />
+    <Compile Include="Steps\StepActTimer.cs" />
+    <Compile Include="Steps\StepSetupMMRepeat.cs" />
+    <Compile Include="Steps\StepSetupMM.cs" />
+    <Compile Include="Steps\StepSetupTech.cs" />
+    <Compile Include="Steps\StepCheckDestroy.cs" />
+    <Compile Include="Steps\StepActForward.cs" />
+    <Compile Include="Steps\StepActSpeak.cs" />
+    <Compile Include="Steps\StepActWin.cs" />
+    <Compile Include="Steps\StepActFail.cs" />
+    <Compile Include="Steps\StepActShifter.cs" />
+    <Compile Include="Steps\SubMissionStep.cs" />
+    <Compile Include="SMUtil.cs" />
+    <Compile Include="SubMissionReward.cs" />
+    <Compile Include="TrackedBlock.cs" />
+    <Compile Include="TrackedTech.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="mod.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>del *.pdb
+@setlocal enableextensions enabledelayedexpansion
+
+set modpath="C:\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\Sub_Missions"
+
+if exist !modpath! (
+echo Copying to game
+set e=$(TargetDir)&gt;nul
+xcopy /S /Y /R "!e:~0,-1!" !modpath!
+)</PostBuildEvent>
+  </PropertyGroup>
+</Project>

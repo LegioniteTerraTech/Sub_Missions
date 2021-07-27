@@ -1,0 +1,9 @@
+﻿{
+  "Id": "legionite.sub_missions",
+  "DisplayName": "Sub Missions",
+  "Author": "Legionite",
+  "Version": "0.1.0",
+  "Enable": true,
+  "AssemblyName": "Sub_Missions.dll",
+  "EntryMethod": "Sub_Missions.KickStart.Main"
+}
