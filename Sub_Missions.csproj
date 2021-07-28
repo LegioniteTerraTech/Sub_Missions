@@ -138,10 +138,11 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ButtonAct.cs" />
-    <Compile Include="CustomSubMission.cs" />
-    <Compile Include="CustomSubMissionTree.cs" />
+    <Compile Include="SubMission.cs" />
+    <Compile Include="SubMissionTree.cs" />
     <Compile Include="EVaribleType.cs" />
     <Compile Include="KickStart.cs" />
+    <Compile Include="SaveManSubMissions.cs" />
     <Compile Include="ManWindows\GUIButtonWindow.cs" />
     <Compile Include="ManWindows\GUIDualButton.cs" />
     <Compile Include="ManWindows\GUIMessageSide.cs" />

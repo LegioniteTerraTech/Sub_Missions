@@ -11,7 +11,7 @@ namespace Sub_Missions.Steps
         /// <summary>
         /// Mission base
         /// </summary>
-        public CustomSubMission Mission;
+        public SubMission Mission;
 
         /// <summary>
         /// Mission STEP

@@ -11,7 +11,7 @@ namespace Sub_Missions.ManWindows
     public class GUIMessageSide : IGUIFormat
     {
         public GUIPopupDisplay Display { get; set; }
-        public static CustomSubMission currentMission { get { return ManSubMissions.Selected; } }
+        public static SubMission currentMission { get { return ManSubMissions.Selected; } }
         public string CurrentMissionName = "Loading...";
         public string CurrentMissionObjectives = "MissionTasks";
 

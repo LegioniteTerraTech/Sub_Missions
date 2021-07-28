@@ -10,39 +10,45 @@ using Newtonsoft.Json;
 
 namespace Sub_Missions
 {
+    // Nuts are stored in the tree
+    //   In other words - all the important information is stored in these trees, ManSubMissions just acts as a forging method
     [Serializable]
-    public class CustomSubMissionTree
+    public class SubMissionTree
     {   //  Build the mission tree!
         public string TreeName = "unset";
         public string Faction = "GSO";
 
+        // Cache
         [JsonIgnore]
-        internal List<CustomSubMissionStandby> Missions = new List<CustomSubMissionStandby>();          //MUST BE SET VIA JSON
-
+        internal List<SubMissionStandby> Missions = new List<SubMissionStandby>();          //MUST BE SET VIA JSON
         [JsonIgnore]
-        internal List<CustomSubMissionStandby> RepeatMissions = new List<CustomSubMissionStandby>();    //MUST BE SET VIA JSON
+        internal List<SubMissionStandby> RepeatMissions = new List<SubMissionStandby>();    //MUST BE SET VIA JSON
 
+        // JSON string linking
         public List<string> MissionNames = new List<string>();          //MUST BE SET VIA JSON
         public List<string> RepeatMissionNames = new List<string>();    //MUST BE SET VIA JSON
 
-        internal List<CustomSubMission> ActiveMissions = new List<CustomSubMission>();// DO NOT SET!!! - saved in campaign
 
+        // Campaign Progression
+        [JsonIgnore]
+        internal List<SubMission> ActiveMissions = new List<SubMission>();// DO NOT SET!!! - saved in campaign
+        [JsonIgnore]
         internal byte ProgressX = 0; // DO NOT SET!!! - saved in campaign
+        [JsonIgnore]
         internal byte ProgressY = 0; // DO NOT SET!!! - saved in campaign
-
-
-        private List<CustomSubMissionStandby> CompletedMissions = new List<CustomSubMissionStandby>();// DO NOT SET!!! - saved in campaign
+        [JsonIgnore]
+        internal List<SubMissionStandby> CompletedMissions = new List<SubMissionStandby>();// DO NOT SET!!! - saved in campaign
 
 
         // Initialization
-        public CustomSubMissionTree CompileMissionTree()
+        public SubMissionTree CompileMissionTree()
         {   // Reduce memory loads
-            CustomSubMissionTree tree = SMissionJSONLoader.TreeLoader(TreeName);
-            List<CustomSubMission> MissionsLoaded = SMissionJSONLoader.LoadAllMissions(TreeName, tree);
-            List<CustomSubMissionStandby> compiled = CompileToStandby(MissionsLoaded);
+            SubMissionTree tree = SMissionJSONLoader.TreeLoader(TreeName);
+            List<SubMission> MissionsLoaded = SMissionJSONLoader.LoadAllMissions(TreeName, tree);
+            List<SubMissionStandby> compiled = CompileToStandby(MissionsLoaded);
 
             // Now we sort them based on input strings
-            foreach (CustomSubMissionStandby sort in compiled)
+            foreach (SubMissionStandby sort in compiled)
             {
                 sort.Tree = tree;
                 bool repeat = tree.RepeatMissionNames.Contains(sort.Name);
@@ -79,16 +85,16 @@ namespace Sub_Missions
 
 
         // Actions
-        public void AcceptTreeMission(CustomSubMissionStandby Anon)
+        public void AcceptTreeMission(SubMissionStandby Anon)
         {   //
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.AcceptMission);
-            CustomSubMission newMission = DeployMission(TreeName, Anon);
+            SubMission newMission = DeployMission(TreeName, Anon);
             newMission.Startup();
             ActiveMissions.Add(newMission);
             ManSubMissions.inst.GetAllPossibleMissions();
             ManSubMissions.Selected = newMission;
         }
-        public void CancelTreeMission(CustomSubMission Active)
+        public void CancelTreeMission(SubMission Active)
         {   //
             if (ManSubMissions.Selected == Active)
             {
@@ -102,15 +108,15 @@ namespace Sub_Missions
                 Debug.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on CancelTreeMission!");
             ManSubMissions.inst.GetAllPossibleMissions();
         }
-        public List<CustomSubMissionStandby> GetReachableMissions()
+        public List<SubMissionStandby> GetReachableMissions()
         {   //
             //Debug.Log("SubMissions: " + TreeName + " is fetching missions");
-            List<CustomSubMissionStandby> initMissions = new List<CustomSubMissionStandby>();
+            List<SubMissionStandby> initMissions = new List<SubMissionStandby>();
             Debug.Log("SubMissions: Missions count " + Missions.Count + " | " + RepeatMissions.Count);
-            foreach (CustomSubMissionStandby mission in Missions)
+            foreach (SubMissionStandby mission in Missions)
             {
                 //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
-                if (ActiveMissions.Exists(delegate (CustomSubMission cand) { return cand.Name == mission.Name; }))
+                if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name == mission.Name; }))
                 {   // It's been finished already, do not get
                     Debug.Log("SubMissions: " + mission.Name + " is already active");
                     continue;
@@ -145,10 +151,10 @@ namespace Sub_Missions
                     continue;
                 }
             }
-            foreach (CustomSubMissionStandby mission in RepeatMissions)
+            foreach (SubMissionStandby mission in RepeatMissions)
             {
                 //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
-                if (ActiveMissions.Exists(delegate (CustomSubMission cand) { return cand.Name == mission.Name; }))
+                if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name == mission.Name; }))
                 {   // It's been finished already, do not get
                     Debug.Log("SubMissions: " + mission.Name + " is already active");
                     continue;
@@ -183,33 +189,33 @@ namespace Sub_Missions
 
 
         // COMPILER
-        public List<CustomSubMission> DeployMissions(string treeName, List<CustomSubMissionStandby> toDeploy)
+        public List<SubMission> DeployMissions(string treeName, List<SubMissionStandby> toDeploy)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
-            List<CustomSubMission> missionsLoaded = new List<CustomSubMission>();
-            foreach (CustomSubMissionStandby mission in toDeploy)
+            List<SubMission> missionsLoaded = new List<SubMission>();
+            foreach (SubMissionStandby mission in toDeploy)
             {
                 missionsLoaded.Add(DeployMission(treeName, mission));
             }
             return missionsLoaded;
         }
-        public CustomSubMission DeployMission(string treeName, CustomSubMissionStandby toDeploy)
+        public SubMission DeployMission(string treeName, SubMissionStandby toDeploy)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
             return SMissionJSONLoader.MissionLoader(treeName, toDeploy.Name, this);
         }
-        public static List<CustomSubMissionStandby> CompileToStandby(List<CustomSubMission> MissionsLoaded)
+        public static List<SubMissionStandby> CompileToStandby(List<SubMission> MissionsLoaded)
         {   // Reduce memory loads
-            List<CustomSubMissionStandby> missions = new List<CustomSubMissionStandby>();
-            foreach (CustomSubMission mission in MissionsLoaded)
+            List<SubMissionStandby> missions = new List<SubMissionStandby>();
+            foreach (SubMission mission in MissionsLoaded)
             {
                 missions.Add(CompileToStandby(mission));
             }
             return missions;
         }
-        public static CustomSubMissionStandby CompileToStandby(CustomSubMission mission)
+        public static SubMissionStandby CompileToStandby(SubMission mission)
         {   // Reduce memory loads
-            CustomSubMissionStandby missionCompiled = new CustomSubMissionStandby();
+            SubMissionStandby missionCompiled = new SubMissionStandby();
             missionCompiled.Tree = mission.Tree;
             missionCompiled.Name = mission.Name;
             missionCompiled.Desc = mission.Description;
@@ -225,14 +231,14 @@ namespace Sub_Missions
 
 
         // Events
-        public void FinishedMission(CustomSubMission finished)
+        public void FinishedMission(SubMission finished)
         {
             ActiveMissions.Remove(finished);
-            if (RepeatMissions.Find(delegate (CustomSubMissionStandby cand) { return cand.Name == finished.Name; }).Name == finished.Name)
+            if (RepeatMissions.Find(delegate (SubMissionStandby cand) { return cand.Name == finished.Name; }).Name == finished.Name)
             {   // Do nothing special - repeat missions are to be repeated
                 return;
             }
-            else if (Missions.Find(delegate (CustomSubMissionStandby cand) { return cand.Name == finished.Name; }).Name == finished.Name)
+            else if (Missions.Find(delegate (SubMissionStandby cand) { return cand.Name == finished.Name; }).Name == finished.Name)
             {
                 CompletedMissions.Add(CompileToStandby(finished));
             }
@@ -249,16 +255,20 @@ namespace Sub_Missions
         }
         public void ResetALLTreeMissions()
         {
-            foreach (CustomSubMission mission in ActiveMissions)
+            foreach (SubMission mission in ActiveMissions)
             {
                 CancelTreeMission(mission);
             }
+            CompletedMissions = new List<SubMissionStandby>();
+            ProgressX = 0;
+            ProgressY = 0;
             ManSubMissions.inst.GetAllPossibleMissions();
         }
+
     }
-    public class CustomSubMissionStandby 
+    public class SubMissionStandby 
     {
-        public CustomSubMissionTree Tree;
+        public SubMissionTree Tree;
         public string Name = "Unset";
         public string Desc = "Nothing";
         public string Faction = "";

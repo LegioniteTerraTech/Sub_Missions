@@ -28,7 +28,7 @@ namespace Sub_Missions.ManWindows
                 {
                 }
                 posLerp++;
-                foreach (CustomSubMissionStandby active in ManSubMissions.AnonSubMissions)
+                foreach (SubMissionStandby active in ManSubMissions.AnonSubMissions)
                 {
                     string buttonText;
                     if (active == ManSubMissions.SelectedAnon)
@@ -60,7 +60,7 @@ namespace Sub_Missions.ManWindows
             {   
             }
             posLerp++;
-            foreach (CustomSubMission active in ManSubMissions.ActiveSubMissions)
+            foreach (SubMission active in ManSubMissions.ActiveSubMissions)
             {
                 string buttonText;
                 if (active == ManSubMissions.Selected)

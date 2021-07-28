@@ -11,7 +11,7 @@ namespace Sub_Missions
     public class MissionChecklist
     {
         [JsonIgnore]
-        internal CustomSubMission mission;
+        internal SubMission mission;
 
         public string ListArticle = "unset";
         public VarType ValueType = VarType.Bool;

@@ -57,31 +57,32 @@ namespace Sub_Missions
     public class ManSubMissions : MonoBehaviour
     {   // Handle non-Payload missions here
         public static ManSubMissions inst;
+
         public static bool Subscribed = false;
         public static bool SelectedIsAnon = false;
 
-        public static List<CustomSubMissionTree> SubMissionTrees = new List<CustomSubMissionTree>();
+        public static List<SubMissionTree> SubMissionTrees = new List<SubMissionTree>();
 
 
-        private static List<CustomSubMission> activeSubMissions = new List<CustomSubMission>();
-        public static List<CustomSubMission> ActiveSubMissions 
+        private static List<SubMission> activeSubMissions = new List<SubMission>();
+        public static List<SubMission> ActiveSubMissions
         {
-            get {
+            get
+            {
                 activeSubMissions.Clear();
-                foreach (CustomSubMissionTree tree in SubMissionTrees)
-                        activeSubMissions.AddRange(tree.ActiveMissions);
+                foreach (SubMissionTree tree in SubMissionTrees)
+                    activeSubMissions.AddRange(tree.ActiveMissions);
                 return activeSubMissions;
             }
         }
 
 
-        [JsonIgnore]
-        private static List<CustomSubMissionStandby> anonSubMissions = new List<CustomSubMissionStandby>();
-        [JsonIgnore]
-        public static List<CustomSubMissionStandby> AnonSubMissions => anonSubMissions;
+        private static List<SubMissionStandby> anonSubMissions = new List<SubMissionStandby>();
+        public static List<SubMissionStandby> AnonSubMissions => anonSubMissions;
 
-        public static CustomSubMission Selected;
-        public static CustomSubMissionStandby SelectedAnon;
+        public static SubMission Selected;
+        public static SubMissionStandby SelectedAnon;
+
         public static GUISMissionsList Board;
 
         public static float timer = 0;
@@ -101,7 +102,10 @@ namespace Sub_Missions
         public static void Subscribe()
         {
             if (!Subscribed)
-            {
+            {;
+                Singleton.Manager<ManGameMode>.inst.ModeSetupEvent.Subscribe(LoadSubMissionsFromSave);
+                Singleton.Manager<ManGameMode>.inst.ModeCleanUpEvent.Subscribe(SaveSubMissionsToSave);
+
                 WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.TinyWindow);
 
                 WindowManager.ShowPopup(new Vector2(0.8f, 1));
@@ -112,6 +116,7 @@ namespace Sub_Missions
 
                 WindowManager.ShowPopup(new Vector2(1, 0.1f));
 
+                Debug.Log("SubMissions: ManSubMissions subscribed");
                 Subscribed = true;
             }
         }
@@ -119,8 +124,8 @@ namespace Sub_Missions
         {
             Debug.Log("SubMissions: HARVESTING ALL TREES!!!");
             SubMissionTrees.Clear();
-            List<CustomSubMissionTree> trees = SMissionJSONLoader.LoadAllTrees();
-            foreach (CustomSubMissionTree tree in trees)
+            List<SubMissionTree> trees = SMissionJSONLoader.LoadAllTrees();
+            foreach (SubMissionTree tree in trees)
             {
                 SubMissionTrees.Add(tree.CompileMissionTree());
                 Debug.Log("SubMissions: Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
@@ -131,10 +136,11 @@ namespace Sub_Missions
         {
             Debug.Log("SubMissions: Fetching available missions...");
             anonSubMissions.Clear();
-            foreach (CustomSubMissionTree tree in SubMissionTrees)
+            foreach (SubMissionTree tree in SubMissionTrees)
             {
                 anonSubMissions.AddRange(tree.GetReachableMissions());
             }
+            SaveSubMissionsToSave();
         }
 
 
@@ -178,16 +184,58 @@ namespace Sub_Missions
             timer += Time.deltaTime;
             if (timer >= timerSecondsDelay)
             {
-                timer = 0; 
+                timer = 0;
                 UpdateAllSubMissions();
+
+                if (!ActiveSubMissions.Contains(Selected))
+                {
+                    Selected = null;
+                    return;
+                }
+                if (!AnonSubMissions.Contains(SelectedAnon))
+                {
+                    SelectedAnon = null;
+                    return;
+                }
             }
             CheckKeyCombo();
         }
         public void UpdateAllSubMissions()
         {
-            foreach (CustomSubMission sub in ActiveSubMissions)
+            foreach (SubMission sub in ActiveSubMissions)
             {
                 sub.TriggerUpdate();
+            }
+        }
+
+
+        //Saving
+        public static List<SubMission> GetAllActiveSubMissions()
+        {
+            return activeSubMissions;
+        }
+        public static void SaveSubMissionsToSave()
+        {
+            if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>())
+            {
+                Debug.Log("SubMissions: ManSubMissions Saving!");
+                SaveManSubMissions.SaveDataAutomatic();
+            }
+        }
+        public static void SaveSubMissionsToSave(Mode mode)
+        {
+            if (mode is ModeMain)
+            {
+                Debug.Log("SubMissions: ManSubMissions Saving!");
+                SaveManSubMissions.SaveDataAutomatic();
+            }
+        }
+        public static void LoadSubMissionsFromSave(Mode mode)
+        {
+            if (mode is ModeMain)
+            {
+                Debug.Log("SubMissions: ManSubMissions Loading from save!");
+                SaveManSubMissions.LoadDataAutomatic();
             }
         }
     }

@@ -91,103 +91,141 @@ namespace Sub_Missions
         }
         public static void ConcludeGlobal1(ref SubMissionStep Step)
         {
-            switch (Step.VaribleType)
+            try
             {
-                case EVaribleType.Int: //
-                    Step.Mission.VarInts[Step.SetGlobalIndex1] = (int)Step.InputNum;
-                    break;
-                case EVaribleType.False: //
-                    Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] = false;
-                    break;
-                case EVaribleType.True: //
-                    Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] = true;
-                    break;
-                case EVaribleType.DoSuccessID: // 
-                    ProceedID(ref Step);
-                    break;
-                case EVaribleType.None: // 
-                default:
-                    break;
+                int setVal = Step.SetGlobalIndex1;
+                switch (Step.VaribleType)
+                {
+                    case EVaribleType.Int: //
+                        Step.Mission.VarInts[setVal] = (int)Step.InputNum;
+                        break;
+                    case EVaribleType.False: //
+                        Step.Mission.VarTrueFalse[setVal] = false;
+                        break;
+                    case EVaribleType.True: //
+                        Step.Mission.VarTrueFalse[setVal] = true;
+                        break;
+                    case EVaribleType.DoSuccessID: // 
+                        ProceedID(ref Step);
+                        break;
+                    case EVaribleType.None: // 
+                    default:
+                        break;
+                }
+            }
+            catch
+            {
+                Debug.Log("SubMissions: Error in output [SetGlobalIndex1] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
         public static void ConcludeGlobal2(ref SubMissionStep Step)
         {
-            switch (Step.VaribleType)
+            try
             {
-                case EVaribleType.Int: //
-                    Step.Mission.VarInts[Step.SetGlobalIndex2] = (int)Step.InputNum;
-                    break;
-                case EVaribleType.False: //
-                    Step.Mission.VarTrueFalse[Step.SetGlobalIndex2] = false;
-                    break;
-                case EVaribleType.True: //
-                    Step.Mission.VarTrueFalse[Step.SetGlobalIndex2] = true;
-                    break;
-                case EVaribleType.DoSuccessID: // 
-                    ProceedID(ref Step);
-                    break;
-                case EVaribleType.None: // 
-                default:
-                    break;
+                int setVal = Step.SetGlobalIndex2;
+                switch (Step.VaribleType)
+                {
+                    case EVaribleType.Int: //
+                        Step.Mission.VarInts[setVal] = (int)Step.InputNum;
+                        break;
+                    case EVaribleType.False: //
+                        Step.Mission.VarTrueFalse[setVal] = false;
+                        break;
+                    case EVaribleType.True: //
+                        Step.Mission.VarTrueFalse[setVal] = true;
+                        break;
+                    case EVaribleType.DoSuccessID: // 
+                        ProceedID(ref Step);
+                        break;
+                    case EVaribleType.None: // 
+                    default:
+                        break;
+                }
+            }
+            catch
+            {
+                Debug.Log("SubMissions: Error in output [SetGlobalIndex2] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
         public static void ConcludeGlobal3(ref SubMissionStep Step)
         {
-            switch (Step.VaribleType)
+            try
             {
-                case EVaribleType.Int: //
-                    Step.Mission.VarInts[Step.SetGlobalIndex3] = (int)Step.InputNum;
-                    break;
-                case EVaribleType.False: //
-                    Step.Mission.VarTrueFalse[Step.SetGlobalIndex3] = false;
-                    break;
-                case EVaribleType.True: //
-                    Step.Mission.VarTrueFalse[Step.SetGlobalIndex3] = true;
-                    break;
-                case EVaribleType.DoSuccessID: // 
-                    ProceedID(ref Step);
-                    break;
-                case EVaribleType.None: // 
-                default:
-                    break;
+                int setVal = Step.SetGlobalIndex3;
+                switch (Step.VaribleType)
+                {
+                    case EVaribleType.Int: //
+                        Step.Mission.VarInts[setVal] = (int)Step.InputNum;
+                        break;
+                    case EVaribleType.False: //
+                        Step.Mission.VarTrueFalse[setVal] = false;
+                        break;
+                    case EVaribleType.True: //
+                        Step.Mission.VarTrueFalse[setVal] = true;
+                        break;
+                    case EVaribleType.DoSuccessID: // 
+                        ProceedID(ref Step);
+                        break;
+                    case EVaribleType.None: // 
+                    default:
+                        break;
+                }
+            }
+            catch
+            {
+                Debug.Log("SubMissions: Error in output [SetGlobalIndex3] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
 
         public static bool BoolOut(ref SubMissionStep Step)
         {
-            switch (Step.VaribleType)
+            try
             {
-                case EVaribleType.Int: //
-                    return Step.Mission.VarInts[Step.SetGlobalIndex1] == (int)Step.InputNum;
-                case EVaribleType.IntGreaterThan: //
-                    return Step.Mission.VarInts[Step.SetGlobalIndex1] > (int)Step.InputNum;
-                case EVaribleType.IntLessThan: //
-                    return Step.Mission.VarInts[Step.SetGlobalIndex1] < (int)Step.InputNum;
-                case EVaribleType.False: //
-                    return Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] == false;
-                case EVaribleType.True: //
-                    return Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] == true;
-                case EVaribleType.None: // 
-                default:
-                    return true;
+                switch (Step.VaribleType)
+                {
+                    case EVaribleType.Int: //
+                        return Step.Mission.VarInts[Step.SetGlobalIndex1] == (int)Step.InputNum;
+                    case EVaribleType.IntGreaterThan: //
+                        return Step.Mission.VarInts[Step.SetGlobalIndex1] > (int)Step.InputNum;
+                    case EVaribleType.IntLessThan: //
+                        return Step.Mission.VarInts[Step.SetGlobalIndex1] < (int)Step.InputNum;
+                    case EVaribleType.False: //
+                        return Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] == false;
+                    case EVaribleType.True: //
+                        return Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] == true;
+                    case EVaribleType.None: // 
+                    default:
+                        return true;
+                }
+            }
+            catch
+            {
+                Debug.Log("SubMissions: Error in output in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                return false;
             }
         }
 
 
-        public static Tank SpawnTechAuto(ref CustomSubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
+        public static Tank SpawnTechAuto(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
         {   // Load from folder
             return RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Name + "\\Raw Techs"));
         }
-        public static string SpawnTechTracked(ref CustomSubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
+        public static string SpawnTechTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
         {   // We pull these from MissionTechs.JSON
-
-            //TrackedTech tech = new TrackedTech();
             Tank tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
 
             SetTrackedTech(ref mission, tech);
             return tech.name;
         }
-        public static string InjectTechTracked(ref CustomSubMission mission, TechData techdata)
+        public static void SpawnTechAddTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
+        {   // We pull these from MissionTechs.JSON
+            TrackedTech tech = new TrackedTech();
+            tech.Tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
+
+            mission.TrackedTechs.Add(tech);
+            return;
+        }
+        public static string InjectTechTracked(ref SubMission mission, TechData techdata)
         {
             return "error - requires PopulationInjector";
         }
@@ -195,11 +233,11 @@ namespace Sub_Missions
         {
             return mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;
         }
-        public static Tank GetTrackedTech(ref CustomSubMission mission, string TechName)
+        public static Tank GetTrackedTech(ref SubMission mission, string TechName)
         {
             return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;
         }
-        public static void SetTrackedTech(ref CustomSubMission mission, Tank tech)
+        public static void SetTrackedTech(ref SubMission mission, Tank tech)
         {
             mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == tech.name; }).Tech = tech;
         }

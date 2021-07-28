@@ -12,11 +12,11 @@ using Newtonsoft.Json;
 namespace Sub_Missions
 {
     [Serializable]
-    public class CustomSubMission
+    public class SubMission
     {   //  Build the mission!
         //    Core
         [JsonIgnore]
-        internal CustomSubMissionTree Tree;
+        internal SubMissionTree Tree;
 
         public string Name = "Unset";
         public string Faction = "GSO";
@@ -25,6 +25,7 @@ namespace Sub_Missions
         public byte MinProgressX = 0;
         public byte MinProgressY = 0;
         public bool ClearTechsOnClear = true;
+        public bool ClearSceneryOnSpawn = true;
         public bool FixatePositionInWorld = false;
         public Vector3 Position = Vector3.zero;
 
@@ -65,7 +66,8 @@ namespace Sub_Missions
         {   // 
             if (!FixatePositionInWorld)
                 SetPositionFromPlayer();
-            TryClearAreaForMission();
+            if (ClearSceneryOnSpawn)
+                TryClearAreaForMission();
             bool isMissionImpossible = true;
             foreach (SubMissionStep step in EventList)
             {
@@ -155,6 +157,7 @@ namespace Sub_Missions
             }
         }
 
+        // Endings
         public void Finish()
         {   //
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionComplete);
@@ -261,7 +264,7 @@ namespace Sub_Missions
                     removeCount++;
                 }
             }
-            Debug.Log("SubMissions: removed " + removeCount + " trees around new mission setup");
+            Debug.Log("SubMissions: removed " + removeCount + " scenery items around new mission setup");
         }
     }
 }

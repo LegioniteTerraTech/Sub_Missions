@@ -13,7 +13,7 @@ namespace Sub_Missions
     public class TrackedBlock
     {   //  
         [JsonIgnore]
-        public CustomSubMission mission;
+        public SubMission mission;
 
         public string BlockName = "";
         public int blockID = 0;

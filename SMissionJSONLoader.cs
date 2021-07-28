@@ -16,6 +16,7 @@ namespace Sub_Missions
         public static string DLLDirectory;
         public static string BaseDirectory;
         public static string MissionsDirectory;
+        public static string MissionSavesDirectory;
 
         private static JsonSerializerSettings JSONSaver = new JsonSerializerSettings
         {
@@ -31,6 +32,7 @@ namespace Sub_Missions
             di = di.Parent; // out of QMods
             BaseDirectory = di.ToString();
             MissionsDirectory = di.ToString() + "\\Custom SMissions";
+            MissionSavesDirectory = di.ToString() + "\\SMissions Saves";
             Debug.Log("SubMissions: DLL folder is at: " + DLLDirectory);
             Debug.Log("SubMissions: Custom SMissions is at: " + MissionsDirectory);
         }
@@ -39,7 +41,7 @@ namespace Sub_Missions
         public static void MakePrefabMissionTreeToFile(string TreeName)
         {
             Debug.Log("SubMissions: Setting up template reference...");
-            CustomSubMission mission1 = new CustomSubMission();
+            SubMission mission1 = new SubMission();
             mission1.Name = "NPC Mission";
             mission1.Description = "A complex showcase mission with an NPC involved";
             mission1.GradeRequired = 1;
@@ -50,7 +52,7 @@ namespace Sub_Missions
                 false,  // Range check
                 false,  // Choice 1 "No"
                 false,  // Choice 2 "Yes"
-                true,   // False when Player drives away
+                false,  // When Player drives away while making teh choice
             };
             mission1.VarInts = new List<int>
             {
@@ -167,7 +169,7 @@ namespace Sub_Missions
                     StepType = SMissionType.StepCheckPlayerDist,
                     ProgressID = 30,
                     Position = new Vector3(2,0,6), // needs specific location
-                    InputNum = 64, // distance before it gets true
+                    InputNum = -64, // distance before it gets true - Negative makes this trigger when player outside
                     VaribleType = EVaribleType.True,
                     SetGlobalIndex1 = 3, //ooop
                     InputString = "",
@@ -218,7 +220,7 @@ namespace Sub_Missions
                     StepType = SMissionType.StepActForward,
                     ProgressID = 30,
                     SuccessProgressID = 80,
-                    VaribleType = EVaribleType.False,
+                    VaribleType = EVaribleType.True,
                     SetGlobalIndex1 = 3, // value to check before moving forward
                 },
                 new SubMissionStep
@@ -314,7 +316,7 @@ namespace Sub_Missions
                 AddProgressX = 2,
             };
 
-            CustomSubMission mission2 = new CustomSubMission();
+            SubMission mission2 = new SubMission();
             mission2.Name = "Combat Mission";
             mission2.Description = "A nice and simple combat target mission template";
             mission2.GradeRequired = 0;
@@ -394,7 +396,7 @@ namespace Sub_Missions
             };
 
 
-            CustomSubMission mission3 = new CustomSubMission();
+            SubMission mission3 = new SubMission();
             mission3.Name = "Harvest Mission";
             mission3.Description = "A showcase mission with harvesting involved";
             mission3.GradeRequired = 1;
@@ -416,7 +418,7 @@ namespace Sub_Missions
                 new MissionChecklist
                 {
                     ListArticle = "Mine F*bron ",
-                    ValueType = VarType.Unset,
+                    ValueType = VarType.IntOverInt,
                     GlobalIndex = 1,    // numberator
                     GlobalIndex2 = 2,    // denominator
                 }
@@ -478,7 +480,7 @@ namespace Sub_Missions
                 EXPGain = 100,
             };
 
-            CustomSubMissionTree tree = new CustomSubMissionTree();
+            SubMissionTree tree = new SubMissionTree();
             tree.TreeName = "Template";
             tree.Faction = "GSO";
             tree.MissionNames.Add("NPC Mission");
@@ -493,8 +495,8 @@ namespace Sub_Missions
             string one = JsonConvert.SerializeObject(mission1, Formatting.Indented, JSONSaver);
             string two = JsonConvert.SerializeObject(mission2, Formatting.Indented, JSONSaver);
             string three = JsonConvert.SerializeObject(mission3, Formatting.Indented, JSONSaver);
-            string four = "{\n\"Name\": \"GSO Garrett\",\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSO_Chassis_Cab_314\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOGyroAllAxisActive_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOAIGuardController_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":3}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":1}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":3.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":12}|{\\\"t\\\":\\\"GSOBattery_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOTractorMini_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":16}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":23}|{\\\"t\\\":\\\"VENBracketStraight_211\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":5.0,\\\"z\\\":-1.0},\\\"r\\\":8}|{\\\"t\\\":\\\"GSORadar_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":6.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightSpot_111\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightFixed_111\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":2.0},\\\"r\\\":4}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-2.0},\\\"r\\\":6}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":11}|{\\\"t\\\":\\\"GSOFuelTank_121\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":6}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false,\n\"Cost\": 42828\n};";
-            string five = "{\n\"Name\": \"TestTarget\",\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBlock_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":2}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":11}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false\n};";
+            string four = "{\n\"Name\": \"GSO Garrett\",\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSO_Chassis_Cab_314\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOGyroAllAxisActive_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOAIGuardController_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":3}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":1}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":3.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":12}|{\\\"t\\\":\\\"GSOBattery_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOTractorMini_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":16}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":23}|{\\\"t\\\":\\\"VENBracketStraight_211\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":5.0,\\\"z\\\":-1.0},\\\"r\\\":8}|{\\\"t\\\":\\\"GSORadar_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":6.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightSpot_111\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightFixed_111\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":2.0},\\\"r\\\":4}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-2.0},\\\"r\\\":6}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":11}|{\\\"t\\\":\\\"GSOFuelTank_121\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":6}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false,\n\"Cost\": 42828\n}";
+            string five = "{\n\"Name\": \"TestTarget\",\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBlock_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":2}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":11}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false\n}";
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Missions\\NPC Mission", one);
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Missions\\Combat Mission", two);
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Missions\\Harvest Mission", three);
@@ -514,12 +516,12 @@ namespace Sub_Missions
         }
 
         // Majors
-        public static List<CustomSubMissionTree> LoadAllTrees()
+        public static List<SubMissionTree> LoadAllTrees()
         {
             Debug.Log("SubMissions: Searching Custom SMissions Folder...");
             List<string> names = GetNameList();
             Debug.Log("SubMissions: Found " + names.Count + " trees...");
-            List<CustomSubMissionTree> temps = new List<CustomSubMissionTree>();
+            List<SubMissionTree> temps = new List<SubMissionTree>();
             foreach (string name in names)
             {
                 Debug.Log("SubMissions: Added Tree " + name);
@@ -527,17 +529,18 @@ namespace Sub_Missions
             }
             return temps;
         }
-        public static List<CustomSubMission> LoadAllMissions(string TreeName, CustomSubMissionTree tree)
+        public static List<SubMission> LoadAllMissions(string TreeName, SubMissionTree tree)
         {
             ValidateDirectory(MissionsDirectory);
             List<string> names = GetNameList(TreeName + "\\Missions", true);
-            List<CustomSubMission> temps = new List<CustomSubMission>();
+            List<SubMission> temps = new List<SubMission>();
             foreach (string name in names)
             {
                 temps.Add(MissionLoader(TreeName, name, tree));
             }
             return temps;
         }
+
 
 
         // Utilities
@@ -626,15 +629,15 @@ namespace Sub_Missions
 
 
         // JSON Handlers
-        public static CustomSubMissionTree TreeLoader(string TreeName)
+        public static SubMissionTree TreeLoader(string TreeName)
         {
             string output = LoadMissionTreeFromFile(TreeName);
-            return JsonConvert.DeserializeObject<CustomSubMissionTree>(output, JSONSaver);
+            return JsonConvert.DeserializeObject<SubMissionTree>(output, JSONSaver);
         }
-        public static CustomSubMission MissionLoader(string TreeName, string MissionName, CustomSubMissionTree tree)
+        public static SubMission MissionLoader(string TreeName, string MissionName, SubMissionTree tree)
         {
             string output = LoadMissionTreeMissionFromFile(TreeName, MissionName);
-            CustomSubMission mission = JsonConvert.DeserializeObject<CustomSubMission>(output, JSONSaver);
+            SubMission mission = JsonConvert.DeserializeObject<SubMission>(output, JSONSaver);
             mission.Tree = tree;
             return mission;
         }

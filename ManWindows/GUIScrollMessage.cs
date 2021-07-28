@@ -16,7 +16,7 @@ namespace Sub_Missions.ManWindows
         public string MessageOut;
 
         private float scrollDelay = 0.075f;
-        private int StepFadeoutDelay = 250;
+        private int StepFadeoutDelay = 175;
         private float tracker = 0;
         private int step = -5;
 
@@ -30,7 +30,7 @@ namespace Sub_Missions.ManWindows
 
         public void RunGUI(int ID)
         {
-            GUI.Label(new Rect(200, 40, Display.Window.width - 220, Display.Window.height - 80), MessageOut, WindowManager.styleLargeFont);
+            GUI.Label(new Rect(200, 40, Display.Window.width - 220, Display.Window.height - 60), MessageOut, WindowManager.styleLargeFont);
             if (GUI.Button(new Rect(20, Display.Window.height - 60, 60, 40), "<b>OK</b>", WindowManager.styleHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Enter);

@@ -7,7 +7,14 @@ using System.Threading.Tasks;
 namespace Sub_Missions.Steps
 {
     public class StepActShifter : SMissionStep
-    {
+    {   // The Shifter acts as a possible "update" gate for ProgressIDs
+        //   Say, the Shifter's Progress ID always remains true but
+        //   When the Shifter is Shifting (up one)
+        //   The value the opposite direction is no longer updated
+        //   The value that the Shifter moved to remains updating
+        //   The value two shifts right begins to get updated
+        // BUT:
+        //   The Shifter is greedy since there can only be one per ID and they cannot be safely adjacent.
         public override void TrySetup()
         {
         }

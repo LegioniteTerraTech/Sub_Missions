@@ -14,7 +14,7 @@ namespace Sub_Missions.Steps
     {
         // auto-set
         [JsonIgnore]
-        public CustomSubMission Mission;
+        public SubMission Mission;
         [JsonIgnore]
         public SMissionStep stepGenerated;
         [JsonIgnore]

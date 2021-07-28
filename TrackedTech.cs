@@ -13,7 +13,7 @@ namespace Sub_Missions
     public class TrackedTech
     {   //  
         [JsonIgnore]
-        public CustomSubMission mission;
+        public SubMission mission;
 
         public string TechName = "";
         public int TechID = 0;

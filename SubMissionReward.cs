@@ -21,7 +21,7 @@ namespace Sub_Missions
         public int RandomBlocksToSpawn = 0;
         public List<BlockTypes> BlocksToSpawn = new List<BlockTypes>();
 
-        public void Reward(CustomSubMissionTree tree)
+        public void Reward(SubMissionTree tree)
         {
             tree.ProgressX += AddProgressX;
             tree.ProgressY += AddProgressY;
@@ -59,7 +59,15 @@ namespace Sub_Missions
                 }
 
                 //crate.m_Contents = items.ToArray();
-                Vector3 landingPos = Singleton.playerPos + (Vector3.forward * Singleton.playerTank.blockBounds.size.magnitude);
+                Vector3 landingPos;
+                try
+                {
+                    landingPos = Singleton.playerPos + (Vector3.forward * Singleton.playerTank.blockBounds.size.magnitude);
+                }
+                catch 
+                {
+                    landingPos = Singleton.cameraTrans.position;
+                }
                 Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos);
                 //Singleton.Manager<ManSpawn>.inst.SpawnCrateRef("GSO_Crate", crate, landingPos, Quaternion.identity, true, true);
             }

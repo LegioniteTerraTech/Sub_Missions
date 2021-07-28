@@ -16,13 +16,29 @@ namespace Sub_Missions.Steps
         {   // check player dist
             if (SMission.InputString == "")
             {
-                if (SMUtil.IsPlayerInRangeOfPos(SMission.Position, SMission.InputNum))
-                    SMUtil.ConcludeGlobal1(ref SMission);
+                if (SMission.InputNum > 0)
+                {
+                    if (SMUtil.IsPlayerInRangeOfPos(SMission.Position, SMission.InputNum))
+                        SMUtil.ConcludeGlobal1(ref SMission);
+                }
+                else
+                {   //invert detection trigger
+                    if (!SMUtil.IsPlayerInRangeOfPos(SMission.Position, -SMission.InputNum))
+                        SMUtil.ConcludeGlobal1(ref SMission);
+                }
             }
             else
             {
-                if (SMUtil.IsPlayerInRangeOfPos(SMUtil.GetTrackedTech(ref SMission, SMission.InputString).boundsCentreWorld, SMission.InputNum))
-                    SMUtil.ConcludeGlobal1(ref SMission);
+                if (SMission.InputNum > 0)
+                {
+                    if (SMUtil.IsPlayerInRangeOfPos(SMUtil.GetTrackedTech(ref SMission, SMission.InputString).boundsCentreWorld, SMission.InputNum))
+                        SMUtil.ConcludeGlobal1(ref SMission);
+                }
+                else
+                {   //invert detection trigger
+                    if (!SMUtil.IsPlayerInRangeOfPos(SMUtil.GetTrackedTech(ref SMission, SMission.InputString).boundsCentreWorld, -SMission.InputNum))
+                        SMUtil.ConcludeGlobal1(ref SMission);
+                }
             }
         }
     }
