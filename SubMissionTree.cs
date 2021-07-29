@@ -35,9 +35,9 @@ namespace Sub_Missions
         [JsonIgnore]
         internal List<SubMission> ActiveMissions = new List<SubMission>();// DO NOT SET!!! - saved in campaign
         [JsonIgnore]
-        internal byte ProgressX = 0; // DO NOT SET!!! - saved in campaign
+        internal sbyte ProgressX = 0; // DO NOT SET!!! - saved in campaign
         [JsonIgnore]
-        internal byte ProgressY = 0; // DO NOT SET!!! - saved in campaign
+        internal sbyte ProgressY = 0; // DO NOT SET!!! - saved in campaign
         [JsonIgnore]
         internal List<SubMissionStandby> CompletedMissions = new List<SubMissionStandby>();// DO NOT SET!!! - saved in campaign
 

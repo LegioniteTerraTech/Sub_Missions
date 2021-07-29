@@ -11,8 +11,8 @@ namespace Sub_Missions
     {   //  
 
 
-        public byte AddProgressX = 0;
-        public byte AddProgressY = 0;
+        public sbyte AddProgressX = 0;
+        public sbyte AddProgressY = 0;
 
         public int EXPGain = 0;
         public int MoneyGain = 0;
@@ -21,10 +21,19 @@ namespace Sub_Missions
         public int RandomBlocksToSpawn = 0;
         public List<BlockTypes> BlocksToSpawn = new List<BlockTypes>();
 
+        public void TryChange(ref sbyte input, sbyte toChangeBy)
+        {
+            if ((int)input + (int)toChangeBy > sbyte.MaxValue)
+                input = sbyte.MaxValue;
+            else if ((int)input + (int)toChangeBy < sbyte.MinValue)
+                input = sbyte.MinValue;
+            else
+                input += toChangeBy;
+        }
         public void Reward(SubMissionTree tree)
         {
-            tree.ProgressX += AddProgressX;
-            tree.ProgressY += AddProgressY;
+            TryChange(ref tree.ProgressX, AddProgressX);
+            TryChange(ref tree.ProgressY, AddProgressY);
             if (MoneyGain > 0)
             {
                 try
@@ -46,19 +55,13 @@ namespace Sub_Missions
             }
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)
             {
-                //Crate.Definition crate = new Crate.Definition();
-                //crate.m_Locked = false;
-
-                //List<Crate.ItemDefinition> items = new List<Crate.ItemDefinition>();
                 List<BlockTypes> items = new List<BlockTypes>(BlocksToSpawn);
                 for (int step = 0; step < RandomBlocksToSpawn; step++)
                 {
                     BlockTypes RANDtype = BlockTypes.GSOBlock_111;// still pending...
-                    //items.Add(new Crate.ItemDefinition { m_BlockType = RANDtype})
                     items.Add(RANDtype);
                 }
 
-                //crate.m_Contents = items.ToArray();
                 Vector3 landingPos;
                 try
                 {
@@ -69,7 +72,6 @@ namespace Sub_Missions
                     landingPos = Singleton.cameraTrans.position;
                 }
                 Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos);
-                //Singleton.Manager<ManSpawn>.inst.SpawnCrateRef("GSO_Crate", crate, landingPos, Quaternion.identity, true, true);
             }
         }
     }

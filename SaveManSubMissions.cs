@@ -333,8 +333,8 @@ namespace Sub_Missions
 
         internal List<SubMissionSave> ActiveMissions = new List<SubMissionSave>();// DO NOT SET!!! - saved in campaign
 
-        internal byte ProgressX = 0; // DO NOT SET!!! - saved in campaign
-        internal byte ProgressY = 0; // DO NOT SET!!! - saved in campaign
+        internal sbyte ProgressX = 0; // DO NOT SET!!! - saved in campaign
+        internal sbyte ProgressY = 0; // DO NOT SET!!! - saved in campaign
 
         internal List<SubMissionStandby> CompletedMissions = new List<SubMissionStandby>();
 
