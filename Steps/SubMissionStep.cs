@@ -23,8 +23,10 @@ namespace Sub_Missions.Steps
         public bool hasBlock = false;
         [JsonIgnore]
         public GUIPopupDisplay AssignedWindow;
+        [JsonIgnore]
+        public Waypoint AssignedWaypoint;
 
-        public SMissionType StepType;           // The type this is
+        public SMissionType StepType = SMissionType.StepActSpeak;           // The type this is
 
         public int ProgressID = 0;          // progress ID this runs on
         public int SuccessProgressID = 0;   // transfer to this when successful
@@ -61,7 +63,21 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a setup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
+                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a TrySetup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
+                Debug.Log(e);
+            }
+        }
+        public void LoadSetup()
+        {
+            try
+            {
+                TrySetupOnType();
+                stepGenerated.Mission = Mission;
+                stepGenerated.SMission = this;
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a LoadSetup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
                 Debug.Log(e);
             }
         }
@@ -86,6 +102,9 @@ namespace Sub_Missions.Steps
                     break;
                 case SMissionType.StepSetupTech:
                     stepGenerated = new StepSetupTech();
+                    break;
+                case SMissionType.StepSetupWaypoint:
+                    stepGenerated = new StepSetupWaypoint();
                     break;
                 case SMissionType.StepActSpeak:
                     stepGenerated = new StepActSpeak();
@@ -151,5 +170,6 @@ namespace Sub_Missions.Steps
         // SPAWNS
         StepSetupTech,
         StepSetupMM, // ModularMonuments
+        StepSetupWaypoint,
     }
 }

@@ -45,13 +45,15 @@ namespace Sub_Missions
      *         When a branch ID is set, the values adjacent of it will still be triggered
      *         this it to allow some keep features to still work like slightly changing the ProgressID to deal with
      *         players leaving the mission area
-     *         CurrentProgressID is '1', will run the missions in [0,1,2]
+     *         If the CurrentProgressID is '1', the mission will run the Steps in [0,1,2]
      *         
-     *         Steps with a capital "S" at the end can offset step. It is suggested that you only use one step with
+     *         Steps with a capital "S" at the end can offset Step. It is suggested that you only use one step with
      *         per ProgressID.
      *         
      *         On success, the CurrentProgressID will be set to -98 and do one last loop.
      *         On fail, the CurrentProgressID will be set to -100 and do one last loop.
+     *         
+     *         If a Step's ProgressID is set to -999, it will update all the time regardless of the CurrentProgressID.
      *     
      */
     public class ManSubMissions : MonoBehaviour
@@ -106,8 +108,8 @@ namespace Sub_Missions
         {
             if (!Subscribed)
             {;
-                Singleton.Manager<ManGameMode>.inst.ModeSetupEvent.Subscribe(LoadSubMissionsFromSave);
-                Singleton.Manager<ManGameMode>.inst.ModeCleanUpEvent.Subscribe(SaveSubMissionsToSave);
+                Singleton.Manager<ManGameMode>.inst.ModeStartEvent.Subscribe(LoadSubMissionsFromSave);
+                Singleton.Manager<ManGameMode>.inst.ModeFinishedEvent.Subscribe(SaveSubMissionsToSave);
 
                 WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.TinyWindow);
 
@@ -152,6 +154,13 @@ namespace Sub_Missions
             SaveSubMissionsToSave();
         }
 
+        public static SubMissionTree GetTree(string treeName)
+        {
+            SubMissionTree tree = SubMissionTrees.Find(delegate (SubMissionTree cand) { return cand.TreeName == treeName; });
+            if (tree == default(SubMissionTree))
+                SMUtil.Assert(false, "SubMissions: Failed to fetch tree - Was it removed!?");
+            return tree;
+        }
 
         // Missions
         public void AcceptMission()
@@ -162,6 +171,13 @@ namespace Sub_Missions
         public void CancelMission()
         {
             Selected.Tree.CancelTreeMission(Selected);
+        }
+        public static void ReSyncSubMissions()
+        {
+            foreach (SubMission sub in ActiveSubMissions)
+            {
+                sub.ReSync();
+            }
         }
 
 
@@ -184,6 +200,7 @@ namespace Sub_Missions
                 if (Input.GetKey(KeyCode.LeftAlt))
                 {
                     HarvestAllTrees();
+                    LoadSubMissionsFromSave();
                 }
                 if (Input.GetKey(KeyCode.LeftControl))
                 {
@@ -195,11 +212,11 @@ namespace Sub_Missions
         // UPDATE
         public void Update()
         {
+            UpdateAllSubMissions();
             timer += Time.deltaTime;
             if (timer >= timerSecondsDelay)
             {
                 timer = 0;
-                UpdateAllSubMissions();
 
                 if (!ActiveSubMissions.Contains(Selected))
                 {
@@ -222,6 +239,16 @@ namespace Sub_Missions
             }
         }
 
+        public static void PurgeAllTrees()
+        {
+            inst.GetAllPossibleMissions();
+            foreach (SubMissionTree tree in SubMissionTrees)
+            {
+                tree.ResetALLTreeMissions();
+            }
+            inst.GetAllPossibleMissions();
+        }
+
 
         //Saving
         public static List<SubMission> GetAllActiveSubMissions()
@@ -232,16 +259,44 @@ namespace Sub_Missions
         {
             if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
             {
-                Debug.Log("SubMissions: ManSubMissions Saving!");
-                SaveManSubMissions.SaveDataAutomatic();
+                var saver = Singleton.Manager<ManSaveGame>.inst;
+                if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
+                {
+                    Debug.Log("SubMissions: ManSubMissions Saving!");
+                    SaveManSubMissions.SaveDataAutomatic();
+                }
             }
         }
         public static void SaveSubMissionsToSave(Mode mode)
         {
             if (mode is ModeMain && !IgnoreSaveThisSession)
             {
-                Debug.Log("SubMissions: ManSubMissions Saving!");
-                SaveManSubMissions.SaveDataAutomatic();
+                var saver = Singleton.Manager<ManSaveGame>.inst;
+                if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
+                {
+                    Debug.Log("SubMissions: ManSubMissions Saving!");
+                    SaveManSubMissions.SaveDataAutomatic();
+                }
+            }
+        }
+        public static void LoadSubMissionsFromSave()
+        {
+            if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
+            {
+                IgnoreSaveThisSession = false;
+                Debug.Log("SubMissions: ManSubMissions Loading from save!");
+                PurgeAllTrees();
+                SaveManSubMissions.LoadDataAutomatic();
+                WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+            }
+            else
+            {
+                if (!KickStart.Debugger)
+                {
+                    WindowManager.HidePopup(Button);
+                    WindowManager.HidePopup(SideUI);
+                }
             }
         }
         public static void LoadSubMissionsFromSave(Mode mode)
@@ -250,9 +305,10 @@ namespace Sub_Missions
             {
                 IgnoreSaveThisSession = false;
                 Debug.Log("SubMissions: ManSubMissions Loading from save!");
+                PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomatic();
-                WindowManager.ShowPopup(Button);
-                WindowManager.ShowPopup(SideUI);
+                WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
             }
             else
             {

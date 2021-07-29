@@ -47,12 +47,17 @@ namespace Sub_Missions
 
         public SubMissionReward Rewards; // MUST be set externally via JSON or built C# code!
 
-        public int UpdatePassovers = 1; // DON'T TOUCH THIS unless you know EXACTLY what you are doing!
+        public int UpdateSpeedMultiplier = 1; // DON'T TOUCH THIS unless you know EXACTLY what you are doing!
+        //  If this value is too high, there WILL be framerate and performance issues!
 
+        [JsonIgnore]
+        private float updateLerp = 0;
         [JsonIgnore]
         internal bool AwaitingAction = false;
         [JsonIgnore]
         internal int CurrentProgressID = 0;
+        [JsonIgnore]
+        private bool IsCleaningUp = false;
 
 
         public void GetAndSetDisplayName()
@@ -84,6 +89,13 @@ namespace Sub_Missions
         }
         public void Startup()
         {   // 
+            if (UpdateSpeedMultiplier < 1)
+            {
+                SMUtil.Assert(false, "SubMissions: " + Name + " UpdateSpeedMultiplier cannot be lower than 1");
+                UpdateSpeedMultiplier = 1;
+            }
+
+            IsCleaningUp = false;
             if (!FixatePositionInWorld)
                 SetPositionFromPlayer();
             if (ClearSceneryOnSpawn)
@@ -91,16 +103,13 @@ namespace Sub_Missions
             bool isMissionImpossible = true;
             foreach (SubMissionStep step in EventList)
             {
+                step.Mission = this;
+                step.TrySetup();
                 if (step.StepType == SMissionType.StepActWin)
                     isMissionImpossible = false;
             }
             if (isMissionImpossible)
-                Debug.Log("SubMissions: " + Name + " is impossible to complete as there are no existing Win Steps in the Event List!!!");
-            foreach (SubMissionStep step in EventList)
-            {
-                step.Mission = this;
-                step.TrySetup();
-            }
+                SMUtil.Assert(false, "SubMissions: " + Name + " is impossible to complete as there are no existing Win Steps in the Event List!!!");
             try
             {
                 foreach (TrackedTech tech in TrackedTechs)
@@ -118,9 +127,36 @@ namespace Sub_Missions
             }
             catch { }
         }
+        public void ReSync()
+        {   // 
+            IsCleaningUp = false; 
+            foreach (SubMissionStep step in EventList)
+            {
+                step.Mission = this;
+                step.LoadSetup();
+            }
+            try
+            {
+                foreach (TrackedTech tech in TrackedTechs)
+                {
+                    tech.mission = this;
+                }
+            }
+            catch { }
+            try
+            {
+                foreach (MissionChecklist listEntry in CheckList)
+                {
+                    listEntry.mission = this;
+                }
+            }
+            catch { }
+            //Debug.Log("SubMissions: ReSynced");
+            //Debug.Log("SubMissions: Tree " + Tree.TreeName);
+        }
         public void Cleanup()
         {   //
-            //Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
+            IsCleaningUp = true;
             try  // We don't want to crash when the mission maker is still testing
             {       // Will inevitably crash with no checklist items assigned
                 CheckList.Clear();
@@ -153,7 +189,15 @@ namespace Sub_Missions
                             WindowManager.RemovePopup(step.AssignedWindow);
                         }
                     }
-                    catch { };
+                    catch { }
+                    try  // We don't want to crash when the mission maker is still testing
+                    {
+                        if (step.AssignedWaypoint != null)
+                        {
+                            step.AssignedWaypoint.visible.RemoveFromGame();
+                        }
+                    }
+                    catch { }
                 }
             }
         }
@@ -180,6 +224,8 @@ namespace Sub_Missions
         // Endings
         public void Finish()
         {   //
+            if (IsCleaningUp)
+                return;
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionComplete);
             Rewards.Reward(Tree);
             CurrentProgressID = -98;
@@ -198,13 +244,34 @@ namespace Sub_Missions
 
         // UPDATE
         public void TriggerUpdate()
-        {   // updated every second
-            for (int round = 0; round < UpdatePassovers; round++)
+        {   // updated at least every second
+            updateLerp += Time.deltaTime;
+            if (updateLerp > 1 / UpdateSpeedMultiplier)
             {
+                updateLerp = 0;
+                int position = 0;
                 foreach (SubMissionStep step in EventList)
                 {
-                    if (IsAdjacentTo(step.ProgressID))
-                        step.Trigger();
+                    if (CanRunStep(step.ProgressID))
+                    {
+                        try
+                        {   // can potentially fire too early before mission is set
+                            step.Trigger();
+                        }
+                        catch 
+                        {
+                            Debug.Log("SubMissions: Error on attempting step lerp " + position + " in relation to " + CurrentProgressID + " of mission " + Name + " in tree " + Tree.TreeName);
+                            try
+                            {
+                                Debug.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
+                            }
+                            catch
+                            {
+                                Debug.Log("SubMissions: Confirmed null");
+                            }
+                        }
+                    }
+                    position++;
                 }
             }
             try
@@ -215,17 +282,17 @@ namespace Sub_Missions
                     {  
                         task.TestForCompleted();
                     }
-                    catch { };
+                    catch { }
                 }
             }
-            catch { };
+            catch { }
         }
 
 
         // Utilities
-        public bool IsAdjacentTo(int input)
+        public bool CanRunStep(int input)
         {
-            return input <= CurrentProgressID + 1 && input >= CurrentProgressID - 1;
+            return (input <= CurrentProgressID + 1 && input >= CurrentProgressID - 1) || input == -999;
         }
         public bool GetTechPosHeading(string TechName, out Vector3 pos, out Vector3 direction, out int team)
         {   //

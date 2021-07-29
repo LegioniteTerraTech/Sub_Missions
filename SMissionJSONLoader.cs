@@ -52,7 +52,7 @@ namespace Sub_Missions
                 false,  // Range check
                 false,  // Choice 1 "No"
                 false,  // Choice 2 "Yes"
-                false,  // When Player drives away while making teh choice
+                false,  // When Player drives away while making the choice
             };
             mission1.VarInts = new List<int>
             {
@@ -78,6 +78,14 @@ namespace Sub_Missions
                     InputNum = -2, // team
                     VaribleType = EVaribleType.None,
                     InputString = "GSO Garrett"
+                },
+                new SubMissionStep
+                {
+                    StepType = SMissionType.StepSetupWaypoint,
+                    ProgressID = -999,// update For all time. Always.
+                    Position = new Vector3(2,0,6),
+                    VaribleType = EVaribleType.None,
+                    InputString = "GSO Garrett" // give it a TrackedTech Tech name to assign it to that tech
                 },
                 new SubMissionStep
                 {
@@ -365,6 +373,14 @@ namespace Sub_Missions
                     InputNum = 8,
                     VaribleType = EVaribleType.None,
                     InputString = "TestTarget",
+                },
+                new SubMissionStep
+                {
+                    StepType = SMissionType.StepSetupWaypoint,
+                    ProgressID = -999,// update For all time. Always.
+                    Position = new Vector3(2,0,6),
+                    VaribleType = EVaribleType.None,
+                    InputString = "TestTarget"
                 },
                 new SubMissionStep
                 {

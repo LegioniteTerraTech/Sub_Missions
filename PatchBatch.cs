@@ -23,5 +23,15 @@ namespace Sub_Missions
             }
         }
 
+        [HarmonyPatch(typeof(ManSaveGame))]
+        [HarmonyPatch("Save")]// SAAAAAVVE
+        private static class SaveTheMissions
+        {
+            private static void Prefix()
+            {
+                Debug.Log("SubMissions: ManSubMissions Saving!");
+                SaveManSubMissions.SaveDataAutomatic();
+            }
+        }
     }
 }

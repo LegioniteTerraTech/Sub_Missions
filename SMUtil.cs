@@ -25,7 +25,7 @@ namespace Sub_Missions
         // DEBUG
         public static void PushErrors()
         {
-            if (KickStart.Debugger && errorQueued)
+            if (KickStart.Debugger)
             {
                 if (errorQueued)
                 {

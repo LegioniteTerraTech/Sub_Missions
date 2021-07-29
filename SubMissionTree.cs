@@ -274,20 +274,42 @@ namespace Sub_Missions
         }
         public void ResetALLTreeMissions()
         {
-            foreach (SubMission mission in ActiveMissions)
+            int CountStep = ActiveMissions.Count();
+            for (int step = 0; step < CountStep; step++)
             {
-                CancelTreeMission(mission);
+                try
+                {
+                    CancelTreeMission(ActiveMissions.First());
+                }
+                catch { }
             }
             CompletedMissions = new List<SubMissionStandby>();
             ProgressX = 0;
             ProgressY = 0;
-            ManSubMissions.inst.GetAllPossibleMissions();
         }
 
     }
     public class SubMissionStandby 
     {
-        public SubMissionTree Tree;
+        [JsonIgnore]
+        public SubMissionTree tree;
+        [JsonIgnore]
+        public SubMissionTree Tree
+        {
+            get 
+            {
+                if (tree == null)
+                    tree = GetTree();
+                return tree; 
+            }
+            set
+            {
+                treeName = value.TreeName;
+                tree = value;
+            }
+        }
+        public string treeName;
+
         public string Name = "Unset";
         public string AltName = "Unset";
         public List<string> AltNames;
@@ -316,6 +338,10 @@ namespace Sub_Missions
                     AltName = Name;
                 AltName = check;
             }
+        }
+        public SubMissionTree GetTree()
+        {   // 
+            return ManSubMissions.GetTree(treeName);
         }
     }
 }

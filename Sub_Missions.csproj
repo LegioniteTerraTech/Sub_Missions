@@ -138,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ButtonAct.cs" />
+    <Compile Include="Steps\StepSetupWaypoint.cs" />
     <Compile Include="SubMission.cs" />
     <Compile Include="SubMissionTree.cs" />
     <Compile Include="EVaribleType.cs" />

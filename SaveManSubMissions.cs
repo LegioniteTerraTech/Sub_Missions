@@ -17,6 +17,8 @@ namespace Sub_Missions
         private static JsonSerializerSettings JSONSaver = new JsonSerializerSettings
         {
             DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate,
+            MaxDepth = 10,
+            ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
             TypeNameHandling = TypeNameHandling.Auto,
         };
 
@@ -58,11 +60,12 @@ namespace Sub_Missions
                 try
                 {
                     DeserializeToManager(output);
-                    ManSubMissions.inst.GetAllPossibleMissions();
+                    ManSubMissions.ReSyncSubMissions();
                 }
-                catch
+                catch (Exception e)
                 {
                     SMUtil.Assert(false, "SubMissions: Could not load contents of MissionSave.JSON for " + saveName + "!");
+                    Debug.Log(e);
                     return;
                 }
                 Debug.Log("SubMissions: Loaded MissionSave.JSON for " + saveName + " successfully.");
@@ -91,6 +94,7 @@ namespace Sub_Missions
             try
             {
                 File.WriteAllText(destination + ".JSON", SerializeFromManager());
+                CleanUpCache();
                 Debug.Log("SubMissions: Saved MissionSave.JSON for " + saveName + " successfully.");
             }
             catch
@@ -103,18 +107,149 @@ namespace Sub_Missions
 
         private static string SerializeFromManager(bool defaultState = false)
         {
-            return JsonConvert.SerializeObject(SaveToFileFormatting(defaultState), JSONSaver);
+            return JsonConvert.SerializeObject(SaveToFileFormatting(defaultState), KickStart.Debugger ? Formatting.Indented : Formatting.None, JSONSaver);
         }
-        private static void DeserializeToManager(string ManSubMissionSave)
+        private static void DeserializeToManager(string ManSubMissionSaveIn)
         {
-            LoadFromFileFormatting((ManSubMissionSave)JsonConvert.DeserializeObject(ManSubMissionSave, JSONSaver));
+            LoadFromFileFormatting(JsonConvert.DeserializeObject<ManSubMissionSave>(ManSubMissionSaveIn, JSONSaver));
+        }
+        private static void CleanUpCache()
+        {
+            stepsSaved = new List<SubMissionStepSave>();
+            actMissions = new List<SubMissionSave>();
+            treesSaved = new List<ManSubMissionTreeSave>();
         }
 
 
         // Formatting
+        private static List<SubMissionSave> actMissions = new List<SubMissionSave>();
+        private static List<ManSubMissionTreeSave> treesSaved = new List<ManSubMissionTreeSave>();
+        private static ManSubMissionSave SaveToFileFormatting(bool defaultState)
+        {
+            if (defaultState)
+            {
+                Debug.Log("SubMissions: Resetting ManSubMissions for new save instance...");
+            }
+            treesSaved = new List<ManSubMissionTreeSave>();
+            foreach (SubMissionTree missionTree in ManSubMissions.SubMissionTrees)
+            {
+                if (defaultState)
+                {
+                    missionTree.ResetALLTreeMissions();
+                }
+                ManSubMissionTreeSave treeSaved = new ManSubMissionTreeSave();
+                treeSaved.TreeName = missionTree.TreeName;
+                treeSaved.Faction = missionTree.Faction;
+
+                actMissions = new List<SubMissionSave>();
+                foreach (SubMission missionCase in missionTree.ActiveMissions)
+                {
+                    actMissions.Add(SaveMissionState(missionCase));
+                }
+                treeSaved.ActiveMissions = actMissions;
+
+                treeSaved.CompletedMissions = missionTree.CompletedMissions;
+
+                treeSaved.ProgressX = missionTree.ProgressX;
+                treeSaved.ProgressY = missionTree.ProgressY;
+
+                treesSaved.Add(treeSaved);
+            }
+            ManSubMissionSave save = new ManSubMissionSave
+            {
+                SubMissionTrees = treesSaved,
+
+                SelectedIsAnon = ManSubMissions.SelectedIsAnon,
+
+                Selected = ManSubMissions.ActiveSubMissions.IndexOf(ManSubMissions.Selected),
+                SelectedAnon = ManSubMissions.AnonSubMissions.IndexOf(ManSubMissions.SelectedAnon),
+            };
+            return save;
+        }
+        private static void LoadFromFileFormatting(ManSubMissionSave save)
+        {
+            if (save.SubMissionTrees.Count > ManSubMissions.SubMissionTrees.Count)
+            {
+                Debug.Log("SubMissions: SaveManSubMissions - Tree counts are wrong! There are missing trees!");
+            }
+
+            bool hasMissingItems = false;
+            StringBuilder missingTrees = new StringBuilder();
+            StringBuilder missingMissions = new StringBuilder();
+            missingTrees.Append("Missing Trees: ");
+            missingMissions.Append("Missing Missions: ");
+            foreach (ManSubMissionTreeSave treeSaved in save.SubMissionTrees)
+            {
+                if (ManSubMissions.SubMissionTrees.Exists(delegate (SubMissionTree cand) { return cand.TreeName == treeSaved.TreeName; }))
+                {
+                    SubMissionTree missionTree = ManSubMissions.SubMissionTrees.Find(delegate (SubMissionTree cand) { return cand.TreeName == treeSaved.TreeName; });
+
+                    missionTree.TreeName = treeSaved.TreeName;
+                    missionTree.Faction = treeSaved.Faction;
+
+                    missionTree.ActiveMissions.Clear();
+                    List<SubMission> reloadMissions = new List<SubMission>();
+                    foreach (SubMissionSave mission in treeSaved.ActiveMissions)
+                    {
+                        //var Loaded = missionTree.ActiveMissions.Find(delegate (SubMission cand) { return cand.Name == mission.Name && cand.Faction == mission.Faction; });
+                        //if (Loaded != null)
+                        //{
+                        //    LoadMissionState(ref Loaded, mission);
+                        //}
+                        //else
+                        //{
+                            SubMission add = SMissionJSONLoader.MissionLoader(missionTree.TreeName, mission.Name, missionTree);
+                            if (add == null)
+                            {
+                                missingMissions.Append(treeSaved.TreeName + ":" + mission.Name);
+                                hasMissingItems = true;
+                                continue;// load failure
+                            }
+                            LoadMissionState(ref add, mission);
+                            reloadMissions.Add(add);
+                        //}
+                    }
+                    missionTree.ActiveMissions = reloadMissions;
+                    missionTree.CompletedMissions = treeSaved.CompletedMissions;
+
+                    missionTree.ProgressX = treeSaved.ProgressX;
+                    missionTree.ProgressY = treeSaved.ProgressY;
+                }
+                else
+                {
+                    Debug.Log("SubMissions: SaveManSubMissions - Missing tree " + treeSaved.TreeName + " from save!  If this tree is not returned then all data will be lost!");
+                    missingTrees.Append(treeSaved.TreeName + " - ");
+                    hasMissingItems = true;
+                }
+
+            }
+            if (hasMissingItems)
+            {
+                ManSubMissions.IgnoreSaveThisSession = true;
+                WindowManager.AddPopupMessage("<b>Missing Sub Missions!</b>", missingTrees.ToString() + "\n" + missingMissions.ToString() + "\n Please add back in these Custom SMissions to prevent loss of Sub Missions save data!");
+                WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
+                WindowManager.AddPopupButtonDual("<b>Save Anyways?</b>", "Yes", true, "SaveThisGameAnyways");
+                WindowManager.ShowPopup(new Vector2(0.5f, 1));
+            }
+
+            ManSubMissions.SelectedIsAnon = save.SelectedIsAnon;
+            SubMission chek1 = ManSubMissions.ActiveSubMissions.ElementAtOrDefault(save.Selected);
+            if (chek1 != default(SubMission))
+                ManSubMissions.Selected = chek1;
+            else
+                ManSubMissions.Selected = null;
+            SubMissionStandby chek2 = ManSubMissions.AnonSubMissions.ElementAtOrDefault(save.SelectedAnon);
+            if (chek2 != default(SubMissionStandby))
+                ManSubMissions.SelectedAnon = chek2;
+            else
+                ManSubMissions.SelectedAnon = null;
+        }
+
+        // mission formatting
+        private static List<SubMissionStepSave> stepsSaved;
         private static SubMissionSave SaveMissionState(SubMission mission)
         {
-            List<SubMissionStepSave> stepsSaved = new List<SubMissionStepSave>();
+            stepsSaved = new List<SubMissionStepSave>();
             foreach (SubMissionStep missionStep in mission.EventList)
             {
                 SubMissionStepSave treeSaved = new SubMissionStepSave();
@@ -155,11 +290,12 @@ namespace Sub_Missions
                 });
                 if (StepFind != null)
                 {
+                    /*
                     treeSaved.ProgressID = StepFind.ProgressID;
                     treeSaved.SuccessProgressID = StepFind.SuccessProgressID;
                     treeSaved.StepType = StepFind.StepType;
                     treeSaved.VaribleType = StepFind.VaribleType;
-
+                    */
                     treeSaved.SavedInt = StepFind.SavedInt;
                 }
                 else
@@ -174,140 +310,19 @@ namespace Sub_Missions
             mission.VarInts = missionLoad.VarInts;
             return;
         }
-
-        private static ManSubMissionSave SaveToFileFormatting(bool defaultState)
-        {
-            if (defaultState)
-            {
-                Debug.Log("SubMissions: Resetting ManSubMissions for new save instance...");
-            }
-            List<ManSubMissionTreeSave> treesSaved = new List<ManSubMissionTreeSave>();
-            foreach (SubMissionTree missionTree in ManSubMissions.SubMissionTrees)
-            {
-                if (defaultState)
-                {
-                    missionTree.ResetALLTreeMissions();
-                }
-                ManSubMissionTreeSave treeSaved = new ManSubMissionTreeSave();
-                treeSaved.TreeName = missionTree.TreeName;
-                treeSaved.Faction = missionTree.Faction;
-
-                List<SubMissionSave> actMissions = new List<SubMissionSave>();
-                foreach (SubMission missionCase in missionTree.ActiveMissions)
-                {
-                    actMissions.Add(SaveMissionState(missionCase));
-                }
-                treeSaved.ActiveMissions = actMissions;
-
-                treeSaved.CompletedMissions = missionTree.CompletedMissions;
-
-                treeSaved.ProgressX = missionTree.ProgressX;
-                treeSaved.ProgressY = missionTree.ProgressY;
-
-                treesSaved.Add(treeSaved);
-            }
-            ManSubMissionSave save = new ManSubMissionSave 
-            {
-                SubMissionTrees = treesSaved,
-
-                SelectedIsAnon = ManSubMissions.SelectedIsAnon,
-
-                Selected = ManSubMissions.ActiveSubMissions.IndexOf(ManSubMissions.Selected),
-                SelectedAnon = ManSubMissions.AnonSubMissions.IndexOf(ManSubMissions.SelectedAnon),
-            };
-            return save;
-        }
-        private static void LoadFromFileFormatting(ManSubMissionSave save)
-        {
-            if (save.SubMissionTrees.Count > ManSubMissions.SubMissionTrees.Count)
-            {
-                Debug.Log("SubMissions: SaveManSubMissions - Tree counts are wrong! There are missing trees!");
-            }
-
-            bool hasMissingItems = false;
-            StringBuilder missingTrees = new StringBuilder();
-            StringBuilder missingMissions = new StringBuilder();
-            missingTrees.Append("Missing Trees: ");
-            missingMissions.Append("Missing Missions: ");
-            foreach (ManSubMissionTreeSave treeSaved in save.SubMissionTrees)
-            {
-                if (ManSubMissions.SubMissionTrees.Exists(delegate (SubMissionTree cand) { return cand.TreeName == treeSaved.TreeName; }))
-                {
-                    SubMissionTree missionTree = ManSubMissions.SubMissionTrees.Find(delegate (SubMissionTree cand) { return cand.TreeName == treeSaved.TreeName; });
-
-                    missionTree.TreeName = treeSaved.TreeName;
-                    missionTree.Faction = treeSaved.Faction;
-
-                    List<SubMission> reloadMissions = new List<SubMission>();
-                    foreach (SubMissionSave mission in treeSaved.ActiveMissions)
-                    {
-                        var Loaded = missionTree.ActiveMissions.Find(delegate (SubMission cand) { return cand.Name == mission.Name && cand.Faction == mission.Faction; });
-                        if (Loaded != null)
-                        {
-                            LoadMissionState(ref Loaded, mission);
-                        }
-                        else
-                        {
-                            SubMission add = SMissionJSONLoader.MissionLoader(missionTree.TreeName, mission.Name, missionTree);
-                            if (add == null)
-                            {
-                                missingMissions.Append(treeSaved.TreeName + ":" + mission.Name);
-                                hasMissingItems = true;
-                                continue;// load failure
-                            }
-                            LoadMissionState(ref add, mission);
-                            reloadMissions.Add(add);
-                        }
-                    }
-                    missionTree.ActiveMissions.AddRange(reloadMissions);
-                    missionTree.CompletedMissions = treeSaved.CompletedMissions;
-
-                    missionTree.ProgressX = treeSaved.ProgressX;
-                    missionTree.ProgressY = treeSaved.ProgressY;
-                }
-                else
-                {
-                    Debug.Log("SubMissions: SaveManSubMissions - Missing tree " + treeSaved.TreeName + " from save!  If this tree is not returned then all data will be lost!");
-                    missingTrees.Append(treeSaved.TreeName + " - ");
-                    hasMissingItems = true;
-                }
-
-            }
-            if (hasMissingItems)
-            {
-                ManSubMissions.IgnoreSaveThisSession = true;
-                WindowManager.AddPopupMessage("<b>Missing Sub Missions!</b>", missingTrees.ToString() + "\n" + missingMissions.ToString() + "\n Please add back in these Custom SMissions to prevent loss of Sub Missions save data!");
-                WindowManager.ShowPopup(new Vector2(0.5f ,0.5f));
-                WindowManager.AddPopupButtonDual("<b>Save Anyways?</b>", "Yes", true, "SaveThisGameAnyways");
-                WindowManager.ShowPopup(new Vector2(0.5f, 1));
-            }
-
-            ManSubMissions.SelectedIsAnon = save.SelectedIsAnon;
-            SubMission chek1 = ManSubMissions.ActiveSubMissions.ElementAtOrDefault(save.Selected);
-            if (chek1 != default(SubMission))
-                ManSubMissions.Selected = chek1;
-            else
-                ManSubMissions.Selected = null;
-            SubMissionStandby chek2 = ManSubMissions.AnonSubMissions.ElementAtOrDefault(save.SelectedAnon);
-            if (chek2 != default(SubMissionStandby))
-                ManSubMissions.SelectedAnon = chek2;
-            else
-                ManSubMissions.SelectedAnon = null;
-        }
     }
 
 
     // Save compiling - only need the relivant matters
     public class SubMissionStepSave
     {   // Grab some key details 
-        public SMissionType StepType;           // The type this is
+        public SMissionType StepType = SMissionType.StepActSpeak;           // The type this is
 
         public int ProgressID = 0;          // progress ID this runs on
         public int SuccessProgressID = 0;   // transfer to this when successful
 
-        public EVaribleType VaribleType = EVaribleType.True;           // Selects what the output should be
-
         public int SavedInt = 0;
+        public EVaribleType VaribleType = EVaribleType.True;           // Selects what the output should be
     }
     public class SubMissionSave
     {   //  Build the mission!
@@ -316,14 +331,14 @@ namespace Sub_Missions
         public string Faction = "GSO";
         public Vector3 Position = Vector3.zero;
 
-        internal int CurrentProgressID = 0;     // EXTREMELY IMPORTANT - determines the state the mission is at!
-
-        public List<SubMissionStepSave> EventList;  
+        public int CurrentProgressID = 0;     // EXTREMELY IMPORTANT - determines the state the mission is at!
 
         public List<bool> VarTrueFalse = new List<bool>();   
         public List<int> VarInts = new List<int>();                 
 
-        public List<TrackedTech> TrackedTechs;  
+        public List<TrackedTech> TrackedTechs;
+
+        public List<SubMissionStepSave> EventList;
     }
     public class ManSubMissionTreeSave
     {   // Save ManSubMissions in a separate file since ManSaveGame does not have hooks for saving unofficial
@@ -331,22 +346,20 @@ namespace Sub_Missions
         public string TreeName = "unset";
         public string Faction = "GSO";
 
-        internal List<SubMissionSave> ActiveMissions = new List<SubMissionSave>();// DO NOT SET!!! - saved in campaign
+        public sbyte ProgressX = 0; // DO NOT SET!!! - saved in campaign
+        public sbyte ProgressY = 0; // DO NOT SET!!! - saved in campaign
 
-        internal sbyte ProgressX = 0; // DO NOT SET!!! - saved in campaign
-        internal sbyte ProgressY = 0; // DO NOT SET!!! - saved in campaign
+        public List<SubMissionStandby> CompletedMissions = new List<SubMissionStandby>();
 
-        internal List<SubMissionStandby> CompletedMissions = new List<SubMissionStandby>();
-
+        public List<SubMissionSave> ActiveMissions = new List<SubMissionSave>();// DO NOT SET!!! - saved in campaign
     }
     public class ManSubMissionSave
     {   // Save ManSubMissions in a separate file since ManSaveGame does not have hooks for saving unofficial
         //   modded content
         public bool SelectedIsAnon = false;
-
-        public List<ManSubMissionTreeSave> SubMissionTrees = new List<ManSubMissionTreeSave>();
-
         public int Selected;
         public int SelectedAnon;
+
+        public List<ManSubMissionTreeSave> SubMissionTrees = new List<ManSubMissionTreeSave>();
     }
 }

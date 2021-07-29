@@ -9,8 +9,6 @@ namespace Sub_Missions
 {
     public class SubMissionReward
     {   //  
-
-
         public sbyte AddProgressX = 0;
         public sbyte AddProgressY = 0;
 

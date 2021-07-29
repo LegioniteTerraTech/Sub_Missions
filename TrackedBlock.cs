@@ -18,7 +18,6 @@ namespace Sub_Missions
         public string BlockName = "";
         public int blockID = 0;
 
-        [JsonIgnore]
         public bool loaded = false;
 
         [JsonIgnore]
