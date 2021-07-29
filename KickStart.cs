@@ -15,12 +15,10 @@ namespace Sub_Missions
     public class KickStart
     {
         const string ModName = "Sub_Missions";
-
-
-        public static bool OpenEditor = false;
+        
+        public static bool Debugger = false;
         public static bool OverrideRestrictions = true;
 
-        public static bool Debugger = false;
         public static ModConfig Saver;
 
         public static void Main()
@@ -51,7 +49,6 @@ namespace Sub_Missions
             Saver.BindConfig<KickStart>(null, "Debugger");
             Saver.BindConfig<KickStart>(null, "FirstTime");
 
-            SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
             if (FirstTime)
             {
                 FirstTime = false;
@@ -59,16 +56,41 @@ namespace Sub_Missions
 
             var SubMissions = ModName;
             editor = new OptionToggle("<b>ALLOW DEBUG</b> - WILL CONSUME PROCESSING POWER", SubMissions, Debugger);
-            editor.onValueSaved.AddListener(() => { Debugger = editor.SavedValue; Save(); });
+            editor.onValueSaved.AddListener(() => 
+            { 
+                Debugger = editor.SavedValue; 
+                Save();
+                try
+                {
+                    if (Debugger)
+                    {
+                        WindowManager.ShowPopup(ManSubMissions.Button);
+                        WindowManager.ShowPopup(ManSubMissions.SideUI);
+                    }
+                    else if (!ManGameMode.inst.IsCurrent<ModeMain>())
+                    {
+                        WindowManager.HidePopup(ManSubMissions.Button);
+                        WindowManager.HidePopup(ManSubMissions.SideUI);
+                    }
+                }
+                catch { }
+            });
+            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, Debugger);
+            exportTemplate.onValueSaved.AddListener(() => 
+            { 
+                Debugger = editor.SavedValue; 
+                SMissionJSONLoader.MakePrefabMissionTreeToFile("Template"); 
+                Save();
+            });
 
             ManSubMissions.inst.HarvestAllTrees();
         }
 
         public static OptionToggle editor;
-        public static OptionToggle NPCActOut;
-
+        public static OptionToggle exportTemplate;
 
         public static bool FirstTime = true;
+
 
         internal static bool isTACAIPresent = false;
         internal static bool isWaterModPresent = false;

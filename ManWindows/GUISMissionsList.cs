@@ -101,8 +101,7 @@ namespace Sub_Missions.ManWindows
             if (GUI.Button(new Rect(((Display.Window.width / 6) * 2) - 50, Display.Window.height - 60, 140, 40), "<b>CLOSE</b>", WindowManager.styleHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
-                WindowManager.SetCurrentPopup(Display);
-                WindowManager.HidePopup();
+                WindowManager.HidePopup(Display);
             }
 
             //--------------------------------------------------------------------
@@ -119,16 +118,16 @@ namespace Sub_Missions.ManWindows
                     if (ManSubMissions.SelectedAnon.Rewards != null)
                     {
                         SubMissionReward Rewards = ManSubMissions.SelectedAnon.Rewards;
-                        GUI.TextField(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "<b>----Rewards----</b>");
+                        GUI.TextField(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "----Rewards----");
                         if (Rewards.EXPGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "<b>EXP: " + Rewards.EXPGain + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "EXP: " + Rewards.EXPGain );
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "<b>No EXP</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "No EXP");
 
                         if (Rewards.MoneyGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "<b>¥¥: " + Rewards.MoneyGain + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "¥¥: " + Rewards.MoneyGain);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "<b>No ¥¥</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "No ¥¥");
 
                         int blocks;
                         if (Rewards.BlocksToSpawn != null)
@@ -136,13 +135,13 @@ namespace Sub_Missions.ManWindows
                         else
                             blocks = Rewards.RandomBlocksToSpawn;
                         if (blocks > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "<b>Blocks: " + blocks + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "Blocks: " + blocks);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "<b>No Blocks</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "No Blocks");
                         if (Rewards.AddProgressX > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), "<b>Prestige: " + Rewards.AddProgressX + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), ManSubMissions.SelectedAnon.Tree.ProgressXName + ": " + Rewards.AddProgressX);
                         if (Rewards.AddProgressY > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), "<b>Status: " + Rewards.AddProgressY + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.SelectedAnon.Tree.ProgressYName + ": " + Rewards.AddProgressY);
                     }
                 }
                 else if (!ManSubMissions.SelectedIsAnon)
@@ -155,16 +154,16 @@ namespace Sub_Missions.ManWindows
                     if (ManSubMissions.Selected.Rewards != null)
                     {
                         SubMissionReward Rewards = ManSubMissions.Selected.Rewards;
-                        GUI.TextField(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "<b>----Rewards----</b>");
+                        GUI.TextField(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "----Rewards----");
                         if (Rewards.EXPGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "<b>EXP: " + Rewards.EXPGain + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "EXP: " + Rewards.EXPGain);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "<b>No EXP</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "No EXP");
 
                         if (Rewards.MoneyGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "<b>¥¥: " + Rewards.MoneyGain + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "¥¥: " + Rewards.MoneyGain);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "<b>No ¥¥</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "No ¥¥");
 
                         int blocks;
                         if (Rewards.BlocksToSpawn != null)
@@ -172,13 +171,13 @@ namespace Sub_Missions.ManWindows
                         else
                             blocks = Rewards.RandomBlocksToSpawn;
                         if (blocks > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "<b>Blocks: " + blocks + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "Blocks: " + blocks);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "<b>No Blocks</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "No Blocks");
                         if (Rewards.AddProgressX > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), "<b>Prestige: " + Rewards.AddProgressX + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), ManSubMissions.Selected.Tree.ProgressXName + ": " + Rewards.AddProgressX);
                         if (Rewards.AddProgressY > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), "<b>Status: " + Rewards.AddProgressY + "</b>");
+                            GUI.TextField(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.Selected.Tree.ProgressYName + ": " + Rewards.AddProgressY);
                     }
                 }
                 else

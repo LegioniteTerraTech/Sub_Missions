@@ -41,7 +41,7 @@ namespace Sub_Missions
                 }
                 catch
                 {
-                    Debug.Log("SubMissions: Tried to add EXP to a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName);
+                    SMUtil.Assert(false, "SubMissions: Tried to add EXP to a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName);
                 }
             }
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)

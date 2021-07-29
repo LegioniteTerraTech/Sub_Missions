@@ -32,6 +32,10 @@ namespace Sub_Missions
         {
             WindowManager.UpdateAllPopups();
         }
+        public void SaveThisGameAnyways()
+        {
+            ManSubMissions.IgnoreSaveThisSession = false;
+        }
 
         public void AcceptSMission()
         {

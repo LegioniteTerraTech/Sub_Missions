@@ -606,7 +606,7 @@ namespace Sub_Missions
                 }
                 catch
                 {
-                    Debug.Log("SubMissions: Could not create new " + name + " folder.  \n   This could be due to a bug with this mod or file permissions.");
+                    SMUtil.Assert(false, "SubMissions: Could not create new " + name + " folder.  \n   This could be due to a bug with this mod or file permissions.");
                     return;
                 }
             }
@@ -622,7 +622,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Could not edit " + name + ".JSON.  \n   This could be due to a bug with this mod or file permissions.");
+                SMUtil.Assert(false, "SubMissions: Could not edit " + name + ".JSON.  \n   This could be due to a bug with this mod or file permissions.");
                 return;
             }
         }
@@ -641,7 +641,7 @@ namespace Sub_Missions
             mission.Tree = tree;
             return mission;
         }
-        // Tech loading is handled elsewhere
+        // Tech loading is handled elsewhere - either PopulationInjector or TACtical_AIs.
 
 
         // Loaders
@@ -658,7 +658,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Could not read MissionTree.JSON for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                SMUtil.Assert(false, "SubMissions: Could not read MissionTree.JSON for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
                 return null;
             }
         }
@@ -677,7 +677,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Could not read Mission.JSON for " + MissionName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                SMUtil.Assert(false, "SubMissions: Could not read Mission.JSON for " + MissionName + ".  \n   This could be due to a bug with this mod or file permissions.");
                 return null;
             }
         }

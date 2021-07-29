@@ -60,6 +60,7 @@ namespace Sub_Missions
 
         public static bool Subscribed = false;
         public static bool SelectedIsAnon = false;
+        public static bool IgnoreSaveThisSession = false;
 
         public static List<SubMissionTree> SubMissionTrees = new List<SubMissionTree>();
 
@@ -83,7 +84,9 @@ namespace Sub_Missions
         public static SubMission Selected;
         public static SubMissionStandby SelectedAnon;
 
+        public static GUIPopupDisplay Button;
         public static GUISMissionsList Board;
+        public static GUIPopupDisplay SideUI;
 
         public static float timer = 0;
         public static float timerSecondsDelay = 1;
@@ -108,13 +111,19 @@ namespace Sub_Missions
 
                 WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.TinyWindow);
 
-                WindowManager.ShowPopup(new Vector2(0.8f, 1));
+                if (KickStart.Debugger)
+                    WindowManager.ShowPopup(new Vector2(0.8f, 1));
+
+                Button = WindowManager.GetCurrentPopup();
 
                 WindowManager.AddPopupMissionsList();
 
                 WindowManager.AddPopupMessageSide();
 
-                WindowManager.ShowPopup(new Vector2(1, 0.1f));
+                if (KickStart.Debugger)
+                    WindowManager.ShowPopup(new Vector2(1, 0.1f));
+
+                SideUI = WindowManager.GetCurrentPopup();
 
                 Debug.Log("SubMissions: ManSubMissions subscribed");
                 Subscribed = true;
@@ -146,7 +155,8 @@ namespace Sub_Missions
 
         // Missions
         public void AcceptMission()
-        {
+        {   // We bite the bullet and insure the file has been marked tampered wth - because it was
+            Singleton.Manager<ManSaveGame>.inst.CurrentState.m_FileHasBeenTamperedWith = true;
             SelectedAnon.Tree.AcceptTreeMission(SelectedAnon);
         }
         public void CancelMission()
@@ -167,13 +177,17 @@ namespace Sub_Missions
                 WindowManager.ShowPopup(new Vector2(0.5f, 0.5f), Board.Display);
             }
         }
-        public void CheckKeyCombo()
+        public void CheckKeyCombos()
         {
-            if (Input.GetKey(KeyCode.LeftShift) && Input.GetKey(KeyCode.LeftAlt))
+            if (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.M))
             {
-                if (Input.GetKeyDown(KeyCode.M))
+                if (Input.GetKey(KeyCode.LeftAlt))
                 {
                     HarvestAllTrees();
+                }
+                if (Input.GetKey(KeyCode.LeftControl))
+                {
+                    SMUtil.PushErrors();
                 }
             }
         }
@@ -198,7 +212,7 @@ namespace Sub_Missions
                     return;
                 }
             }
-            CheckKeyCombo();
+            CheckKeyCombos();
         }
         public void UpdateAllSubMissions()
         {
@@ -216,7 +230,7 @@ namespace Sub_Missions
         }
         public static void SaveSubMissionsToSave()
         {
-            if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>())
+            if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
             {
                 Debug.Log("SubMissions: ManSubMissions Saving!");
                 SaveManSubMissions.SaveDataAutomatic();
@@ -224,7 +238,7 @@ namespace Sub_Missions
         }
         public static void SaveSubMissionsToSave(Mode mode)
         {
-            if (mode is ModeMain)
+            if (mode is ModeMain && !IgnoreSaveThisSession)
             {
                 Debug.Log("SubMissions: ManSubMissions Saving!");
                 SaveManSubMissions.SaveDataAutomatic();
@@ -234,8 +248,19 @@ namespace Sub_Missions
         {
             if (mode is ModeMain)
             {
+                IgnoreSaveThisSession = false;
                 Debug.Log("SubMissions: ManSubMissions Loading from save!");
                 SaveManSubMissions.LoadDataAutomatic();
+                WindowManager.ShowPopup(Button);
+                WindowManager.ShowPopup(SideUI);
+            }
+            else
+            {
+                if (!KickStart.Debugger)
+                {
+                    WindowManager.HidePopup(Button);
+                    WindowManager.HidePopup(SideUI);
+                }
             }
         }
     }

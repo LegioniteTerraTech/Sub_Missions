@@ -32,8 +32,9 @@ namespace Sub_Missions
                 if (!loaded)
                 {
                     if (!mission.GetTechPosHeading(TechName, out Vector3 pos, out Vector3 direction, out int team))
-                        Debug.Log("SubMissions: Tech in TrackedTechs list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
+                        SMUtil.Assert(true, "SubMissions: Tech in TrackedTechs list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
                     tech = SMUtil.SpawnTechAuto(ref mission, pos, team, direction, TechName);
+                    SMUtil.Assert(true, "SubMissions: Tech called into world before a StepSetupTech!  Mission: " + mission.Name);
                     loaded = true;
                 }
                 if (tech == null)

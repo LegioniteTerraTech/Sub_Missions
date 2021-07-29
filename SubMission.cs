@@ -19,6 +19,9 @@ namespace Sub_Missions
         internal SubMissionTree Tree;
 
         public string Name = "Unset";
+        [JsonIgnore]
+        public string SelectedAltName;
+        public List<string> AltNames;
         public string Faction = "GSO";
         public int GradeRequired = 0;
         public string Description = "ThisIsNotSetCorrectly";
@@ -51,6 +54,23 @@ namespace Sub_Missions
         [JsonIgnore]
         internal int CurrentProgressID = 0;
 
+
+        public void GetAndSetDisplayName()
+        {   // 
+            if (!SelectedAltName.NullOrEmpty())
+                return;
+            if (AltNames == null)
+                SelectedAltName = Name;
+            else if (AltNames.Count < 1)
+                SelectedAltName = Name;
+            else
+            {
+                string check = AltNames.GetRandomEntry();
+                if (check.NullOrEmpty())
+                    SelectedAltName = Name;
+                SelectedAltName = check;
+            }
+        }
         public float GetMinimumLoadRange()
         {   // 
             float minRange = 0;

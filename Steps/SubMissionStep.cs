@@ -61,7 +61,8 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: Mission " + Mission.Name + " Has a setup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.\n" + e);
+                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a setup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
+                Debug.Log(e);
             }
         }
         public void Trigger() 
@@ -72,7 +73,8 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: Mission " + Mission.Name + " Has invalid syntax at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \n" + e);
+                SMUtil.Assert(true, "SubMissions: Mission " + Mission.Name + " Has invalid syntax at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute."); 
+                Debug.Log(e);
             }
         }
         public void TrySetupOnType()

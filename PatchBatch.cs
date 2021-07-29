@@ -23,25 +23,5 @@ namespace Sub_Missions
             }
         }
 
-        /*
-        [HarmonyPatch(typeof(ManSaveGame))]
-        [HarmonyPatch("Save")]// On game save
-        private static class SaveMissionData
-        {
-            private static void Prefix(ManGameMode.GameType gameType, ref string saveName)
-            {
-                SaveManSubMissions.SaveData(saveName);
-            }
-        }
-
-        [HarmonyPatch(typeof(ManSaveGame))]
-        [HarmonyPatch("Load")]// On game load
-        private static class LoadMissionData
-        {
-            private static void Prefix(ManGameMode.GameType gameType, ref string saveName)
-            {
-                SaveManSubMissions.LoadData(saveName);
-            }
-        }*/
     }
 }

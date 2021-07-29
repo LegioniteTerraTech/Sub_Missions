@@ -28,6 +28,8 @@ namespace Sub_Missions
         public List<string> MissionNames = new List<string>();          //MUST BE SET VIA JSON
         public List<string> RepeatMissionNames = new List<string>();    //MUST BE SET VIA JSON
 
+        public string ProgressXName = "Prestiege";
+        public string ProgressYName = "Status";
 
         // Campaign Progression
         [JsonIgnore]
@@ -55,9 +57,9 @@ namespace Sub_Missions
                 bool main = tree.MissionNames.Contains(sort.Name);
                 if (repeat && main)
                 {
-                    Debug.Log("SubMissions: Tree " + TreeName + " contains mission " + sort.Name + " that's specified in both MissionNames or RepeatMissionNames.");
-                    Debug.Log("SubMissions:   Make sure to assign it to MissionNames or RepeatMissionNames.");
-                    Debug.Log("SubMissions:   Defaulting " + sort.Name + " to MissionNames.");
+                    SMUtil.Assert(false, "SubMissions: Tree " + TreeName + " contains mission " + sort.Name + " that's specified in both MissionNames or RepeatMissionNames.");
+                    SMUtil.Assert(false, "  Make sure to assign it to MissionNames or RepeatMissionNames.");
+                    SMUtil.Assert(false, "  Defaulting " + sort.Name + " to MissionNames.");
                     tree.Missions.Add(sort);
                 }
                 else if (repeat)
@@ -72,9 +74,9 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    Debug.Log("SubMissions: Tree " + TreeName + " contains unspecified mission " + sort.Name + ".");
-                    Debug.Log("SubMissions:   Make sure to assign it to MissionNames or RepeatMissionNames.");
-                    Debug.Log("SubMissions:   Defaulting " + sort.Name + " to MissionNames.");
+                    SMUtil.Assert(false, "SubMissions: Tree " + TreeName + " contains unspecified mission " + sort.Name + ".");
+                    SMUtil.Assert(false, "  Make sure to assign it to MissionNames or RepeatMissionNames.");
+                    SMUtil.Assert(false, "  Defaulting " + sort.Name + " to MissionNames.");
                     tree.Missions.Add(sort);
                 }
 
@@ -117,7 +119,7 @@ namespace Sub_Missions
             {
                 //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
                 if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name == mission.Name; }))
-                {   // It's been finished already, do not get
+                {   // It's already in the list
                     Debug.Log("SubMissions: " + mission.Name + " is already active");
                     continue;
                 }
@@ -133,9 +135,15 @@ namespace Sub_Missions
                     continue;
                 }
                 if (mission.MinProgressX > ProgressX)
+                {
+                    Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
                     continue;
+                }
                 if (mission.MinProgressY > ProgressY)
+                {
+                    Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
                     continue;
+                }
                 try
                 {
                     FactionLicense licence = Singleton.Manager<ManLicenses>.inst.GetLicense((FactionSubTypes)Enum.Parse(typeof(FactionSubTypes), mission.Faction));
@@ -155,7 +163,7 @@ namespace Sub_Missions
             {
                 //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
                 if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name == mission.Name; }))
-                {   // It's been finished already, do not get
+                {   // It's already in the list
                     Debug.Log("SubMissions: " + mission.Name + " is already active");
                     continue;
                 }
@@ -166,15 +174,22 @@ namespace Sub_Missions
                     continue;
                 }
                 if (mission.MinProgressX > ProgressX)
+                {
+                    Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
                     continue;
+                }
                 if (mission.MinProgressY > ProgressY)
+                {
+                    Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
                     continue;
+                }
                 try
                 {
                     FactionLicense licence = Singleton.Manager<ManLicenses>.inst.GetLicense((FactionSubTypes)Enum.Parse(typeof(FactionSubTypes), mission.Faction));
                     if (licence.IsDiscovered && licence.CurrentLevel >= mission.GradeRequired)
                     {
-                        Debug.Log("SubMissions: Presenting mission " + mission.Name);
+                        mission.GetAndSetDisplayName();
+                        Debug.Log("SubMissions: Presenting mission " + mission.AltName);
                         initMissions.Add(mission);
                     }
                 }
@@ -202,7 +217,9 @@ namespace Sub_Missions
         public SubMission DeployMission(string treeName, SubMissionStandby toDeploy)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
-            return SMissionJSONLoader.MissionLoader(treeName, toDeploy.Name, this);
+            SubMission mission = SMissionJSONLoader.MissionLoader(treeName, toDeploy.Name, this);
+            mission.SelectedAltName = toDeploy.AltName;
+            return mission;
         }
         public static List<SubMissionStandby> CompileToStandby(List<SubMission> MissionsLoaded)
         {   // Reduce memory loads
@@ -218,6 +235,8 @@ namespace Sub_Missions
             SubMissionStandby missionCompiled = new SubMissionStandby();
             missionCompiled.Tree = mission.Tree;
             missionCompiled.Name = mission.Name;
+            missionCompiled.AltName = mission.SelectedAltName;
+            missionCompiled.AltNames = mission.AltNames;
             missionCompiled.Desc = mission.Description;
             missionCompiled.GradeRequired = mission.GradeRequired;
             missionCompiled.Faction = mission.Faction;
@@ -270,6 +289,8 @@ namespace Sub_Missions
     {
         public SubMissionTree Tree;
         public string Name = "Unset";
+        public string AltName = "Unset";
+        public List<string> AltNames;
         public string Desc = "Nothing";
         public string Faction = "";
         public int GradeRequired = 0;
@@ -279,5 +300,22 @@ namespace Sub_Missions
         public float LoadRadius = 0;
 
         public SubMissionReward Rewards; //
+
+        public void GetAndSetDisplayName()
+        {   // 
+            if (!AltName.NullOrEmpty())
+                return;
+            if (AltNames == null)
+                AltName = Name;
+            else if (AltNames.Count < 1)
+                AltName = Name;
+            else
+            {
+                string check = AltNames.GetRandomEntry();
+                if (check.NullOrEmpty())
+                    AltName = Name;
+                AltName = check;
+            }
+        }
     }
 }

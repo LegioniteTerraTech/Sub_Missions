@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using TAC_AI.Templates;
 using Sub_Missions.Steps;
+using Sub_Missions.ManWindows;
 
 namespace Sub_Missions
 {
@@ -16,6 +17,61 @@ namespace Sub_Missions
             get => Singleton.playerTank;
         }
 
+        public static bool errorQueued = false;
+        public static string errorList = "";
+        public static int countError = 0;
+        public static bool repeatingErrored = false;
+
+        // DEBUG
+        public static void PushErrors()
+        {
+            if (KickStart.Debugger && errorQueued)
+            {
+                if (errorQueued)
+                {
+                    WindowManager.AddPopupMessage("SubMissions Error", errorList);
+                    WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
+                    errorList = "";
+                    errorQueued = false;
+                    countError = 0;
+                    repeatingErrored = false;
+                }
+                else
+                {
+                    WindowManager.AddPopupMessage("SubMissions Error", "No errors reported.");
+                    WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
+                }
+            }
+        }
+        public static void Assert(bool repeatingError, string input)
+        {
+            if (KickStart.Debugger && !repeatingErrored)
+            {
+                try
+                {
+                    if (input.Contains("SubMissions: "))
+                    {
+                        countError++;
+                        input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                    }
+                    if (repeatingError)
+                    {
+                        errorList += "<b>-MAJOR ERROR-<b> ";
+                        repeatingErrored = true;
+                    }
+                    errorList += input + "\n";
+                }
+                catch
+                {
+                    errorList = "Error collector failed, please contact Legionite";
+                }
+                errorQueued = true;
+            }
+            Debug.Log(input);
+        }
+
+
+        // MAINs
         public static Vector3 VectorOnTerrain(Vector3 input, float heightOffset = 0)
         {
             if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(input, out float height))
@@ -39,6 +95,7 @@ namespace Sub_Missions
             return input;
         }
         
+
         // PLAYER
         public static bool IsPlayerInRangeOfPos(Vector3 Pos, float distance)
         {
@@ -115,7 +172,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Error in output [SetGlobalIndex1] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, "SubMissions: Error in output [SetGlobalIndex1] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
         public static void ConcludeGlobal2(ref SubMissionStep Step)
@@ -144,7 +201,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Error in output [SetGlobalIndex2] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, "SubMissions: Error in output [SetGlobalIndex2] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
         public static void ConcludeGlobal3(ref SubMissionStep Step)
@@ -173,7 +230,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Error in output [SetGlobalIndex3] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, "SubMissions: Error in output [SetGlobalIndex3] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
 
@@ -200,7 +257,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Error in output in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, "SubMissions: Error in output in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
                 return false;
             }
         }

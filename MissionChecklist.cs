@@ -58,19 +58,19 @@ namespace Sub_Missions
                 }
             }
             catch 
-            { 
-                Debug.Log("SubMissions: MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
+            {
+                SMUtil.Assert(false, "SubMissions: MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
 
                 switch (ValueType)
                 {
                     case VarType.Bool:
-                        Debug.Log("SubMissions: Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
+                        SMUtil.Assert(true, "SubMissions: Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
                         break;
                     case VarType.IntOverInt:
-                        Debug.Log("SubMissions: Make sure both GlobalIndexes are set properly and exist in VarInts!");
+                        SMUtil.Assert(true, "SubMissions: Make sure both GlobalIndexes are set properly and exist in VarInts!");
                         break;
                     case VarType.Unset:
-                        Debug.Log("SubMissions: Internal issue!  Contact Legionite!");
+                        SMUtil.Assert(true, "SubMissions: Internal issue!  Contact Legionite!");
                         break;
                 }
             }
@@ -103,7 +103,7 @@ namespace Sub_Missions
                         builder.Append("<b>"+ mission.VarInts[GlobalIndex] + "/" + mission.VarInts[GlobalIndex2] + "</b>");
                     break;
                 default:
-                    builder.Append("<b>!</b>");
+                    builder.Append("<b>O</b>");
                     break;
 
             }

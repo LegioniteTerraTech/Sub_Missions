@@ -43,7 +43,6 @@ namespace Sub_Missions.ManWindows
 
                 if (DestroyOnPress)
                 {
-                    WindowManager.SetCurrentPopup(Display);
                     WindowManager.HidePopup(Display);
                     WindowManager.RemovePopup(Display);
                 }

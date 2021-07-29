@@ -48,7 +48,6 @@ namespace Sub_Missions.ManWindows
                 else
                     ButtonAct.inst.Invoke(InvokeAction, 0);// has frame delay
 
-                WindowManager.SetCurrentPopup(Display);
                 WindowManager.HidePopup(Display);
                 if (DestroyOnPress)
                 {
@@ -59,7 +58,6 @@ namespace Sub_Missions.ManWindows
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
 
-                WindowManager.SetCurrentPopup(Display);
                 WindowManager.HidePopup(Display);
                 if (DestroyOnPress)
                 {

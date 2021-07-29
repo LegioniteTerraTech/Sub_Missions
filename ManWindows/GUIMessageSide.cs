@@ -48,15 +48,15 @@ namespace Sub_Missions.ManWindows
                 builder.Clear();
                 try
                 {
-                    int displayNum = maxObjectivesToDisplay;
-                    if (currentMission.CheckList.Count < maxObjectivesToDisplay)
-                        displayNum = currentMission.CheckList.Count;
-                    for (int step = 0; step < displayNum; step++)
+                    int currentDisplayedNum = 0;
+                    int displayNum = currentMission.CheckList.Count;
+                    for (int step = 0; step < displayNum && currentDisplayedNum < maxObjectivesToDisplay; step++)
                     {
                         if (currentMission.CheckList.ElementAt(step).GetStatus(out string output))
+                        {
                             builder.Append(output + "\n");
-                        else
-                            displayNum++;
+                            currentDisplayedNum++;
+                        }
                     }
                 }
                 catch { };

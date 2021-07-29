@@ -38,18 +38,6 @@ namespace Sub_Missions.ManWindows
         public static int numActivePopups;
         public static bool SetupAltWins = false;
 
-        private static int nextID = 135000;
-        public static int NextID
-        {
-            get
-            {
-                return AllPopups.Count + IDOffset;
-            }
-            set
-            {
-                nextID = value;
-            }
-        }
 
         private static GUIPopupDisplay currentGUIWindow;
         private static int updateClock = 0;
@@ -95,11 +83,11 @@ namespace Sub_Missions.ManWindows
             }
             );
         }
-        public static GUIPopupDisplay GetPopup(string title)
+        public static GUIPopupDisplay GetPopup(string title, GUISetTypes type)
         {
             return AllPopups.Find(delegate (GUIPopupDisplay cand)
             {
-                return cand.context == title;
+                return cand.context == title && cand.type == type;
             }
             );
         }
@@ -109,8 +97,8 @@ namespace Sub_Missions.ManWindows
         {
             if (DoesPopupExist(title, GUISetTypes.Button))
             {
-                SetCurrentPopup(GetPopup(title));
-                RefreshPopup(GetPopup(title), buttonLabel, removeOnPress, libFunctionName, windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.Button));
+                RefreshPopup(GetPopup(title, GUISetTypes.Button), buttonLabel, removeOnPress, libFunctionName, windowOverride);
                 return true;
             }
             return AddPopup(GUISetTypes.Button, title, buttonLabel, removeOnPress, libFunctionName, windowOverride: windowOverride);
@@ -119,8 +107,8 @@ namespace Sub_Missions.ManWindows
         {
             if (DoesPopupExist(title, GUISetTypes.ButtonDual))
             {
-                SetCurrentPopup(GetPopup(title));
-                RefreshPopup(GetPopup(title), buttonLabel, removeOnPress, libFunctionName, windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.ButtonDual));
+                RefreshPopup(GetPopup(title, GUISetTypes.ButtonDual), buttonLabel, removeOnPress, libFunctionName, windowOverride);
                 return true;
             }
             return AddPopup(GUISetTypes.ButtonDual, title, buttonLabel, removeOnPress, libFunctionName, windowOverride: windowOverride);
@@ -129,8 +117,8 @@ namespace Sub_Missions.ManWindows
         {
             if (DoesPopupExist(title, GUISetTypes.ButtonDual))
             {
-                SetCurrentPopup(GetPopup(title));
-                RefreshPopup(GetPopup(title), buttonLabel, removeOnPress, options, windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.ButtonDual));
+                RefreshPopup(GetPopup(title, GUISetTypes.ButtonDual), buttonLabel, removeOnPress, options, windowOverride);
                 return true;
             }
             return AddPopup(GUISetTypes.ButtonDual, title, buttonLabel, removeOnPress, options, windowOverride: windowOverride);
@@ -144,8 +132,8 @@ namespace Sub_Missions.ManWindows
         {
             if (DoesPopupExist(title, GUISetTypes.MessageScroll))
             {
-                SetCurrentPopup(GetPopup(title));
-                RefreshPopup(GetPopup(title), message, scrollSpeed, windowOverride: windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.MessageScroll));
+                RefreshPopup(GetPopup(title, GUISetTypes.MessageScroll), message, scrollSpeed, windowOverride: windowOverride);
                 return true;
             }
             return AddPopup(GUISetTypes.MessageScroll, title, message, scrollSpeed, windowOverride: windowOverride);
@@ -154,7 +142,16 @@ namespace Sub_Missions.ManWindows
         {
             return AddPopup(GUISetTypes.MessageSide, "");
         }
-
+        public static bool AddPopupMessage(string title, string message)
+        {
+            if (DoesPopupExist(title, GUISetTypes.Message))
+            {
+                SetCurrentPopup(GetPopup(title, GUISetTypes.Message));
+                RefreshPopup(GetPopup(title, GUISetTypes.Message), message);
+                return true;
+            }
+            return AddPopup(GUISetTypes.Message, title, message);
+        }
 
         private static bool AddPopup(GUISetTypes type, string context, object val1 = null, object val2 = null, object val3 = null, object val4 = null, object windowOverride = null)
         {
@@ -308,7 +305,7 @@ namespace Sub_Missions.ManWindows
             }
             if (currentGUIWindow.isOpen)
             {
-                Debug.Log("SubMissions: ShowPopup - Window is already open");
+                //Debug.Log("SubMissions: ShowPopup - Window is already open");
                 return false;
             }
             numActivePopups++;
@@ -328,7 +325,7 @@ namespace Sub_Missions.ManWindows
             }
             if (!currentGUIWindow.isOpen)
             {
-                Debug.Log("SubMissions: HidePopup - Window is already closed");
+                //Debug.Log("SubMissions: HidePopup - Window is already closed");
                 return false;
             }
             numActivePopups--;
@@ -346,7 +343,7 @@ namespace Sub_Missions.ManWindows
             }
             if (!disp.isOpen)
             {
-                Debug.Log("SubMissions: HidePopup - Window is already closed");
+                //Debug.Log("SubMissions: HidePopup - Window is already closed");
                 return false;
             }
             numActivePopups--;
@@ -359,13 +356,13 @@ namespace Sub_Missions.ManWindows
 
         private void Update()
         {
+            UpdateAllFast();
             if (updateClock > updateClockDelay)
             {
                 UpdateAllPopups();
                 updateClock = 0;
             }
             updateClock++;
-            UpdateAllFast();
         }
 
         public static void UpdateAllPopups()
@@ -458,9 +455,8 @@ namespace Sub_Missions.ManWindows
                 case GUISetTypes.Message:
                 default:
                     GUIMessage guiSet9 = new GUIMessage();
-                    guiSet9.Setup(this, (string)val1, (bool)val2);
-                    if (windowOverride != null)
-                        Window = (Rect)windowOverride;
+                    guiSet9.Setup(this, (string)val1);
+                    Window = WindowManager.LargeWindow;
                     gui = guiSet9;
                     break;
             }
