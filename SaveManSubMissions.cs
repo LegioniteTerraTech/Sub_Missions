@@ -50,7 +50,7 @@ namespace Sub_Missions
         }
 
 
-        private static void LoadData(string saveName)
+       public static void LoadData(string saveName)
         {
             string destination = SMissionJSONLoader.MissionSavesDirectory + "\\" + saveName;
             SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionSavesDirectory);
@@ -86,7 +86,7 @@ namespace Sub_Missions
                 }
             }
         }
-        private static void SaveData(string saveName)
+        public static void SaveData(string saveName)
         {
             Debug.Log("SubMissions: Setting up template reference...");
             string destination = SMissionJSONLoader.MissionSavesDirectory + "\\" + saveName;

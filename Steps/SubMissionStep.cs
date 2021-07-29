@@ -25,6 +25,8 @@ namespace Sub_Missions.Steps
         public GUIPopupDisplay AssignedWindow;
         [JsonIgnore]
         public Waypoint AssignedWaypoint;
+        [JsonIgnore]
+        public TrackedVisible AssignedTracked;
 
         public SMissionType StepType = SMissionType.StepActSpeak;           // The type this is
 

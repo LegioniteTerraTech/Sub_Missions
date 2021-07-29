@@ -25,8 +25,13 @@ namespace Sub_Missions.Steps
                         {
                             try
                             {
+                                //UIBouncingArrow.BouncingArrowContext arrow = default;
+                                //arrow.targetTransform = SMUtil.GetTrackedTech(ref Mission, SMission.InputString).CentralBlock.trans;
                                 SMission.AssignedWaypoint = ManSpawn.inst.HostSpawnWaypoint(SMUtil.GetTrackedTech(ref Mission, SMission.InputString).boundsCentreWorldNoCheck, Quaternion.identity);
                                 SMission.SavedInt = SMission.AssignedWaypoint.visible.ID;
+                                SMission.AssignedTracked = new TrackedVisible(SMission.SavedInt, SMission.AssignedWaypoint.visible, ObjectTypes.Waypoint, RadarTypes.AreaQuest);
+                                ManOverlay.inst.AddWaypointOverlay(SMission.AssignedTracked);
+                                Debug.Log("SubMissions: StepSetupWaypoint (Tech) - Attached Waypoint to Tech " + SMission.InputString);
                             }
                             catch (Exception e)
                             {
@@ -38,6 +43,10 @@ namespace Sub_Missions.Steps
                         {
                             SMission.AssignedWaypoint = ManSpawn.inst.HostSpawnWaypoint(SMission.Position, Quaternion.identity);
                             SMission.SavedInt = SMission.AssignedWaypoint.visible.ID;
+                            //arrow.targetTransform = SMUtil.GetTrackedTech(ref Mission, SMission.InputString).CentralBlock.trans;
+                            SMission.AssignedTracked = new TrackedVisible(SMission.SavedInt, SMission.AssignedWaypoint.visible, ObjectTypes.Waypoint, RadarTypes.AreaQuest);
+                            ManOverlay.inst.AddWaypointOverlay(SMission.AssignedTracked);
+                            Debug.Log("SubMissions: StepSetupWaypoint - Placed Waypoint at " + SMission.Position);
                         }
                     }
                     catch (Exception e)
@@ -52,7 +61,8 @@ namespace Sub_Missions.Steps
                     {   // Keep updating the waypoint to follow the target
                         try
                         {
-                            SMission.AssignedWaypoint.visible.transform.position = SMUtil.GetTrackedTech(ref Mission, SMission.InputString).boundsCentreWorldNoCheck;
+                            Tank tech = SMUtil.GetTrackedTech(ref Mission, SMission.InputString);
+                            SMission.AssignedWaypoint.visible.transform.position = tech.boundsCentreWorldNoCheck + (Vector3.up * tech.blockBounds.extents.y);
                         }
                         catch (Exception e)
                         {
@@ -72,6 +82,7 @@ namespace Sub_Missions.Steps
                 {
                     try
                     {
+                        ManOverlay.inst.RemoveWaypointOverlay(SMission.AssignedTracked);
                         SMission.AssignedWaypoint.visible.RemoveFromGame();
                     }
                     catch (Exception e)
@@ -91,7 +102,10 @@ namespace Sub_Missions.Steps
                     if ((bool)vis.Waypoint)
                     {
                         if (vis.ID == SMission.SavedInt)
+                        {
                             SMission.AssignedWaypoint = vis.Waypoint;
+                            SMission.AssignedTracked = ManVisible.inst.GetTrackedVisible(SMission.SavedInt);
+                        }
                         return;
                     }
                 }

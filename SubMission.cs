@@ -162,6 +162,58 @@ namespace Sub_Missions
                 CheckList.Clear();
             }
             catch { };
+            try  // not all missions involve techs
+            {
+                foreach (TrackedTech tech in TrackedTechs)
+                {
+                    try  // not all techs will still exist
+                    {
+                        tech.DestroyTech();
+                    }
+                    catch { };
+                }
+            }
+            catch { };
+            if (EventList != null)
+            {
+                foreach (SubMissionStep step in EventList)
+                {
+                    try  // We don't want to crash when the mission maker is still testing
+                    {
+                        if (step.AssignedWindow != null)
+                        {
+                            WindowManager.HidePopup(step.AssignedWindow);
+                            WindowManager.RemovePopup(step.AssignedWindow);
+                        }
+                    }
+                    catch { }
+                    try  // We don't want to crash when the mission maker is still testing
+                    {
+                        if (step.AssignedWaypoint != null)
+                        {
+                            step.AssignedWaypoint.visible.RemoveFromGame();
+                        }
+                    }
+                    catch { }
+                    try  // We don't want to crash when the mission maker is still testing
+                    {
+                        if (step.AssignedTracked != null)
+                        {
+                            ManOverlay.inst.RemoveWaypointOverlay(step.AssignedTracked);
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+        public void Conclude()
+        {   // Like Cleanup but leaves some optional aftermath
+            IsCleaningUp = true;
+            try  // We don't want to crash when the mission maker is still testing
+            {       // Will inevitably crash with no checklist items assigned
+                CheckList.Clear();
+            }
+            catch { };
             if (ClearTechsOnClear)
             {
                 try  // not all missions involve techs
@@ -198,6 +250,14 @@ namespace Sub_Missions
                         }
                     }
                     catch { }
+                    try  // We don't want to crash when the mission maker is still testing
+                    {
+                        if (step.AssignedTracked != null)
+                        {
+                            ManOverlay.inst.RemoveWaypointOverlay(step.AssignedTracked);
+                        }
+                    }
+                    catch { }
                 }
             }
         }
@@ -230,6 +290,7 @@ namespace Sub_Missions
             Rewards.Reward(Tree);
             CurrentProgressID = -98;
             TriggerUpdate();
+            Conclude();
             Tree.FinishedMission(this);
         }
         public void Fail()

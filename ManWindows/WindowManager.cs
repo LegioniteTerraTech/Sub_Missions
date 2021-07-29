@@ -13,8 +13,8 @@ namespace Sub_Missions.ManWindows
         public static WindowManager inst;
 
         internal const int IDOffset = 135000;
-        private const int MaxPopups = 16;
-        private const int MaxPopupsActive = 10;
+        private const int MaxPopups = 48;
+        private const int MaxPopupsActive = 32;
 
         public static Rect DefaultWindow = new Rect(0, 0, 300, 300);   // the "window"
         public static Rect LargeWindow = new Rect(0, 0, 1000, 600);

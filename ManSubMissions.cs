@@ -257,15 +257,19 @@ namespace Sub_Missions
         }
         public static void SaveSubMissionsToSave()
         {
-            if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
+            try
             {
-                var saver = Singleton.Manager<ManSaveGame>.inst;
-                if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
+                if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
                 {
-                    Debug.Log("SubMissions: ManSubMissions Saving!");
-                    SaveManSubMissions.SaveDataAutomatic();
+                    var saver = Singleton.Manager<ManSaveGame>.inst;
+                    if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
+                    {
+                        Debug.Log("SubMissions: ManSubMissions Saving!");
+                        SaveManSubMissions.SaveDataAutomatic();
+                    }
                 }
             }
+            catch { }
         }
         public static void SaveSubMissionsToSave(Mode mode)
         {
@@ -287,6 +291,7 @@ namespace Sub_Missions
                 Debug.Log("SubMissions: ManSubMissions Loading from save!");
                 PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomatic();
+                inst.GetAllPossibleMissions();
                 WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
                 WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
             }
@@ -307,6 +312,7 @@ namespace Sub_Missions
                 Debug.Log("SubMissions: ManSubMissions Loading from save!");
                 PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomatic();
+                inst.GetAllPossibleMissions();
                 WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
                 WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
             }

@@ -45,6 +45,7 @@ namespace Sub_Missions
                 tech = value;
                 TechName = value.name;
                 TechID = value.visible.ID;
+                loaded = true;
             }
         }
         public void DestroyTech()

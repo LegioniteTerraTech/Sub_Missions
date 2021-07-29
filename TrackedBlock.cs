@@ -44,6 +44,7 @@ namespace Sub_Missions
                 block = value;
                 BlockName = value.name;
                 blockID = value.visible.ID;
+                loaded = true;
             }
         }
         public TankBlock TryFindMatchingBlock()
