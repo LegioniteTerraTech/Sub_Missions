@@ -110,6 +110,7 @@ namespace Sub_Missions
             {;
                 Singleton.Manager<ManGameMode>.inst.ModeStartEvent.Subscribe(LoadSubMissionsFromSave);
                 Singleton.Manager<ManGameMode>.inst.ModeFinishedEvent.Subscribe(SaveSubMissionsToSave);
+                Singleton.Manager<ManTechs>.inst.TankDestroyedEvent.Subscribe(BroadcastTechDeath);
 
                 WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.TinyWindow);
 
@@ -138,8 +139,13 @@ namespace Sub_Missions
             List<SubMissionTree> trees = SMissionJSONLoader.LoadAllTrees();
             foreach (SubMissionTree tree in trees)
             {
-                SubMissionTrees.Add(tree.CompileMissionTree());
-                Debug.Log("SubMissions: Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
+                if (tree.CompileMissionTree(out SubMissionTree treeOut))
+                {
+                    SubMissionTrees.Add(treeOut);
+                    Debug.Log("SubMissions: Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
+                }
+                else
+                    SMUtil.Assert(false, "SubMissions: Failed to compress tree " + tree.TreeName + " properly, unable to push to ManSubMissions...");
             }
             GetAllPossibleMissions();
         }
@@ -167,6 +173,7 @@ namespace Sub_Missions
         {   // We bite the bullet and insure the file has been marked tampered wth - because it was
             Singleton.Manager<ManSaveGame>.inst.CurrentState.m_FileHasBeenTamperedWith = true;
             SelectedAnon.Tree.AcceptTreeMission(SelectedAnon);
+            SelectedIsAnon = false;
         }
         public void CancelMission()
         {
@@ -247,6 +254,28 @@ namespace Sub_Missions
                 tree.ResetALLTreeMissions();
             }
             inst.GetAllPossibleMissions();
+        }
+        public static void BroadcastTechDeath(Tank techIn, ManDamage.DamageInfo oof)
+        {
+            //Debug.Log("SubMissions: Tech " + techIn.name + " of ID " + techIn.visible.ID + " was destroyed");
+            foreach (SubMissionTree tree in SubMissionTrees)
+            {
+                foreach (SubMission mission in tree.ActiveMissions)
+                {
+                    try
+                    {
+                        foreach (TrackedTech tech in mission.TrackedTechs)
+                        {
+                            try
+                            {
+                                tech.CheckWasDestroyed(techIn);
+                            }
+                            catch { }
+                        }
+                    }
+                    catch { }
+                }
+            }
         }
 
 

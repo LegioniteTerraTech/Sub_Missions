@@ -18,15 +18,17 @@ namespace Sub_Missions.Steps
         {   // 
             if (SMUtil.BoolOut(ref SMission))
             {
-                Tank target = SMUtil.GetTrackedTech(ref SMission, SMission.InputString);
-                try
+                if (SMUtil.GetTrackedTech(ref SMission, SMission.InputString, out Tank target))
                 {
-                    target.GetComponent<AIECore.TankAIHelper>().OverrideAllControls = true;
-                    target.control.BoostControlJets = true;
-                }
-                catch
-                {
-                    Debug.Log("SubMissions: Could not fly away Tech as this action requires TACtical AIs to execute correctly!");
+                    try
+                    {
+                        target.GetComponent<AIECore.TankAIHelper>().OverrideAllControls = true;
+                        target.control.BoostControlJets = true;
+                    }
+                    catch
+                    {
+                        Debug.Log("SubMissions: Could not fly away Tech as this action requires TACtical AIs to execute correctly!");
+                    }
                 }
             }
         }

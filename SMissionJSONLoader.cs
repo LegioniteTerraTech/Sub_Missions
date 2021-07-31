@@ -326,7 +326,19 @@ namespace Sub_Missions
 
             SubMission mission2 = new SubMission();
             mission2.Name = "Combat Mission";
+            mission2.AltNames = new List<string>
+            {
+                "Shoot The Target",
+                "Weapons Testing",
+                "Show Me What You Got",
+            };
             mission2.Description = "A nice and simple combat target mission template";
+            mission2.AltDescs = new List<string>
+            {
+                "Let's see how well you can aim pal! \n Shoot the bullseye!",
+                "We've set up a test dummy on the field, take it down!",
+                "Show me those guns aren't just for show!",
+            };
             mission2.GradeRequired = 0;
             mission2.MinProgressX = 1;
             mission2.Faction = "GSO";
@@ -355,7 +367,7 @@ namespace Sub_Missions
                     SetGlobalIndex1 = 0,    // Gets true, shows message
                     SetGlobalIndex2 = 1,    // sends true on close
                     InputString = "Some Random Feller From GSO",
-                    InputStringAux = "Hey it's working now! \n\n    Feller, could you shoot that target over there?",
+                    InputStringAux = "Hey it's working now! \n\n    Prospector, could you shoot that target over there?",
                 },
                 /*
                 new SubMissionStep
@@ -408,9 +420,8 @@ namespace Sub_Missions
             {
                 MoneyGain = 950,
                 EXPGain = 100,
-                BlocksToSpawn = new List<BlockTypes> { BlockTypes.GSOAIGuardController_111, BlockTypes.GSOBlock_511 }
+                BlocksToSpawn = new List<BlockTypes> { BlockTypes.GSOCockpit_111 }
             };
-
 
             SubMission mission3 = new SubMission();
             mission3.Name = "Harvest Mission";
@@ -496,11 +507,54 @@ namespace Sub_Missions
                 EXPGain = 100,
             };
 
+            SubMission mission4 = new SubMission();
+            mission4.Name = "Water Blocks Aid";
+            mission4.Description = "If you are stuck in water, we\n  can launch some blocks \n to help out.  But use these \n wisely, we won't be able to spare \n another.";
+            mission4.GradeRequired = 0;
+            mission4.MinProgressX = 0;
+            mission4.Faction = "GSO";
+            mission4.ClearTechsOnClear = true;
+            mission4.VarTrueFalse = new List<bool>
+            {
+                //Simple mission using only ProgressIDs
+            };
+            mission4.VarInts = new List<int>
+            {
+                //Simple mission that only rewards once
+            };
+            mission4.CheckList = new List<MissionChecklist>
+            {
+                //Simple mission that only rewards once
+            };
+            mission4.EventList = new List<SubMissionStep>
+            {
+                // instant win
+                new SubMissionStep
+                {
+                    StepType = SMissionType.StepActWin,
+                    ProgressID = 0,
+                    VaribleType = EVaribleType.None,
+                },
+            };
+            mission4.Rewards = new SubMissionReward
+            {
+                 BlocksToSpawn = new List<BlockTypes> 
+                 {
+                     (BlockTypes)584812,
+                     (BlockTypes)584812,
+                     (BlockTypes)584812,
+                     (BlockTypes)584812,
+                     (BlockTypes)584811,
+                     (BlockTypes)584811
+                 }
+            };
+
             SubMissionTree tree = new SubMissionTree();
             tree.TreeName = "Template";
             tree.Faction = "GSO";
             tree.MissionNames.Add("NPC Mission");
             tree.MissionNames.Add("Harvest Mission");
+            tree.MissionNames.Add("Water Blocks Aid");
             tree.RepeatMissionNames.Add("Combat Mission");
 
             string RawTreeJSON = JsonConvert.SerializeObject(tree, Formatting.Indented, JSONSaver);
@@ -513,11 +567,13 @@ namespace Sub_Missions
             string three = JsonConvert.SerializeObject(mission3, Formatting.Indented, JSONSaver);
             string four = "{\n\"Name\": \"GSO Garrett\",\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSO_Chassis_Cab_314\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOGyroAllAxisActive_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOAIGuardController_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":3}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":1}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":3.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":12}|{\\\"t\\\":\\\"GSOBattery_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOTractorMini_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":16}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":23}|{\\\"t\\\":\\\"VENBracketStraight_211\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":5.0,\\\"z\\\":-1.0},\\\"r\\\":8}|{\\\"t\\\":\\\"GSORadar_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":6.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightSpot_111\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightFixed_111\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":2.0},\\\"r\\\":4}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-2.0},\\\"r\\\":6}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":11}|{\\\"t\\\":\\\"GSOFuelTank_121\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":6}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false,\n\"Cost\": 42828\n}";
             string five = "{\n\"Name\": \"TestTarget\",\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBlock_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":2}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":11}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false\n}";
+            string six = JsonConvert.SerializeObject(mission4, Formatting.Indented, JSONSaver);
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Missions\\NPC Mission", one);
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Missions\\Combat Mission", two);
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Missions\\Harvest Mission", three);
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Raw Techs\\GSO Garrett", four);
             TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Raw Techs\\TestTarget", five);
+            TryWriteToJSONFile(MissionsDirectory + "\\" + TreeName + "\\Missions\\Water Blocks Aid", six);
             try
             {
                 File.WriteAllText(MissionsDirectory + "\\" + TreeName + "\\MissionTree.JSON", RawTreeJSON);
@@ -540,8 +596,14 @@ namespace Sub_Missions
             List<SubMissionTree> temps = new List<SubMissionTree>();
             foreach (string name in names)
             {
-                Debug.Log("SubMissions: Added Tree " + name);
-                temps.Add(TreeLoader(name));
+                if (TreeLoader(name, out SubMissionTree Tree))
+                {
+                    Debug.Log("SubMissions: Added Tree " + name);
+                    temps.Add(Tree);
+                }
+                else
+                    SMUtil.Assert(false, "Could not load mission tree " + name);
+
             }
             return temps;
         }
@@ -552,7 +614,13 @@ namespace Sub_Missions
             List<SubMission> temps = new List<SubMission>();
             foreach (string name in names)
             {
-                temps.Add(MissionLoader(TreeName, name, tree));
+                var mission = MissionLoader(TreeName, name, tree);
+                if (mission == null)
+                {
+                    SMUtil.Assert(false, "<b> CRITICAL ERROR IN HANDLING " + name + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
+                    continue;
+                }
+                temps.Add(mission);
             }
             return temps;
         }
@@ -645,17 +713,35 @@ namespace Sub_Missions
 
 
         // JSON Handlers
-        public static SubMissionTree TreeLoader(string TreeName)
+        public static bool TreeLoader(string TreeName, out SubMissionTree Tree)
         {
-            string output = LoadMissionTreeFromFile(TreeName);
-            return JsonConvert.DeserializeObject<SubMissionTree>(output, JSONSaver);
+            try
+            {
+                string output = LoadMissionTreeFromFile(TreeName);
+                Tree = JsonConvert.DeserializeObject<SubMissionTree>(output, JSONSaver);
+                return true;
+            }
+            catch
+            {
+                SMUtil.Assert(false, "SubMissions: Check your Tree file names, cases where you referenced the names and make sure they match!!!");
+                Tree = null;
+                return false;
+            }
         }
         public static SubMission MissionLoader(string TreeName, string MissionName, SubMissionTree tree)
         {
-            string output = LoadMissionTreeMissionFromFile(TreeName, MissionName);
-            SubMission mission = JsonConvert.DeserializeObject<SubMission>(output, JSONSaver);
-            mission.Tree = tree;
-            return mission;
+            try
+            {
+                string output = LoadMissionTreeMissionFromFile(TreeName, MissionName);
+                SubMission mission = JsonConvert.DeserializeObject<SubMission>(output, JSONSaver);
+                mission.Tree = tree;
+                return mission;
+            }
+            catch
+            {
+                SMUtil.Assert(false, "SubMissions: Check your Mission file names, cases where you referenced the names and make sure they match!!!  Tree: " + TreeName + ", Mission: " + MissionName);
+                return null;
+            }
         }
         // Tech loading is handled elsewhere - either PopulationInjector or TACtical_AIs.
 

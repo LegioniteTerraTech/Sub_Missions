@@ -262,23 +262,47 @@ namespace Sub_Missions
             }
         }
 
-
+        /// <summary>
+        /// FIRES INSTANTLY NO MATTER WHAT
+        /// </summary>
+        /// <param name="mission"></param>
+        /// <param name="pos"></param>
+        /// <param name="Team"></param>
+        /// <param name="facingDirect"></param>
+        /// <param name="TechName"></param>
+        /// <returns></returns>
         public static Tank SpawnTechAuto(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
         {   // Load from folder
             return RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
         }
-        public static string SpawnTechTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
+        public static string SpawnTechTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName, bool instant = false)
         {   // We pull these from MissionTechs.JSON
-            Tank tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
-
-            SetTrackedTech(ref mission, tech);
-            return tech.name;
+            Tank tech;
+            if (instant)
+            { 
+                tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
+                SetTrackedTech(ref mission, tech);
+            }
+            else
+            {
+                TrackedTech techCase = GetTrackedTechBase(ref mission, TechName);
+                techCase.delayedSpawn = ManSpawn.inst.SpawnDeliveryBombNew(pos, DeliveryBombSpawner.ImpactMarkerType.Tech);
+                techCase.delayedSpawn.BombDeliveredEvent.Subscribe(techCase.SpawnTech);
+                techCase.DeliQueued = true;
+            }
+            return TechName;
         }
-        public static void SpawnTechAddTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
+        public static void SpawnTechAddTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName, bool instant = false)
         {   // We pull these from MissionTechs.JSON
             TrackedTech tech = new TrackedTech();
-            tech.Tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
-
+            if (instant)
+                tech.Tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
+            else
+            {
+                tech.delayedSpawn = ManSpawn.inst.SpawnDeliveryBombNew(pos, DeliveryBombSpawner.ImpactMarkerType.Tech);
+                tech.delayedSpawn.BombDeliveredEvent.Subscribe(tech.SpawnTech);
+                tech.DeliQueued = true;
+            }
             mission.TrackedTechs.Add(tech);
             return;
         }
@@ -286,9 +310,20 @@ namespace Sub_Missions
         {
             return "error - requires PopulationInjector";
         }
-        public static Tank GetTrackedTech(ref SubMissionStep mission, string TechName)
+        public static bool GetTrackedTech(ref SubMissionStep mission, string TechName, out Tank tech)
         {
-            return mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;
+            tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;
+            if (tech == null)
+                return false;
+            return true;
+        }
+        public static TrackedTech GetTrackedTechBase(ref SubMissionStep mission, string TechName)
+        {
+            return mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; });
+        }
+        public static TrackedTech GetTrackedTechBase(ref SubMission mission, string TechName)
+        {
+            return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; });
         }
         public static Tank GetTrackedTech(ref SubMission mission, string TechName)
         {

@@ -31,13 +31,15 @@ namespace Sub_Missions.Steps
             {
                 if (SMission.InputNum > 0)
                 {
-                    if (SMUtil.IsPlayerInRangeOfPos(SMUtil.GetTrackedTech(ref SMission, SMission.InputString).boundsCentreWorld, SMission.InputNum))
-                        SMUtil.ConcludeGlobal1(ref SMission);
+                    if (SMUtil.GetTrackedTech(ref SMission, SMission.InputString, out Tank target))
+                        if (SMUtil.IsPlayerInRangeOfPos(target.boundsCentreWorld, SMission.InputNum))
+                            SMUtil.ConcludeGlobal1(ref SMission);
                 }
                 else
                 {   //invert detection trigger
-                    if (!SMUtil.IsPlayerInRangeOfPos(SMUtil.GetTrackedTech(ref SMission, SMission.InputString).boundsCentreWorld, -SMission.InputNum))
-                        SMUtil.ConcludeGlobal1(ref SMission);
+                    if (SMUtil.GetTrackedTech(ref SMission, SMission.InputString, out Tank target))
+                        if (!SMUtil.IsPlayerInRangeOfPos(target.boundsCentreWorld, -SMission.InputNum))
+                            SMUtil.ConcludeGlobal1(ref SMission);
                 }
             }
         }

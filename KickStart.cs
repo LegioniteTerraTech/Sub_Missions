@@ -35,15 +35,16 @@ namespace Sub_Missions
             }
 
             CheckActiveMods();
-            if (!isTACAIPresent)
-            {
-                TACAIRequiredWarning();
-            }
 
             SMissionJSONLoader.SetupWorkingDirectories();
             WindowManager.Initiate();
             ManSubMissions.Initiate();
             ButtonAct.Initiate();
+
+            if (!isTACAIPresent)
+            {
+                TACAIRequiredWarning();
+            }
 
             Saver = new ModConfig();
             Saver.BindConfig<KickStart>(null, "Debugger");
@@ -138,7 +139,7 @@ namespace Sub_Missions
         }
         public static void TACAIRequiredWarning()
         {
-            Debug.Log("SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
+            SMUtil.Assert(false, "SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
         }
         public static bool LookForMod(string name)
         {

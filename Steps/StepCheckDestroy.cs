@@ -49,8 +49,7 @@ namespace Sub_Missions.Steps
             }
             else
             {   //Run the single-tech
-                Tank target = SMUtil.GetTrackedTech(ref SMission, SMission.InputString);
-                if (!target.visible.isActive)
+                if (SMUtil.GetTrackedTechBase(ref SMission, SMission.InputString).destroyed)
                 {   // target destroyed
                     SMUtil.ConcludeGlobal1(ref SMission);
                 }

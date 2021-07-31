@@ -28,7 +28,7 @@ namespace Sub_Missions
             else
                 input += toChangeBy;
         }
-        public void Reward(SubMissionTree tree)
+        public void Reward(SubMissionTree tree, SubMission mission)
         {
             TryChange(ref tree.ProgressX, AddProgressX);
             TryChange(ref tree.ProgressY, AddProgressY);
@@ -44,21 +44,30 @@ namespace Sub_Missions
             {
                 try
                 {
-                    Singleton.Manager<ManLicenses>.inst.AddXP((FactionSubTypes)Enum.Parse(typeof(FactionSubTypes), tree.Faction), EXPGain, true);
+                    Singleton.Manager<ManLicenses>.inst.AddXP((FactionSubTypes)Enum.Parse(typeof(FactionSubTypes), mission.Faction), EXPGain, true);
                 }
                 catch
                 {
-                    SMUtil.Assert(false, "SubMissions: Tried to add EXP to a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName);
+                    SMUtil.Assert(false, "SubMissions: Tried to add EXP to a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + mission.Name);
                 }
             }
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)
             {
                 List<BlockTypes> items = new List<BlockTypes>(BlocksToSpawn);
+                try
+                {
+                    items.AddRange(Singleton.Manager<ManLicenses>.inst.GetRewardPoolTable().GetRewardBlocks((FactionSubTypes)Enum.Parse(typeof(FactionSubTypes), mission.Faction), RandomBlocksToSpawn).ToList());
+                }
+                catch
+                {
+                    SMUtil.Assert(false, "SubMissions: Tried to fetch blocks from a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + mission.Name);
+                }
+                /*
                 for (int step = 0; step < RandomBlocksToSpawn; step++)
                 {
                     BlockTypes RANDtype = BlockTypes.GSOBlock_111;// still pending...
                     items.Add(RANDtype);
-                }
+                }*/
 
                 Vector3 landingPos;
                 try
@@ -68,6 +77,17 @@ namespace Sub_Missions
                 catch 
                 {
                     landingPos = Singleton.cameraTrans.position;
+                }
+                int fireCount = items.Count;
+
+                for (int step = 0; step < fireCount; step++)
+                {   // filter and remove illegal blocks
+                    if (!Singleton.Manager<ManSpawn>.inst.IsValidBlockToSpawn(items.ElementAt(step)))
+                    {
+                        items.RemoveAt(step);
+                        fireCount--;
+                        step--;
+                    }
                 }
                 Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos);
             }

@@ -43,9 +43,13 @@ namespace Sub_Missions
 
 
         // Initialization
-        public SubMissionTree CompileMissionTree()
+        public bool CompileMissionTree(out SubMissionTree newTree)
         {   // Reduce memory loads
-            SubMissionTree tree = SMissionJSONLoader.TreeLoader(TreeName);
+            if (!SMissionJSONLoader.TreeLoader(TreeName, out SubMissionTree tree))
+            {
+                newTree = null;
+                return false;
+            }
             List<SubMission> MissionsLoaded = SMissionJSONLoader.LoadAllMissions(TreeName, tree);
             List<SubMissionStandby> compiled = CompileToStandby(MissionsLoaded);
 
@@ -82,7 +86,8 @@ namespace Sub_Missions
 
             }
             Debug.Log("SubMissions: Compiled tree for " + TreeName + ".");
-            return tree;
+            newTree = tree;
+            return true;
         }
 
 
@@ -90,11 +95,16 @@ namespace Sub_Missions
         public void AcceptTreeMission(SubMissionStandby Anon)
         {   //
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.AcceptMission);
-            SubMission newMission = DeployMission(TreeName, Anon);
-            newMission.Startup();
-            ActiveMissions.Add(newMission);
-            ManSubMissions.inst.GetAllPossibleMissions();
-            ManSubMissions.Selected = newMission;
+            if (DeployMission(TreeName, Anon, out SubMission Deployed))
+            {
+                SubMission newMission = Deployed;
+                newMission.Startup();
+                ActiveMissions.Add(newMission);
+                ManSubMissions.inst.GetAllPossibleMissions();
+                ManSubMissions.Selected = newMission;
+            }
+            else
+                SMUtil.Assert(false, "<b> Could not deploy mission! </b>");
         }
         public void CancelTreeMission(SubMission Active)
         {   //
@@ -210,16 +220,25 @@ namespace Sub_Missions
             List<SubMission> missionsLoaded = new List<SubMission>();
             foreach (SubMissionStandby mission in toDeploy)
             {
-                missionsLoaded.Add(DeployMission(treeName, mission));
+                if (DeployMission(treeName, mission, out SubMission Deployed))
+                    missionsLoaded.Add(Deployed);
             }
             return missionsLoaded;
         }
-        public SubMission DeployMission(string treeName, SubMissionStandby toDeploy)
+        public bool DeployMission(string treeName, SubMissionStandby toDeploy, out SubMission Deployed)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
             SubMission mission = SMissionJSONLoader.MissionLoader(treeName, toDeploy.Name, this);
+            if (mission == null)
+            {
+                SMUtil.Assert(false, "<b> CRITICAL ERROR IN HANDLING " + toDeploy.Name + " of tree " + treeName + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
+                Deployed = null;
+                return false;
+            }
             mission.SelectedAltName = toDeploy.AltName;
-            return mission;
+            mission.Description = toDeploy.Desc;
+            Deployed = mission;
+            return true;
         }
         public static List<SubMissionStandby> CompileToStandby(List<SubMission> MissionsLoaded)
         {   // Reduce memory loads
@@ -238,6 +257,7 @@ namespace Sub_Missions
             missionCompiled.AltName = mission.SelectedAltName;
             missionCompiled.AltNames = mission.AltNames;
             missionCompiled.Desc = mission.Description;
+            missionCompiled.AltDescs = mission.AltDescs;
             missionCompiled.GradeRequired = mission.GradeRequired;
             missionCompiled.Faction = mission.Faction;
             missionCompiled.Rewards = mission.Rewards;
@@ -252,23 +272,23 @@ namespace Sub_Missions
         // Events
         public void FinishedMission(SubMission finished)
         {
-            ActiveMissions.Remove(finished);
-            if (RepeatMissions.Find(delegate (SubMissionStandby cand) { return cand.Name == finished.Name; }).Name == finished.Name)
+            if (RepeatMissions.Exists(delegate (SubMissionStandby cand) { return cand.Name == finished.Name; }))
             {   // Do nothing special - repeat missions are to be repeated
-                return;
             }
-            else if (Missions.Find(delegate (SubMissionStandby cand) { return cand.Name == finished.Name; }).Name == finished.Name)
+            else if (Missions.Exists(delegate (SubMissionStandby cand) { return cand.Name == finished.Name; }))
             {
                 CompletedMissions.Add(CompileToStandby(finished));
             }
             else
                 Debug.Log("SubMissions: Tried to finish mission " + finished.Name + " that's not listed in this tree!  Tree " + TreeName);
-            if (ManSubMissions.Selected == finished)
+            ActiveMissions.Remove(finished);
+            try
             {
-                if (ManSubMissions.ActiveSubMissions[0] != null)
-                    ManSubMissions.Selected = ManSubMissions.ActiveSubMissions[0];
-                else
-                    ManSubMissions.Selected = null;
+                ManSubMissions.Selected = ActiveMissions.First();
+            }
+            catch
+            {
+                ManSubMissions.Selected = null;
             }
             ManSubMissions.inst.GetAllPossibleMissions();
         }
@@ -314,6 +334,7 @@ namespace Sub_Missions
         public string AltName = "Unset";
         public List<string> AltNames;
         public string Desc = "Nothing";
+        public List<string> AltDescs;
         public string Faction = "";
         public int GradeRequired = 0;
         public byte MinProgressX = 0;
@@ -337,6 +358,11 @@ namespace Sub_Missions
                 if (check.NullOrEmpty())
                     AltName = Name;
                 AltName = check;
+                try
+                {
+                    Desc = AltDescs.ElementAt(AltNames.IndexOf(check));
+                }
+                catch { }// don't change
             }
         }
         public SubMissionTree GetTree()

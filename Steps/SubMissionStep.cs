@@ -100,7 +100,7 @@ namespace Sub_Missions.Steps
             switch (StepType)
             {
                 case SMissionType.StepSetupMM:
-                    stepGenerated = new StepSetupMM();
+                    stepGenerated = new StepSetupResources();
                     break;
                 case SMissionType.StepSetupTech:
                     stepGenerated = new StepSetupTech();

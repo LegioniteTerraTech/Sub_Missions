@@ -25,6 +25,7 @@ namespace Sub_Missions
         public string Faction = "GSO";
         public int GradeRequired = 0;
         public string Description = "ThisIsNotSetCorrectly";
+        public List<string> AltDescs;
         public byte MinProgressX = 0;
         public byte MinProgressY = 0;
         public bool ClearTechsOnClear = true;
@@ -287,7 +288,7 @@ namespace Sub_Missions
             if (IsCleaningUp)
                 return;
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionComplete);
-            Rewards.Reward(Tree);
+            Rewards.Reward(Tree, this);
             CurrentProgressID = -98;
             TriggerUpdate();
             Conclude();

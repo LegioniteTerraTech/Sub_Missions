@@ -138,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ButtonAct.cs" />
+    <Compile Include="Steps\StepChangeAI.cs" />
     <Compile Include="Steps\StepSetupWaypoint.cs" />
     <Compile Include="SubMission.cs" />
     <Compile Include="SubMissionTree.cs" />
@@ -165,8 +166,8 @@
     <Compile Include="Steps\StepCheckResources.cs" />
     <Compile Include="Steps\StepCheckPlayerDist.cs" />
     <Compile Include="Steps\StepActTimer.cs" />
-    <Compile Include="Steps\StepSetupMMRepeat.cs" />
     <Compile Include="Steps\StepSetupMM.cs" />
+    <Compile Include="Steps\StepSetupResources.cs" />
     <Compile Include="Steps\StepSetupTech.cs" />
     <Compile Include="Steps\StepCheckDestroy.cs" />
     <Compile Include="Steps\StepActForward.cs" />

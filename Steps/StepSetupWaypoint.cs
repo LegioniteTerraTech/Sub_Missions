@@ -27,7 +27,7 @@ namespace Sub_Missions.Steps
                             {
                                 //UIBouncingArrow.BouncingArrowContext arrow = default;
                                 //arrow.targetTransform = SMUtil.GetTrackedTech(ref Mission, SMission.InputString).CentralBlock.trans;
-                                SMission.AssignedWaypoint = ManSpawn.inst.HostSpawnWaypoint(SMUtil.GetTrackedTech(ref Mission, SMission.InputString).boundsCentreWorldNoCheck, Quaternion.identity);
+                                SMission.AssignedWaypoint = ManSpawn.inst.HostSpawnWaypoint(SMission.Position, Quaternion.identity);
                                 SMission.SavedInt = SMission.AssignedWaypoint.visible.ID;
                                 SMission.AssignedTracked = new TrackedVisible(SMission.SavedInt, SMission.AssignedWaypoint.visible, ObjectTypes.Waypoint, RadarTypes.AreaQuest);
                                 ManOverlay.inst.AddWaypointOverlay(SMission.AssignedTracked);
@@ -43,7 +43,6 @@ namespace Sub_Missions.Steps
                         {
                             SMission.AssignedWaypoint = ManSpawn.inst.HostSpawnWaypoint(SMission.Position, Quaternion.identity);
                             SMission.SavedInt = SMission.AssignedWaypoint.visible.ID;
-                            //arrow.targetTransform = SMUtil.GetTrackedTech(ref Mission, SMission.InputString).CentralBlock.trans;
                             SMission.AssignedTracked = new TrackedVisible(SMission.SavedInt, SMission.AssignedWaypoint.visible, ObjectTypes.Waypoint, RadarTypes.AreaQuest);
                             ManOverlay.inst.AddWaypointOverlay(SMission.AssignedTracked);
                             Debug.Log("SubMissions: StepSetupWaypoint - Placed Waypoint at " + SMission.Position);
@@ -64,10 +63,10 @@ namespace Sub_Missions.Steps
                             Tank tech = SMUtil.GetTrackedTech(ref Mission, SMission.InputString);
                             SMission.AssignedWaypoint.visible.transform.position = tech.boundsCentreWorldNoCheck + (Vector3.up * tech.blockBounds.extents.y);
                         }
-                        catch (Exception e)
-                        {
-                            SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not upkeep waypoint!");
-                            Debug.Log("SubMissions: Error - " + e);
+                        catch //(Exception e)
+                        {   // the tech isn't ready yet
+                            //SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not upkeep waypoint!");
+                            //Debug.Log("SubMissions: Error - " + e);
                         }
                     }
                 }
