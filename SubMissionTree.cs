@@ -108,17 +108,24 @@ namespace Sub_Missions
         }
         public void CancelTreeMission(SubMission Active)
         {   //
-            if (ManSubMissions.Selected == Active)
+            try
             {
-                if (ManSubMissions.ActiveSubMissions[0] != null)
-                    ManSubMissions.Selected = ManSubMissions.ActiveSubMissions[0];
-                else
-                    ManSubMissions.Selected = null;
+                if (ManSubMissions.Selected == Active)
+                {
+                    if (ManSubMissions.ActiveSubMissions[0] != null)
+                        ManSubMissions.Selected = ManSubMissions.ActiveSubMissions[0];
+                    else
+                        ManSubMissions.Selected = null;
+                }
+                Active.Cleanup();
+                if (!ActiveMissions.Remove(Active))
+                    Debug.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on CancelTreeMission!");
+                ManSubMissions.inst.GetAllPossibleMissions();
             }
-            Active.Cleanup();
-            if (!ActiveMissions.Remove(Active))
-                Debug.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on CancelTreeMission!");
-            ManSubMissions.inst.GetAllPossibleMissions();
+            catch
+            {
+                Debug.Log("SubMissions: CancelTreeMission - Could not cancel mission!  Mission " + Active.Name + " of Tree" + TreeName);
+            }
         }
         public List<SubMissionStandby> GetReachableMissions()
         {   //
@@ -139,7 +146,7 @@ namespace Sub_Missions
                     initMissions.Add(mission);
                     continue;
                 }
-                if (CompletedMissions.Contains(mission))
+                if (CompletedMissions.Exists(delegate (SubMissionStandby cand) { return cand.Name == mission.Name; }))
                 {   // It's been finished already, do not get
                     Debug.Log("SubMissions: " + mission.Name + " is already finished");
                     continue;
@@ -272,6 +279,7 @@ namespace Sub_Missions
         // Events
         public void FinishedMission(SubMission finished)
         {
+            Debug.Log("SubMissions: Finished mission " + finished.Name + " of Tree " + TreeName + ".");
             if (RepeatMissions.Exists(delegate (SubMissionStandby cand) { return cand.Name == finished.Name; }))
             {   // Do nothing special - repeat missions are to be repeated
             }
@@ -281,7 +289,8 @@ namespace Sub_Missions
             }
             else
                 Debug.Log("SubMissions: Tried to finish mission " + finished.Name + " that's not listed in this tree!  Tree " + TreeName);
-            ActiveMissions.Remove(finished);
+            if (!ActiveMissions.Remove(finished))
+                Debug.Log("SubMissions: Tried to finish mission " + finished.Name + " but it doesn't exist in the ActiveMissions list!  Tree " + TreeName);
             try
             {
                 ManSubMissions.Selected = ActiveMissions.First();

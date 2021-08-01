@@ -106,7 +106,7 @@ namespace Sub_Missions
             {
                 step.Mission = this;
                 step.TrySetup();
-                if (step.StepType == SMissionType.StepActWin)
+                if (step.StepType == SMissionType.ActWin)
                     isMissionImpossible = false;
             }
             if (isMissionImpossible)

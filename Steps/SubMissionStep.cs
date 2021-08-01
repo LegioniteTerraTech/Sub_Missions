@@ -28,7 +28,7 @@ namespace Sub_Missions.Steps
         [JsonIgnore]
         public TrackedVisible AssignedTracked;
 
-        public SMissionType StepType = SMissionType.StepActSpeak;           // The type this is
+        public SMissionType StepType = SMissionType.ActSpeak;           // The type this is
 
         public int ProgressID = 0;          // progress ID this runs on
         public int SuccessProgressID = 0;   // transfer to this when successful
@@ -99,52 +99,61 @@ namespace Sub_Missions.Steps
         {
             switch (StepType)
             {
-                case SMissionType.StepSetupMM:
+                case SMissionType.SetupMM:
                     stepGenerated = new StepSetupResources();
                     break;
-                case SMissionType.StepSetupTech:
+                case SMissionType.SetupTech:
                     stepGenerated = new StepSetupTech();
                     break;
-                case SMissionType.StepSetupWaypoint:
+                case SMissionType.SetupWaypoint:
                     stepGenerated = new StepSetupWaypoint();
                     break;
-                case SMissionType.StepActSpeak:
+                case SMissionType.ActSpeak:
                     stepGenerated = new StepActSpeak();
                     break;
-                case SMissionType.StepActBoost:
+                case SMissionType.ActBoost:
                     stepGenerated = new StepActBoost();
                     break;
-                case SMissionType.StepActRemove:
+                case SMissionType.ActRemove:
                     stepGenerated = new StepActRemove();
                     break;
-                case SMissionType.StepActTimer:
+                case SMissionType.ActTimer:
                     stepGenerated = new StepActTimer();
                     break;
-                case SMissionType.StepActShifter:
+                case SMissionType.ActShifter:
                     stepGenerated = new StepActShifter();
                     break;
-                case SMissionType.StepActOptions:
+                case SMissionType.ActOptions:
                     stepGenerated = new StepActOptions();
                     break;
-                case SMissionType.StepActForward:
+                case SMissionType.ActForward:
                     stepGenerated = new StepActForward();
                     break;
-                case SMissionType.StepActMessagePurge:
+                case SMissionType.ActMessagePurge:
                     stepGenerated = new StepActMessagePurge();
                     break;
-                case SMissionType.StepActWin:
+                case SMissionType.ActWin:
                     stepGenerated = new StepActWin();
                     break;
-                case SMissionType.StepActFail:
+                case SMissionType.ActFail:
                     stepGenerated = new StepActFail();
                     break;
-                case SMissionType.StepCheckResources:
+                case SMissionType.CheckResources:
                     stepGenerated = new StepCheckResources();
                     break;
-                case SMissionType.StepCheckDestroy:
+                case SMissionType.CheckHealth:
+                    stepGenerated = new StepCheckHealth();
+                    break;
+                case SMissionType.CheckDestroy:
                     stepGenerated = new StepCheckDestroy();
                     break;
-                case SMissionType.StepCheckPlayerDist:
+                case SMissionType.ChangeAI:
+                    stepGenerated = new StepChangeAI();
+                    break;
+                case SMissionType.TransformTech:
+                    stepGenerated = new StepTransformTech();
+                    break;
+                case SMissionType.CheckPlayerDist:
                 default:
                     stepGenerated = new StepCheckPlayerDist();
                     break;
@@ -153,25 +162,32 @@ namespace Sub_Missions.Steps
     }
     public enum SMissionType
     {   // ACTS
-        StepActSpeak,
-        StepActWin,
-        StepActFail,
-        StepActForward,
-        StepActShifter,
-        StepActRemove,
-        StepActBoost,
-        StepActTimer,
-        StepActOptions,
-        StepActMessagePurge,
+        ActSpeak,
+        ActWin,
+        ActFail,
+        ActForward,
+        ActShifter,
+        ActRemove,
+        ActBoost,
+        ActTimer,
+        ActOptions,
+        ActMessagePurge,
 
         // CHECKS
-        StepCheckDestroy,
-        StepCheckPlayerDist,
-        StepCheckResources,
+        CheckHealth,
+        CheckDestroy,
+        CheckPlayerDist,
+        CheckResources,
+
+        // CHANGERS
+        ChangeAI,
 
         // SPAWNS
-        StepSetupTech,
-        StepSetupMM, // ModularMonuments
-        StepSetupWaypoint,
+        SetupTech,
+        SetupMM, // ModularMonuments
+        SetupWaypoint,
+
+        // TRANSFORMERS/TRANSMUTATORS
+        TransformTech,
     }
 }

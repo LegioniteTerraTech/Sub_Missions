@@ -17,7 +17,21 @@ namespace Sub_Missions
         const string ModName = "Sub_Missions";
         
         public static bool Debugger = false;
-        public static bool OverrideRestrictions = true;
+        public static bool OverrideRestrictions
+        {
+            get
+            {
+                bool yes = Debugger;
+                try
+                {
+                    ManGameMode.GameType current = ManGameMode.inst.GetCurrentGameType();
+                    if (current == ManGameMode.GameType.MainGame || current == ManGameMode.GameType.CoOpCampaign)
+                        yes = false;
+                }
+                catch { yes = false; }
+                return yes;
+            }
+        }
 
         public static ModConfig Saver;
 

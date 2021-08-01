@@ -72,7 +72,7 @@ namespace Sub_Missions
                 // Phase 1 - Getting the player to the character
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepSetupTech,
+                    StepType = SMissionType.SetupTech,
                     ProgressID = 0,
                     Position = new Vector3(2,0,6), // needs specific location
                     InputNum = -2, // team
@@ -81,7 +81,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepSetupWaypoint,
+                    StepType = SMissionType.SetupWaypoint,
                     ProgressID = -999,// update For all time. Always.
                     Position = new Vector3(2,0,6),
                     VaribleType = EVaribleType.None,
@@ -89,7 +89,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 0,
                     SuccessProgressID = 2,
                     VaribleType = EVaribleType.DoSuccessID,
@@ -98,7 +98,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 2,
                     VaribleType = EVaribleType.None,
                     InputString = "GSO Garrett",
@@ -106,7 +106,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepCheckPlayerDist,
+                    StepType = SMissionType.CheckPlayerDist,
                     ProgressID = 1, // note that this still works even when the CurrentProgressID is 0 or 2 due to the adjecency rule
                     Position = new Vector3(2,0,6), // needs specific location
                     InputNum = 64, // distance before it gets true
@@ -116,7 +116,7 @@ namespace Sub_Missions
                 },  // this basically relays to the below
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActForward,
+                    StepType = SMissionType.ActForward,
                     ProgressID = 1,
                     SuccessProgressID = 15,// Go to Phase 2
                     VaribleType = EVaribleType.True,
@@ -129,14 +129,14 @@ namespace Sub_Missions
                 // Phase 2 - Conversation
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActMessagePurge,
+                    StepType = SMissionType.ActMessagePurge,
                     ProgressID = 15,
                     VaribleType = EVaribleType.None,
                     InputNum = 1,// only fire once
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 15,
                     SuccessProgressID = 20,
                     VaribleType = EVaribleType.DoSuccessID,
@@ -145,7 +145,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 20,
                     SuccessProgressID = 25,
                     VaribleType = EVaribleType.DoSuccessID,
@@ -154,7 +154,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 25,
                     SuccessProgressID = 30,
                     VaribleType = EVaribleType.DoSuccessID,
@@ -163,7 +163,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActOptions,
+                    StepType = SMissionType.ActOptions,
                     ProgressID = 30,
                     VaribleType = EVaribleType.True,
                     InputString = "Met Agent Pow?", // title
@@ -174,7 +174,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepCheckPlayerDist,
+                    StepType = SMissionType.CheckPlayerDist,
                     ProgressID = 30,
                     Position = new Vector3(2,0,6), // needs specific location
                     InputNum = -64, // distance before it gets true - Negative makes this trigger when player outside
@@ -187,7 +187,7 @@ namespace Sub_Missions
                 // Phase 3 - Option "No"
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActForward,
+                    StepType = SMissionType.ActForward,
                     ProgressID = 30,
                     SuccessProgressID = 35,
                     VaribleType = EVaribleType.True,
@@ -195,7 +195,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 35,
                     SuccessProgressID = 50, // Go to Phase 4
                     VaribleType = EVaribleType.DoSuccessID,
@@ -206,7 +206,7 @@ namespace Sub_Missions
                 // Phase 3.5 - Option "Yes"
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActForward,
+                    StepType = SMissionType.ActForward,
                     ProgressID = 30,
                     SuccessProgressID = 40,
                     VaribleType = EVaribleType.True,
@@ -214,7 +214,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 40,
                     SuccessProgressID = 50,// Go to Phase 4
                     VaribleType = EVaribleType.DoSuccessID,
@@ -225,7 +225,7 @@ namespace Sub_Missions
                 // Phase 3.9 - Option "i don't care"
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActForward,
+                    StepType = SMissionType.ActForward,
                     ProgressID = 30,
                     SuccessProgressID = 80,
                     VaribleType = EVaribleType.True,
@@ -233,14 +233,14 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActMessagePurge,
+                    StepType = SMissionType.ActMessagePurge,
                     ProgressID = 80,
                     VaribleType = EVaribleType.None,
                     InputNum = 1,// only fire once
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 80,
                     SuccessProgressID = 50,// Go to Phase 4
                     VaribleType = EVaribleType.DoSuccessID,
@@ -252,7 +252,7 @@ namespace Sub_Missions
                 // Phase 4 - Letting the NPC leave the scene
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 50,
                     SuccessProgressID = 55,
                     VaribleType = EVaribleType.DoSuccessID,
@@ -261,7 +261,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 55,
                     VaribleType = EVaribleType.None,
                     InputString = "GSO Garrett",
@@ -269,14 +269,14 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActBoost,
+                    StepType = SMissionType.ActBoost,
                     ProgressID = 55,
                     VaribleType = EVaribleType.None,
                     InputString = "GSO Garrett"
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActTimer,
+                    StepType = SMissionType.ActTimer,
                     ProgressID = 55,
                     VaribleType = EVaribleType.None,// For All Time. Always.
                     SetGlobalIndex1 = 0,   // check this int (disabled)
@@ -290,7 +290,7 @@ namespace Sub_Missions
                 //     but in the case you want to keep some techs, this is the example.
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActForward,
+                    StepType = SMissionType.ActForward,
                     ProgressID = 55,
                     SuccessProgressID = 60, //
                     VaribleType = EVaribleType.IntGreaterThan,
@@ -299,14 +299,14 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActRemove,
+                    StepType = SMissionType.ActRemove,
                     ProgressID = 60,
                     VaribleType = EVaribleType.None,
                     InputString = "GSO Garrett"
                 },  // The above fires first due to the way the updating works - top to bottom
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActWin,
+                    StepType = SMissionType.ActWin,
                     ProgressID = 60,
                     VaribleType = EVaribleType.None,
                 },
@@ -361,7 +361,7 @@ namespace Sub_Missions
             {
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 0,
                     VaribleType = EVaribleType.True, // WARNING - Does only bools!
                     SetGlobalIndex1 = 0,    // Gets true, shows message
@@ -372,7 +372,7 @@ namespace Sub_Missions
                 /*
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActShifter,
+                    StepType = SMissionType.ActShifter,
                     ProgressID = 0,
                     VaribleType = EVaribleType.True,
                     SetGlobalIndex1 = 0,            // activates on true
@@ -380,7 +380,7 @@ namespace Sub_Missions
                 },*/
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepSetupTech,
+                    StepType = SMissionType.SetupTech,
                     ProgressID = 0,
                     InputNum = 8,
                     VaribleType = EVaribleType.None,
@@ -388,7 +388,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepSetupWaypoint,
+                    StepType = SMissionType.SetupWaypoint,
                     ProgressID = -999,// update For all time. Always.
                     Position = new Vector3(2,0,6),
                     VaribleType = EVaribleType.None,
@@ -396,7 +396,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepCheckDestroy,
+                    StepType = SMissionType.CheckDestroy,
                     ProgressID = 0,
                     SuccessProgressID = 30,
                     VaribleType = EVaribleType.DoSuccessID,
@@ -404,7 +404,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActWin,
+                    StepType = SMissionType.ActWin,
                     ProgressID = 30,
                     VaribleType = EVaribleType.None,
                 },
@@ -455,7 +455,7 @@ namespace Sub_Missions
                 // Phase 1 - Getting the player to mine the resources
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 0,
                     VaribleType = EVaribleType.None,
                     InputString = "GSO Garrett",
@@ -463,7 +463,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepCheckResources,
+                    StepType = SMissionType.CheckResources,
                     ProgressID = 0,
                     SuccessProgressID = 30, //
                     VaribleType = EVaribleType.DoSuccessID,
@@ -476,7 +476,7 @@ namespace Sub_Missions
                 // Phase 2 - Letting the NPC leave the scene
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 30,
                     SuccessProgressID = 35, //
                     VaribleType = EVaribleType.DoSuccessID,
@@ -485,7 +485,7 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActSpeak,
+                    StepType = SMissionType.ActSpeak,
                     ProgressID = 35,
                     SuccessProgressID = 45, //
                     VaribleType = EVaribleType.DoSuccessID,
@@ -496,7 +496,7 @@ namespace Sub_Missions
                 // Phase 2 - Cleanup
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActWin,
+                    StepType = SMissionType.ActWin,
                     ProgressID = 45,
                     VaribleType = EVaribleType.None,
                 },
@@ -531,7 +531,7 @@ namespace Sub_Missions
                 // instant win
                 new SubMissionStep
                 {
-                    StepType = SMissionType.StepActWin,
+                    StepType = SMissionType.ActWin,
                     ProgressID = 0,
                     VaribleType = EVaribleType.None,
                 },

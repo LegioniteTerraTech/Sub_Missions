@@ -138,6 +138,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ButtonAct.cs" />
+    <None Include="NetworkHandler.cs" />
+    <Compile Include="Steps\StepActRandom.cs" />
+    <Compile Include="Steps\StepCheckHealth.cs" />
+    <Compile Include="Steps\StepTransformTech.cs" />
     <Compile Include="Steps\StepChangeAI.cs" />
     <Compile Include="Steps\StepSetupWaypoint.cs" />
     <Compile Include="SubMission.cs" />

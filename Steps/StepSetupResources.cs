@@ -12,45 +12,21 @@ namespace Sub_Missions.Steps
     {
         public override void TrySetup()
         {   // Spawn a single ModularMonument
-            ItemTypeInfo info = new ItemTypeInfo(ObjectTypes.Scenery, (int)Enum.Parse(typeof(SceneryTypes), SMission.InputString));
-            SMission.AssignedTracked = ManSpawn.inst.SpawnDispenser(SMission.Position, Quaternion.identity, info, 1);
-            //ManWorld.inst.LandmarkSpawner.SpawnLandmarks(ManWorld.inst.TileManager.LookupTile(SMission.Position))
-
+            if (Enum.TryParse(SMission.InputString, out SceneryTypes result) && SMission.InputNum >= 1)
+            {
+                ItemTypeInfo info = new ItemTypeInfo(ObjectTypes.Scenery, (int)result);
+                SMission.AssignedTracked = ManSpawn.inst.SpawnDispenser(SMission.Position, Quaternion.identity, info, (int)SMission.InputNum);
+                //ManWorld.inst.LandmarkSpawner.SpawnLandmarks(ManWorld.inst.TileManager.LookupTile(SMission.Position))
+            }
+            else
+            {
+                SMUtil.Assert(false, "SubMissions: StepSetupResources - Failed: Input SceneryType not valid or InputNum below 1.  Mission " + Mission.Name);
+            }
         }
         public override void Trigger()
         {
         }
 
 
-        private void TryFetchTerrainObj()
-        {
-            if (SMission.InputString != "")
-            {
-                foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(SMUtil.GetTrackedTech(ref Mission, SMission.InputString).boundsCentreWorldNoCheck, 32, new Bitfield<ObjectTypes>()))
-                {
-                    if ((bool)vis.Waypoint)
-                    {
-                        if (vis.ID == SMission.SavedInt)
-                        {
-                            SMission.AssignedWaypoint = vis.Waypoint;
-                            SMission.AssignedTracked = ManVisible.inst.GetTrackedVisible(SMission.SavedInt);
-                        }
-                        return;
-                    }
-                }
-                SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not find waypoint!");
-                return;
-            }
-            foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(SMission.Position, 8, new Bitfield<ObjectTypes>()))
-            {
-                if ((bool)vis.Waypoint)
-                {
-                    if (vis.ID == SMission.SavedInt)
-                        SMission.AssignedWaypoint = vis.Waypoint;
-                    return;
-                }
-            }
-            SMUtil.Assert(false, "SubMissions: StepSetupWaypoint - Failed: Could not find waypoint!");
-        }
     }
 }

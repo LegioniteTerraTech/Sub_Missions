@@ -310,6 +310,10 @@ namespace Sub_Missions
         {
             return "error - requires PopulationInjector";
         }
+        public static bool DoesTrackedTechExist(ref SubMissionStep mission, string TechName)
+        {
+            return mission.Mission.TrackedTechs.Exists(delegate (TrackedTech cand) { return cand.TechName == TechName; });
+        }
         public static bool GetTrackedTech(ref SubMissionStep mission, string TechName, out Tank tech)
         {
             tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;

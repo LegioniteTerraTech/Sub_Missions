@@ -270,6 +270,7 @@ namespace Sub_Missions
                 Name = mission.Name,
                 SelectedAltName = mission.SelectedAltName,
                 Faction = mission.Faction,
+                Position = mission.Position,
 
                 TrackedTechs = mission.TrackedTechs,
                 VarTrueFalse = mission.VarTrueFalse,
@@ -304,6 +305,7 @@ namespace Sub_Missions
                 }
             }
             mission.SelectedAltName = missionLoad.SelectedAltName;
+            mission.Position = missionLoad.Position;
 
             mission.TrackedTechs = missionLoad.TrackedTechs;
             mission.VarTrueFalse = missionLoad.VarTrueFalse;
@@ -316,7 +318,7 @@ namespace Sub_Missions
     // Save compiling - only need the relivant matters
     public class SubMissionStepSave
     {   // Grab some key details 
-        public SMissionType StepType = SMissionType.StepActSpeak;           // The type this is
+        public SMissionType StepType = SMissionType.ActSpeak;           // The type this is
 
         public int ProgressID = 0;          // progress ID this runs on
         public int SuccessProgressID = 0;   // transfer to this when successful
