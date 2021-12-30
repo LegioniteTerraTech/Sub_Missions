@@ -178,24 +178,6 @@ namespace Sub_Missions.ManWindows
             disp.GUIFormat = disp.SetupGUI(disp.type, val1, val2, val3, val4, windowOverride);
             return true;
         }
-        public static bool RemoveCurrentPopup()
-        {
-            if (currentGUIWindow == null)
-            {
-                Debug.Log("SubMissions: RemoveCurrentPopup - There is no current window active!!");
-                return false;
-            }
-            AllPopups.Remove(currentGUIWindow);
-            Destroy(currentGUIWindow);
-            UpdateIndexes();
-
-            /*
-            Vector3 Mous = Input.mousePosition;
-            xMenu = 0;
-            yMenu = 0;
-            */
-            return true;
-        }
         public static bool RemovePopup(GUIPopupDisplay disp)
         {
             try
@@ -316,24 +298,6 @@ namespace Sub_Missions.ManWindows
             return true;
         }
 
-        public static bool HidePopup()
-        {
-            if (currentGUIWindow == null)
-            {
-                Debug.Log("SubMissions: HidePopup - There is no current window active!!");
-                return false;
-            }
-            if (!currentGUIWindow.isOpen)
-            {
-                //Debug.Log("SubMissions: HidePopup - Window is already closed");
-                return false;
-            }
-            numActivePopups--;
-            currentGUIWindow.obj.SetActive(false);
-            currentGUIWindow.isOpen = false;
-            Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.InfoClose);
-            return true;
-        }
         public static bool HidePopup(GUIPopupDisplay disp)
         {
             if (disp == null)

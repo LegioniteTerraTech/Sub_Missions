@@ -31,7 +31,7 @@ namespace Sub_Missions.Steps
                         {
                             if (SMission.InputStringAux != "" || SMission.InputStringAux != null)
                             {   // allow the AI to change it's form on demand
-                                mind.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToTechExternal(SMission.InputStringAux));
+                                mind.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToMemoryExternal(SMission.InputStringAux));
                             }
                         }
                         catch { }
@@ -46,7 +46,7 @@ namespace Sub_Missions.Steps
                             {
                                 if (SMission.InputStringAux != "" || SMission.InputStringAux != null)
                                 {   // allow the AI to change it's form on demand
-                                    help.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToTechExternal(SMission.InputStringAux));
+                                    help.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToMemoryExternal(SMission.InputStringAux));
                                 }
                             }
                             catch { }
@@ -57,7 +57,7 @@ namespace Sub_Missions.Steps
                             {
                                 if (SMission.InputStringAux != "" || SMission.InputStringAux != null)
                                 {   // allow the AI to change it's form on demand
-                                    help.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToTechExternal(SMission.InputStringAux));
+                                    help.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToMemoryExternal(SMission.InputStringAux));
                                 }
                             }
                             catch { }
