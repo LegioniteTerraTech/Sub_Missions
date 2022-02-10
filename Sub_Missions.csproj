@@ -63,6 +63,10 @@
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\IncreasedRange\IncreasedRange.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Ionic.Zlib">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Ionic.Zlib.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Newtonsoft.Json.dll</HintPath>
       <Private>False</Private>
@@ -99,12 +103,28 @@
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\WeatherMod\TTQMM WeatherMod.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.AssetBundleModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.AudioModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.CoreModule">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ImageConversionModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.IMGUIModule">
@@ -123,12 +143,32 @@
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.TerrainModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.TerrainPhysicsModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.TerrainPhysicsModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UI.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestAudioModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.UnityWebRequestWWWModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UnityWebRequestWWWModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="WaterMod">
@@ -138,12 +178,33 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ButtonAct.cs" />
+    <Compile Include="ModuleSubMissionsBoard.cs" />
+    <Compile Include="SimpleSMissions.cs" />
+    <Compile Include="CustomCorpsMK2\SMCCorpLicense.cs" />
+    <Compile Include="CustomCorpsMK2\ManSMCCorps.cs" />
+    <Compile Include="CustomCorpsMK2\SMCCorpBlockRange.cs" />
+    <Compile Include="CustomCorpsMK2\SMCSkinID.cs" />
+    <Compile Include="Steps\StepFolder.cs" />
+    <Compile Include="CustomCorpsMK2\UICCorpLicenses.cs" />
+    <Compile Include="CustomCorpsMK2\UICustomCorpSkinsTEMP.CS" />
+    <Content Include="ModularBrickCube_6x3x6.obj">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="NetworkHandler.cs" />
-    <Compile Include="Steps\StepActRandom.cs" />
-    <Compile Include="Steps\StepCheckHealth.cs" />
+    <Compile Include="ModularMonuments\ManModularMonuments.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="SMWorldObject.cs" />
+    <Compile Include="Steps\Acts\StepActRandom.cs" />
+    <Compile Include="Steps\StepNull.cs" />
+    <Compile Include="Steps\Checks\StepCheckLogic.cs" />
+    <Compile Include="Steps\Checks\StepCheckHealth.cs" />
     <Compile Include="Steps\StepTransformTech.cs" />
-    <Compile Include="Steps\StepChangeAI.cs" />
-    <Compile Include="Steps\StepSetupWaypoint.cs" />
+    <Compile Include="Steps\Changes\StepChangeAI.cs" />
+    <Compile Include="Steps\Setups\StepSetupWaypoint.cs" />
     <Compile Include="SubMission.cs" />
     <Compile Include="SubMissionTree.cs" />
     <Compile Include="EVaribleType.cs" />
@@ -151,7 +212,7 @@
     <Compile Include="SaveManSubMissions.cs" />
     <Compile Include="ManWindows\GUIButtonWindow.cs" />
     <Compile Include="ManWindows\GUIDualButton.cs" />
-    <Compile Include="ManWindows\GUIMessageSide.cs" />
+    <Compile Include="ManWindows\GUIMissionInfo.cs" />
     <Compile Include="ManWindows\GUIScrollMessage.cs" />
     <Compile Include="ManWindows\GUIMessage.cs" />
     <Compile Include="ManWindows\GUISMissionsList.cs" />
@@ -163,25 +224,26 @@
     <Compile Include="ManSubMissions.cs" />
     <Compile Include="SMissionJSONLoader.cs" />
     <Compile Include="Steps\SMissionStep.cs" />
-    <Compile Include="Steps\StepActRemove.cs" />
-    <Compile Include="Steps\StepActBoost.cs" />
-    <Compile Include="Steps\StepActOptions.cs" />
-    <Compile Include="Steps\StepActMessagePurge.cs" />
-    <Compile Include="Steps\StepCheckResources.cs" />
-    <Compile Include="Steps\StepCheckPlayerDist.cs" />
-    <Compile Include="Steps\StepActTimer.cs" />
-    <Compile Include="Steps\StepSetupMM.cs" />
-    <Compile Include="Steps\StepSetupResources.cs" />
-    <Compile Include="Steps\StepSetupTech.cs" />
-    <Compile Include="Steps\StepCheckDestroy.cs" />
-    <Compile Include="Steps\StepActForward.cs" />
-    <Compile Include="Steps\StepActSpeak.cs" />
-    <Compile Include="Steps\StepActWin.cs" />
-    <Compile Include="Steps\StepActFail.cs" />
-    <Compile Include="Steps\StepActShifter.cs" />
+    <Compile Include="Steps\Acts\StepActRemove.cs" />
+    <Compile Include="Steps\Acts\StepActBoost.cs" />
+    <Compile Include="Steps\Acts\StepActOptions.cs" />
+    <Compile Include="Steps\Acts\StepActMessagePurge.cs" />
+    <Compile Include="Steps\Checks\StepCheckResources.cs" />
+    <Compile Include="Steps\Checks\StepCheckPlayerDist.cs" />
+    <Compile Include="Steps\Acts\StepActTimer.cs" />
+    <Compile Include="Steps\Setups\StepSetupMM.cs" />
+    <Compile Include="Steps\Setups\StepSetupResources.cs" />
+    <Compile Include="Steps\Setups\StepSetupTech.cs" />
+    <Compile Include="Steps\Checks\StepCheckDestroy.cs" />
+    <Compile Include="Steps\Acts\StepActForward.cs" />
+    <Compile Include="Steps\Acts\StepActSpeak.cs" />
+    <Compile Include="Steps\Acts\StepActWin.cs" />
+    <Compile Include="Steps\Acts\StepActFail.cs" />
+    <Compile Include="Steps\Acts\StepActShifter.cs" />
     <Compile Include="Steps\SubMissionStep.cs" />
     <Compile Include="SMUtil.cs" />
     <Compile Include="SubMissionReward.cs" />
+    <Compile Include="TerrainOperations.cs" />
     <Compile Include="TrackedBlock.cs" />
     <Compile Include="TrackedTech.cs" />
   </ItemGroup>
@@ -189,6 +251,20 @@
     <None Include="mod.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Garrett Gruntle.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="SimpleMissions\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

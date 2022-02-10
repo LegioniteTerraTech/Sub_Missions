@@ -12,50 +12,106 @@ namespace Sub_Missions.Steps
 {
     public class StepTransformTech : SMissionStep
     {
-        public override void TrySetup()
-        {  
+        public override string GetDocumentation()
+        {
+            return
+                "{  // Changes/Edits the entire form of a TrackedTech" +
+                  "\n  \"StepType\": \"TransformTech\"," +
+                  "\n  \"ProgressID\": 0,             // " + StepDesc + 
+                  "\n  // Conditions TO CHECK before executing" +
+                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
+                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
+                  "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
+                  "\n  // Input Parameters" +
+                  "\n  \"InputNum\": 0.0,             // The Team to set the Tech to if \"InputStringAux\" is set to team" +
+                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to change." +
+                  "\n  \"InputStringAux\": null,      // What to change on the Tracked Tech, or the Tech to swap to." +
+                "\n},";
+            /*
+            return
+                "{  // Changes/Edits the entire form of a TrackedTech" +
+                  "\n  \"StepType\": \"TransformTech\"," +
+                  "\n  \"ProgressID\": 0,             // " + StepDesc +
+                  "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if this is successful" +
+                  "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +
+                  "\n    \"x\": 0.0," +
+                  "\n    \"y\": 0.0," +
+                  "\n    \"z\": 0.0" +
+                  "\n  }," +
+                  "\n  \"EulerAngles\": {  // The rotation in EulerAngles that the step subject should be oriented." +
+                  "\n    \"x\": 0.0," +
+                  "\n    \"y\": 0.0," +
+                  "\n    \"z\": 0.0" +
+                  "\n  }," +
+                  "\n  \"Forwards\": {  // The forwards facing of the Tech to spawn relative to north." +
+                  "\n    \"x\": 0.0," +
+                  "\n    \"y\": 0.0," +
+                  "\n    \"z\": 1.0" +
+                  "\n  }," +
+                  "\n  \"TerrainHandling\": 2,      // The way this should handle terrain: " + TerrainHandlingDesc +
+                  "\n  \"RevProgressIDOffset\": false," +
+                  "\n  // Conditions TO CHECK before executing" +
+                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
+                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
+                  "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
+                  "\n  // Input Parameters" +
+                  "\n  \"InputNum\": 0.0,             // The Team to set the Tech to if \"InputStringAux\" is set to team" +
+                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to change." +
+                  "\n  \"InputStringAux\": null,      // What to change on the Tracked Tech, or the Tech to swap to." +
+                "\n},";
+            */
+        }
+
+        public override void OnInit() { }
+        public override void OnDeInit() { }
+
+        public override void FirstSetup()
+        {
         }
         public override void Trigger()
-        {   
-            if (SMUtil.BoolOut(ref SMission))
+        {
+            if (ManNetwork.IsHost)
             {
-                try
+                if (SMUtil.BoolOut(ref SMission))
                 {
-                    TrackedTech tTech = SMUtil.GetTrackedTechBase(ref Mission, SMission.InputString);
+                    try
+                    {
+                        TrackedTech tTech = SMUtil.GetTrackedTechBase(ref Mission, SMission.InputString);
 
-                    if (SMission.InputStringAux == "Team")
-                    {
-                        if (SMission.SavedInt < 1)
+                        if (SMission.InputStringAux == "Team")
                         {
-                            tTech.Tech.SetTeam((int)SMission.InputNum);
-                            Debug.Log("SubMissions: Changed team of tech " + tTech.Tech.name + " to " + tTech.Tech.Team);
+                            if (SMission.SavedInt < 1)
+                            {
+                                tTech.Tech.SetTeam((int)SMission.InputNum);
+                                Debug.Log("SubMissions: Changed team of tech " + tTech.Tech.name + " to " + tTech.Tech.Team);
+                            }
+                        }
+                        else if (SMission.InputStringAux != null && SMission.InputStringAux != "")
+                        {   // allow the AI to change it's form on demand
+                            if (SMission.SavedInt < SMission.InputNum)
+                            {
+                                Tank techCur = tTech.Tech;
+                                Debug.Log("SubMissions: More than meets the eye");
+                                tTech.Tech = RawTechLoader.TechTransformer(techCur, SMission.InputStringAux);
+                            }
+                        }
+                        else
+                        {
+                            SMUtil.Assert(true, "SubMissions: StepTransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
                         }
                     }
-                    else if (SMission.InputStringAux != "" || SMission.InputStringAux != null)
-                    {   // allow the AI to change it's form on demand
-                        if (SMission.SavedInt < SMission.InputNum)
+                    catch (Exception e)
+                    {   // Cannot work without TACtical_AI
+                        if (KickStart.isTACAIPresent)
                         {
-                            Tank techCur = tTech.Tech;
-                            Debug.Log("SubMissions: More than meets the eye");
-                            tTech.Tech = RawTechLoader.TechTransformer(techCur, SMission.InputStringAux);
+                            SMUtil.Assert(true, "SubMissions: StepTransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!");
+                            Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                            Debug.Log("SubMissions: Error - " + e);
                         }
+                        Debug.Log("SubMissions: StepTransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
                     }
-                    else
-                    {
-                        SMUtil.Assert(true, "SubMissions: StepTransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
-                    }
+                    //SMission.SavedInt++;
                 }
-                catch (Exception e)
-                {   // Cannot work without TACtical_AI
-                    if (KickStart.isTACAIPresent)
-                    {
-                        SMUtil.Assert(true, "SubMissions: StepTransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!");
-                        Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                        Debug.Log("SubMissions: Error - " + e);
-                    }
-                    Debug.Log("SubMissions: StepTransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
-                }
-                SMission.SavedInt++;
             }
         }
     }

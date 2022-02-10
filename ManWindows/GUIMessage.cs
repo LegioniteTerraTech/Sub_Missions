@@ -40,6 +40,7 @@ namespace Sub_Missions.ManWindows
                 WindowManager.RemovePopup(Display);
             }
             GUI.DragWindow();
+            WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
 
         public void DelayedUpdate()

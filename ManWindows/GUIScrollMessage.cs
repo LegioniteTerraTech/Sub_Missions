@@ -5,40 +5,59 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using Sub_Missions.Steps;
 
 namespace Sub_Missions.ManWindows
 {
     public class GUIScrollMessage : IGUIFormat
     {
         public GUIPopupDisplay Display { get; set; }
+        public Texture2D Image;
         public StringBuilder MessageBuilder = new StringBuilder();
         public string Message;
         public string MessageOut;
 
+        public bool DenySkip = false;
         private float scrollDelay = 0.075f;
-        private int StepFadeoutDelay = 175;
+        private int StepFadeoutDelay = 150;
         private float tracker = 0;
         private int step = -5;
+        private bool bleep = false;
+        private bool bleepPrev = false;
+        private SMissionStep assignedStep;
+
+        private static int StepRate = 1;
 
 
-        public void Setup(GUIPopupDisplay display, string message, float scrollLerpTime)
+        public void Setup(GUIPopupDisplay display, string message, float scrollLerpTime, SMissionStep assignedStep)
         {
             Display = display;
             Message = message;
             scrollDelay = scrollLerpTime;
+            this.assignedStep = assignedStep;
         }
 
         public void RunGUI(int ID)
         {
-            GUI.Label(new Rect(200, 40, Display.Window.width - 220, Display.Window.height - 60), MessageOut, WindowManager.styleLargeFont);
-            if (GUI.Button(new Rect(20, Display.Window.height - 60, 60, 40), "<b>OK</b>", WindowManager.styleHugeFont))
+            if (Image)
             {
-                Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Enter);
-                OnRemoval();
-                WindowManager.HidePopup(Display);
-                WindowManager.RemovePopup(Display);
+                GUI.DrawTexture(new Rect(15, 15, Display.Window.height - 30, Display.Window.height - 30), Image);
+                GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleLargeFont);
+            }
+            else
+                GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleLargeFont);
+            if (!DenySkip)
+            {
+                if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 35, 40, 25), "<b>OK</b>", WindowManager.styleHugeFont))
+                {
+                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
+                    OnRemoval();
+                    WindowManager.HidePopup(Display);
+                    WindowManager.RemovePopup(Display);
+                }
             }
             GUI.DragWindow();
+            WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
 
         private static FieldInfo clunk = typeof(ManOnScreenMessages).GetField("m_TextBlipSfxEvent", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -54,38 +73,48 @@ namespace Sub_Missions.ManWindows
             {
                 return;
             }
-            for (int internalStep = 0; internalStep < 1; internalStep++)
+            if (step < 0)
             {
-                if (step < 0)
-                {
-                    step++;
-                    return;
-                }
-                else if (step == Message.Length - 1)
-                {
-                }
-                else if (step < Message.Length - 1)
-                {
-                    // the bleep was here but then it had oversaturation issues
-                }
-                else
-                {
-                    if (step > Message.Length - 1 + StepFadeoutDelay)
-                    {
-                        WindowManager.HidePopup(Display);
-                        WindowManager.RemovePopup(Display);
-                        return;
-                    }
-
-                    step++;
-                    return;
-                }
-                //Debug.Log("SubMissions: stepchek");
-                MessageBuilder.Append(Message.ElementAt(step));
-                //Debug.Log("SubMissions: stepchek2");
-                MessageOut = MessageBuilder.ToString();
                 step++;
+                return;
             }
+            else if (step == Message.Length)
+            {
+            }
+            else if (step < Message.Length)
+            {
+                // the bleep was here but then it had oversaturation issues
+            }
+            else
+            {   // End of message
+                if (step > Message.Length + StepFadeoutDelay)
+                {
+                    OnRemoval();
+                    WindowManager.HidePopup(Display);
+                    WindowManager.RemovePopup(Display);
+                    return;
+                }
+
+                step++;
+                return;
+            }
+            //Debug.Log("SubMissions: stepchek");
+            for (int stepSped = 0; stepSped < StepRate; stepSped++)
+            {
+                if (step + stepSped < Message.Length)
+                    MessageBuilder.Append(Message.ElementAt(step + stepSped));
+            }
+            try
+            {
+                bleep = Message.ElementAt(step + StepRate) != ' ';
+            }
+            catch
+            {
+                bleep = false;
+            }
+            //Debug.Log("SubMissions: stepchek2");
+            MessageOut = MessageBuilder.ToString();
+            step += StepRate;
         }
         public void BleepCommand()
         {
@@ -101,7 +130,7 @@ namespace Sub_Missions.ManWindows
                 catch { }
                 return;
             }
-            if (step >= Message.Length - 1)
+            if (step >= Message.Length - 1 || (!bleep && bleepPrev))
             {
                 try
                 {
@@ -121,11 +150,13 @@ namespace Sub_Missions.ManWindows
                 }
                 catch { }
             }
+            bleepPrev = bleep;
             //Debug.Log("Is playing noise " + fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.PLAYING));
         }
 
         public void FastUpdate()
         {
+            StepRate = Input.GetKey(KeyCode.Space) ? 2 : 1;
             BleepCommand();
             if (tracker > scrollDelay)
             {
@@ -141,6 +172,12 @@ namespace Sub_Missions.ManWindows
         {
             try
             {
+                Debug.Log("SubMissions: GUIScrollMessage - OnRemoval");
+                if (assignedStep != null)
+                {
+                    if (assignedStep is StepActSpeak SAS)
+                        SAS.WindowHasClosed();
+                }
                 fInst.StopAndRelease();
             }
             catch { }

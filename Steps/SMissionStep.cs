@@ -18,8 +18,24 @@ namespace Sub_Missions.Steps
         /// </summary>
         public SubMissionStep SMission;
 
+        public static string StepDesc = " Use -999 to always update.  Else:\n" +
+        "  // 0 = Align with Mission Origin\n" +
+        "  // 1 = Snap to Terrain if Position Lower\n" +
+        "  // 2 = Align with terrain + offset by position\n" +
+        "  // 3 = Snap to Terrain";
 
-        public abstract void TrySetup();
+        public static string TerrainHandlingDesc = "\n" +
+        "  // 0 = Align with Mission Origin\n" +
+        "  // 1 = Snap to Terrain if Position Lower\n" +
+        "  // 2 = Align with terrain + offset by position\n" +
+        "  // 3 = Snap to Terrain";
+
+        public abstract string GetDocumentation();
+
+        public abstract void OnInit();
+        public abstract void FirstSetup();
         public abstract void Trigger();
+
+        public abstract void OnDeInit();
     }
 }

@@ -17,6 +17,7 @@ namespace Sub_Missions
         const string ModName = "Sub_Missions";
         
         public static bool Debugger = false;
+        public static bool ExportPrefabExample = false;
         public static bool OverrideRestrictions
         {
             get
@@ -37,20 +38,49 @@ namespace Sub_Missions
 
         public static void Main()
         {
+
+            CheckActiveMods();
+            SMissionJSONLoader.SetupWorkingDirectories();
             Harmony harmonyInstance = new Harmony("legioniteterratech.sub_missions");
             try
             {
-                harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                try
+                {
+                    harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                }
+                catch (Exception e)
+                {
+                    Debug.Log("SubMissions: Error on mass patch");
+                    Debug.Log(e);
+                }
+                List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
+                foreach (MethodBase MB in MP)
+                {
+                    if (MB.Name == "PatchCCModding")
+                    {
+                        if (isBlockInjectorPresent)
+                        {
+                            Debug.Log("SubMissions: Patching " + MB.Name);
+                            //harmonyInstance.Patch(Patches.);
+                        }
+                        else
+                        {
+                            Debug.Log("SubMissions: UnPatching " + MB.Name);
+                            harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log("SubMissions: Patching " + MB.Name);
+                        //harmonyInstance.Patch(MB);
+                    }
+                }
             }
             catch (Exception e)
             {
                 Debug.Log("SubMissions: Error on patch");
                 Debug.Log(e);
             }
-
-            CheckActiveMods();
-
-            SMissionJSONLoader.SetupWorkingDirectories();
             WindowManager.Initiate();
             ManSubMissions.Initiate();
             ButtonAct.Initiate();
@@ -62,6 +92,7 @@ namespace Sub_Missions
 
             Saver = new ModConfig();
             Saver.BindConfig<KickStart>(null, "Debugger");
+            Saver.BindConfig<KickStart>(null, "ExportPrefabExample");
             Saver.BindConfig<KickStart>(null, "FirstTime");
 
             if (FirstTime)
@@ -90,13 +121,15 @@ namespace Sub_Missions
                 }
                 catch { }
             });
-            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, Debugger);
+            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, ExportPrefabExample);
             exportTemplate.onValueSaved.AddListener(() => 
-            { 
-                Debugger = editor.SavedValue; 
+            {
+                ExportPrefabExample = exportTemplate.SavedValue; 
                 SMissionJSONLoader.MakePrefabMissionTreeToFile("Template"); 
                 Save();
             });
+            //if (ExportPrefabExample)
+            //    SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
 
             ManSubMissions.inst.HarvestAllTrees();
         }
@@ -105,6 +138,7 @@ namespace Sub_Missions
         public static OptionToggle exportTemplate;
 
         public static bool FirstTime = true;
+        public static bool FullyLoadedGame = false;
 
 
         internal static bool isTACAIPresent = false;
