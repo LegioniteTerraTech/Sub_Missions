@@ -72,7 +72,6 @@ namespace Sub_Missions
             else
             {
                 ManSubMissions.inst.CancelMission();
-                Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
             }
         }
     }

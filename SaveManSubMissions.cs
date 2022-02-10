@@ -8,19 +8,12 @@ using System.IO;
 using TAC_AI.Templates;
 using Sub_Missions.ManWindows;
 using Sub_Missions.Steps;
-using Ionic.Zlib;
 using Newtonsoft.Json;
 
 namespace Sub_Missions
 {
     public class SaveManSubMissions
     {
-#if DEBUG
-        private static bool UseCompressor = true;
-#else
-        private static bool UseCompressor = true;
-#endif
-
         private static JsonSerializerSettings JSONSaver = new JsonSerializerSettings
         {
             DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate,
@@ -57,88 +50,38 @@ namespace Sub_Missions
         }
 
 
-        public static void LoadData(string saveName)
+       public static void LoadData(string saveName)
         {
-            string destination = SMissionJSONLoader.MissionSavesDirectory + SMissionJSONLoader.up + saveName;
+            string destination = SMissionJSONLoader.MissionSavesDirectory + "\\" + saveName;
             SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionSavesDirectory);
             try
             {
+                string output = File.ReadAllText(destination + ".JSON");
                 try
                 {
-                    if (UseCompressor)
-                    {
-                        if (File.Exists(destination + ".SMSAV"))
-                        {
-                            using (FileStream FS = File.Open(destination + ".SMSAV", FileMode.Open, FileAccess.Read))
-                            {
-                                using (GZipStream GZS = new GZipStream(FS, CompressionMode.Decompress))
-                                {
-                                    using (StreamReader SR = new StreamReader(GZS))
-                                    {
-                                        DeserializeToManager(SR.ReadToEnd());
-                                    }
-                                }
-                            }
-                            ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.SMSAV for " + saveName + " successfully.");
-                        }
-                        else if (File.Exists(destination + ".json"))
-                        {
-                            string output = "";
-                            output = File.ReadAllText(destination + ".json");
-
-                            DeserializeToManager(output);
-                            ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.json for " + saveName + " successfully.");
-                        }
-                    }
-                    else
-                    {
-                        if (File.Exists(destination + ".json"))
-                        {
-                            string output = "";
-                            output = File.ReadAllText(destination + ".json");
-
-                            DeserializeToManager(output);
-                            ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.json for " + saveName + " successfully.");
-                        }
-                        else if (File.Exists(destination + ".SMSAV"))
-                        {
-                            using (FileStream FS = File.Open(destination + ".SMSAV", FileMode.Open, FileAccess.Read))
-                            {
-                                using (GZipStream GZS = new GZipStream(FS, CompressionMode.Decompress))
-                                {
-                                    using (StreamReader SR = new StreamReader(GZS))
-                                    {
-                                        DeserializeToManager(SR.ReadToEnd());
-                                    }
-                                }
-                            }
-                            ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.SMSAV for " + saveName + " successfully.");
-                        }
-                    }
+                    DeserializeToManager(output);
+                    ManSubMissions.ReSyncSubMissions();
                 }
                 catch (Exception e)
                 {
-                    SMUtil.Assert(false, "SubMissions: Could not load contents of MissionSave.json/.SMSAV for " + saveName + "!");
+                    SMUtil.Assert(false, "SubMissions: Could not load contents of MissionSave.JSON for " + saveName + "!");
                     Debug.Log(e);
                     return;
                 }
+                Debug.Log("SubMissions: Loaded MissionSave.JSON for " + saveName + " successfully.");
                 return;
             }
             catch
             {
                 try
                 {
-                    File.WriteAllText(destination + ".json", SerializeFromManager(true));
-                    Debug.Log("SubMissions: Created new MissionSave.json for " + saveName + " successfully.");
+                    File.WriteAllText(destination + ".JSON", SerializeFromManager(true));
+                    Debug.Log("SubMissions: Created new MissionSave.JSON for " + saveName + " successfully.");
                     return;
                 }
                 catch
                 {
-                    Debug.Log("SubMissions: Could not read MissionSave.json for " + saveName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                    Debug.Log("SubMissions: Could not read MissionSave.JSON for " + saveName + ".  \n   This could be due to a bug with this mod or file permissions.");
                     return;
                 }
             }
@@ -146,36 +89,17 @@ namespace Sub_Missions
         public static void SaveData(string saveName)
         {
             Debug.Log("SubMissions: Setting up template reference...");
-            string destination = SMissionJSONLoader.MissionSavesDirectory + SMissionJSONLoader.up + saveName;
+            string destination = SMissionJSONLoader.MissionSavesDirectory + "\\" + saveName;
             SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionSavesDirectory);
             try
             {
-                if (UseCompressor)
-                {
-                    using (FileStream FS = File.Create(destination + ".SMSAV"))
-                    {
-                        using (GZipStream GZS = new GZipStream(FS, CompressionMode.Compress))
-                        {
-                            using (StreamWriter SW = new StreamWriter(GZS))
-                            {
-                                SW.WriteLine(SerializeFromManager());
-                                SW.Flush();
-                            }
-                        }
-                    }
-                    CleanUpCache();
-                    Debug.Log("SubMissions: Saved MissionSave.SMSAV for " + saveName + " successfully.");
-                }
-                else
-                {
-                    File.WriteAllText(destination + ".json", SerializeFromManager());
-                    CleanUpCache();
-                    Debug.Log("SubMissions: Saved MissionSave.json for " + saveName + " successfully.");
-                }
+                File.WriteAllText(destination + ".JSON", SerializeFromManager());
+                CleanUpCache();
+                Debug.Log("SubMissions: Saved MissionSave.JSON for " + saveName + " successfully.");
             }
             catch
             {
-                SMUtil.Assert(false, "SubMissions: Could not save MissionSave.json/.SMSAV for " + saveName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                SMUtil.Assert(false, "SubMissions: Could not save MissionSave.JSON for " + saveName + ".  \n   This could be due to a bug with this mod or file permissions.");
                 return;
             }
         }
@@ -206,7 +130,6 @@ namespace Sub_Missions
             {
                 Debug.Log("SubMissions: Resetting ManSubMissions for new save instance...");
             }
-
             treesSaved = new List<ManSubMissionTreeSave>();
             foreach (SubMissionTree missionTree in ManSubMissions.SubMissionTrees)
             {
@@ -236,8 +159,6 @@ namespace Sub_Missions
             {
                 SubMissionTrees = treesSaved,
 
-                ModularMonuments = ManModularMonuments.SaveAll(),
-
                 SelectedIsAnon = ManSubMissions.SelectedIsAnon,
 
                 Selected = ManSubMissions.ActiveSubMissions.IndexOf(ManSubMissions.Selected),
@@ -247,13 +168,6 @@ namespace Sub_Missions
         }
         private static void LoadFromFileFormatting(ManSubMissionSave save)
         {
-            if (save == null)
-            {
-                Debug.Log("SubMissions: SaveManSubMissions - Save is corrupted!");
-                return;
-            }
-            if (save.ModularMonuments != null)
-                ManModularMonuments.LoadAll(save.ModularMonuments);
             if (save.SubMissionTrees.Count > ManSubMissions.SubMissionTrees.Count)
             {
                 Debug.Log("SubMissions: SaveManSubMissions - Tree counts are wrong! There are missing trees!");
@@ -355,14 +269,8 @@ namespace Sub_Missions
 
                 Name = mission.Name,
                 SelectedAltName = mission.SelectedAltName,
-                SelectedAltDesc = mission.Description,
                 Faction = mission.Faction,
-
-                TilePos = mission.TilePos,
-                OffsetFromTile = mission.OffsetFromTile,
-                NeedsFirstInit = mission.ActiveState == SubMissionLoadState.NeedsFirstInit,
-
-                CurrentProgressID = mission.CurrentProgressID,
+                Position = mission.Position,
 
                 TrackedTechs = mission.TrackedTechs,
                 VarTrueFalse = mission.VarTrueFalse,
@@ -393,17 +301,11 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    Debug.Log("SubMissions: SaveManSubMissions - Missing step " + treeSaved.StepType + ", ID " + treeSaved.ProgressID + " from save!  \n  The mission may handle strangely as it was changed!");
+                    Debug.Log("SubMissions: SaveManSubMissions - Missing step " + treeSaved.StepType + ", ID " + treeSaved.ProgressID + " from save!  \n  The mission may handle strangely!");
                 }
             }
             mission.SelectedAltName = missionLoad.SelectedAltName;
-            mission.Description = missionLoad.SelectedAltDesc;
-
-            mission.TilePos = missionLoad.TilePos;
-            mission.OffsetFromTile = missionLoad.OffsetFromTile;
-            mission.ActiveState = missionLoad.NeedsFirstInit ? SubMissionLoadState.NeedsFirstInit : SubMissionLoadState.PositionSetReady;
-
-            mission.CurrentProgressID = missionLoad.CurrentProgressID;
+            mission.Position = missionLoad.Position;
 
             mission.TrackedTechs = missionLoad.TrackedTechs;
             mission.VarTrueFalse = missionLoad.VarTrueFalse;
@@ -416,7 +318,7 @@ namespace Sub_Missions
     // Save compiling - only need the relivant matters
     public class SubMissionStepSave
     {   // Grab some key details 
-        public SMStepType StepType = SMStepType.ActSpeak;           // The type this is
+        public SMissionType StepType = SMissionType.ActSpeak;           // The type this is
 
         public int ProgressID = 0;          // progress ID this runs on
         public int SuccessProgressID = 0;   // transfer to this when successful
@@ -428,12 +330,8 @@ namespace Sub_Missions
     {   //  Build the mission!
         public string Name = "Unset";
         public string SelectedAltName;
-        public string SelectedAltDesc;
         public string Faction = "GSO";
-
-        public IntVector2 TilePos = Vector2.zero;
-        public Vector3 OffsetFromTile = Vector3.zero;
-        public bool NeedsFirstInit = false;
+        public Vector3 Position = Vector3.zero;
 
         public int CurrentProgressID = 0;     // EXTREMELY IMPORTANT - determines the state the mission is at!
 
@@ -465,7 +363,5 @@ namespace Sub_Missions
         public int SelectedAnon;
 
         public List<ManSubMissionTreeSave> SubMissionTrees = new List<ManSubMissionTreeSave>();
-
-        public List<ModularMonumentSave> ModularMonuments = new List<ModularMonumentSave>();
     }
 }

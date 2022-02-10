@@ -7,8 +7,6 @@ using UnityEngine;
 using TAC_AI.Templates;
 using Sub_Missions.Steps;
 using Sub_Missions.ManWindows;
-using System.IO;
-using Snapshots;
 
 namespace Sub_Missions
 {
@@ -87,44 +85,18 @@ namespace Sub_Missions
 
             return input;
         }
-        public static Vector3 SetPosTerrain(ref Vector3 input, Vector3 missionOriginScene, int terrainHanding)
+        public static Vector3 SetPosTerrain(ref Vector3 input, bool Grounded = true)
         {
-            switch (terrainHanding)
-            {
-                case 1:
-                    input += missionOriginScene;
-                    if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(input, out float height))
-                    {
-                        if (height > input.y)
-                            input.y = height;
-                    }
-                    break;
-                case 2:
-                    input += missionOriginScene.SetY(0);
-                    input = VectorOnTerrain(input, input.y);
-                    break;
-                case 3:
-                    input += missionOriginScene.SetY(0);
-                    input = VectorOnTerrain(input, 0);
-                    break;
-                default:
-                    input += missionOriginScene;
-                    break;
-            }
+            if (Grounded)
+                input = VectorOnTerrain(input, 0);
+            else
+                input = VectorOnTerrain(input, input.y);
 
             return input;
         }
-
+        
 
         // PLAYER
-        public static float GetPlayerDist(Vector3 scenePos)
-        {
-            try
-            {
-                return (scenePos - PlayerTank.rootBlockTrans.position).magnitude;
-            }
-            catch { return 900000; }// probably was destroyed
-        }
         public static bool IsPlayerInRangeOfPos(Vector3 Pos, float distance)
         {
             try
@@ -152,14 +124,6 @@ namespace Sub_Missions
 
 
         // ETC
-        public static bool IsTechInRangeOfPos(Tank tech, Vector3 Pos, float distance)
-        {
-            try
-            {
-                return (Pos - tech.rootBlockTrans.position).magnitude <= distance;
-            }
-            catch { return false; }// probably was destroyed
-        }
         public static void ShiftCurrentID(ref int currentID, int StepID, bool invertShift)
         {
             if (invertShift)
@@ -181,109 +145,111 @@ namespace Sub_Missions
         public static void ProceedID(ref SubMissionStep Step)
         {
             Step.Mission.CurrentProgressID = Step.SuccessProgressID;
-            Debug.Log("SubMissions: ProceedID - Mission " + Step.Mission.Name + " has moved on to ID " + Step.Mission.CurrentProgressID);
-            if (ManNetwork.IsNetworked && ManNetwork.IsHost)
-            {
-                //NetworkHandler
-            }
         }
         public static void ConcludeGlobal1(ref SubMissionStep Step)
         {
-            if (ManNetwork.IsNetworked && !ManNetwork.IsHost)
-                return; // only host does variable updates
             try
             {
-                int setVal = Step.SetMissionVarIndex1;
-                HandleVariables(ref Step, setVal);
+                int setVal = Step.SetGlobalIndex1;
+                switch (Step.VaribleType)
+                {
+                    case EVaribleType.Int: //
+                        Step.Mission.VarInts[setVal] = (int)Step.InputNum;
+                        break;
+                    case EVaribleType.False: //
+                        Step.Mission.VarTrueFalse[setVal] = false;
+                        break;
+                    case EVaribleType.True: //
+                        Step.Mission.VarTrueFalse[setVal] = true;
+                        break;
+                    case EVaribleType.DoSuccessID: // 
+                        ProceedID(ref Step);
+                        break;
+                    case EVaribleType.None: // 
+                    default:
+                        break;
+                }
             }
             catch
             {
-                Assert(true, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, "SubMissions: Error in output [SetGlobalIndex1] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
         public static void ConcludeGlobal2(ref SubMissionStep Step)
         {
-            if (ManNetwork.IsNetworked && !ManNetwork.IsHost)
-                return; // only host does variable updates
             try
             {
-                int setVal = Step.SetMissionVarIndex2;
-                HandleVariables(ref Step, setVal);
+                int setVal = Step.SetGlobalIndex2;
+                switch (Step.VaribleType)
+                {
+                    case EVaribleType.Int: //
+                        Step.Mission.VarInts[setVal] = (int)Step.InputNum;
+                        break;
+                    case EVaribleType.False: //
+                        Step.Mission.VarTrueFalse[setVal] = false;
+                        break;
+                    case EVaribleType.True: //
+                        Step.Mission.VarTrueFalse[setVal] = true;
+                        break;
+                    case EVaribleType.DoSuccessID: // 
+                        ProceedID(ref Step);
+                        break;
+                    case EVaribleType.None: // 
+                    default:
+                        break;
+                }
             }
             catch
             {
-                Assert(true, "SubMissions: Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, "SubMissions: Error in output [SetGlobalIndex2] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
             }
         }
         public static void ConcludeGlobal3(ref SubMissionStep Step)
         {
-            if (ManNetwork.IsNetworked && !ManNetwork.IsHost)
-                return; // only host does variable updates
             try
             {
-                int setVal = Step.SetMissionVarIndex3;
-                HandleVariables(ref Step, setVal);
-            }
-            catch
-            {
-                Assert(true, "SubMissions: Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
-            }
-        }
-        public static void HandleVariables(ref SubMissionStep Step, int setVal)
-        {
-            switch (Step.VaribleType)
-            {
-                case EVaribleType.Int: //
-                    if (setVal < 0)
-                        return; // that means it's not being used
-                    Step.Mission.VarInts[setVal] = (int)Step.VaribleCheckNum;
-                    break;
-                case EVaribleType.False: //
-                    if (setVal < 0)
-                        return; // that means it's not being used
-                    Step.Mission.VarTrueFalse[setVal] = false;
-                    break;
-                case EVaribleType.True: //
-                    if (setVal < 0)
-                        return; // that means it's not being used
-                    Step.Mission.VarTrueFalse[setVal] = true;
-                    break;
-                case EVaribleType.DoSuccessID: // 
-                    ProceedID(ref Step);
-                    break;
-                case EVaribleType.None: // 
-                default:
-                    break;
-            }
-        }
-
-        /// <summary>
-        /// Only uses the first GlobalIndex
-        /// </summary>
-        /// <param name="Step"></param>
-        /// <returns></returns>
-        public static bool BoolOut(ref SubMissionStep Step)
-        {
-            return BoolOut(ref Step, Step.SetMissionVarIndex1);
-        }
-        public static bool BoolOut(ref SubMissionStep Step, int GlobalIndex)
-        {
-            try
-            {
-                if (GlobalIndex < 0)
-                    return true; // that means it's not being used
+                int setVal = Step.SetGlobalIndex3;
                 switch (Step.VaribleType)
                 {
                     case EVaribleType.Int: //
-                        return Step.Mission.VarInts[GlobalIndex] == (int)Step.VaribleCheckNum;
-                    case EVaribleType.IntGreaterThan: //
-                        return Step.Mission.VarInts[GlobalIndex] > (int)Step.VaribleCheckNum;
-                    case EVaribleType.IntLessThan: //
-                        return Step.Mission.VarInts[GlobalIndex] < (int)Step.VaribleCheckNum;
+                        Step.Mission.VarInts[setVal] = (int)Step.InputNum;
+                        break;
                     case EVaribleType.False: //
-                        return Step.Mission.VarTrueFalse[GlobalIndex] == false;
+                        Step.Mission.VarTrueFalse[setVal] = false;
+                        break;
                     case EVaribleType.True: //
-                        return Step.Mission.VarTrueFalse[GlobalIndex] == true;
+                        Step.Mission.VarTrueFalse[setVal] = true;
+                        break;
+                    case EVaribleType.DoSuccessID: // 
+                        ProceedID(ref Step);
+                        break;
+                    case EVaribleType.None: // 
+                    default:
+                        break;
+                }
+            }
+            catch
+            {
+                Assert(true, "SubMissions: Error in output [SetGlobalIndex3] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+            }
+        }
+
+        public static bool BoolOut(ref SubMissionStep Step)
+        {
+            try
+            {
+                switch (Step.VaribleType)
+                {
+                    case EVaribleType.Int: //
+                        return Step.Mission.VarInts[Step.SetGlobalIndex1] == (int)Step.InputNum;
+                    case EVaribleType.IntGreaterThan: //
+                        return Step.Mission.VarInts[Step.SetGlobalIndex1] > (int)Step.InputNum;
+                    case EVaribleType.IntLessThan: //
+                        return Step.Mission.VarInts[Step.SetGlobalIndex1] < (int)Step.InputNum;
+                    case EVaribleType.False: //
+                        return Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] == false;
+                    case EVaribleType.True: //
+                        return Step.Mission.VarTrueFalse[Step.SetGlobalIndex1] == true;
                     case EVaribleType.None: // 
                     default:
                         return true;
@@ -298,8 +264,6 @@ namespace Sub_Missions
 
         /// <summary>
         /// FIRES INSTANTLY NO MATTER WHAT
-        /// Supports normal snapshots in the folder but performance will suffer on lower-end computers.  
-        /// Snapshots are usually cached on first load.
         /// </summary>
         /// <param name="mission"></param>
         /// <param name="pos"></param>
@@ -308,68 +272,16 @@ namespace Sub_Missions
         /// <param name="TechName"></param>
         /// <returns></returns>
         public static Tank SpawnTechAuto(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
-        {
-            // Load from folder
-            string dest = "Custom SMissions" + SMissionJSONLoader.up +  mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-            //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
-            if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
-            {
-                return RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
-            }
-            else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
-            {   // Supports normal snapshots
-                if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)value, out TechData.SerializedSnapshotData data))
-                {
-                    ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
-                    {
-                        isInvulnerable = Team == 0,
-                        teamID = Team,
-                        blockIDs = null,
-                        isPopulation = Team == -1,
-                        techData = data.CreateTechData(),
-                        position = pos,
-                        rotation = Quaternion.LookRotation(facingDirect),
-                    };
-    
-                    return ManSpawn.inst.SpawnTank(spawn, true);
-                }
-            }
-
-            return null;
+        {   // Load from folder
+            return RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
         }
-
-
         public static string SpawnTechTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName, bool instant = false)
-        {   // We pull these from MissionTechs.json
+        {   // We pull these from MissionTechs.JSON
             Tank tech;
             if (instant)
-            {
-                string dest = "Custom SMissions" + SMissionJSONLoader.up + mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-                //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
-                if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
-                {
-                    tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
-                    SetTrackedTech(ref mission, tech);
-                }
-                else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
-                {   // Supports normal snapshots
-                    if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)value, out TechData.SerializedSnapshotData data))
-                    {
-                        ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
-                        {
-                            isInvulnerable = Team == 0,
-                            teamID = Team,
-                            blockIDs = null,
-                            isPopulation = Team == -1,
-                            techData = data.CreateTechData(),
-                            position = pos,
-                            rotation = Quaternion.LookRotation(facingDirect),
-                        };
-
-                        SetTrackedTech(ref mission, ManSpawn.inst.SpawnTank(spawn, true));
-                        return TechName;
-                    }
-                }
+            { 
+                tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
+                SetTrackedTech(ref mission, tech);
             }
             else
             {
@@ -380,45 +292,11 @@ namespace Sub_Missions
             }
             return TechName;
         }
-        /// <summary>
-        /// Makes a FRESH NEW TrackedTech entry for the mission
-        /// </summary>
-        /// <param name="mission"></param>
-        /// <param name="pos"></param>
-        /// <param name="Team"></param>
-        /// <param name="facingDirect"></param>
-        /// <param name="TechName"></param>
-        /// <param name="instant"></param>
         public static void SpawnTechAddTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName, bool instant = false)
-        {   // We pull these from MissionTechs.json
-            TrackedTech tech = new TrackedTech(TechName, true);
-            tech.mission = mission;
+        {   // We pull these from MissionTechs.JSON
+            TrackedTech tech = new TrackedTech();
             if (instant)
-            {
-                string dest = "Custom SMissions" + SMissionJSONLoader.up + mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-                //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
-                if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
-                {
-                    tech.Tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
-                }
-                else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
-                {   // Supports normal snapshots
-                    if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)value, out TechData.SerializedSnapshotData data))
-                    {
-                        ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
-                        {
-                            isInvulnerable = Team == 0,
-                            teamID = Team,
-                            blockIDs = null,
-                            isPopulation = Team == -1,
-                            techData = data.CreateTechData(),
-                            position = pos,
-                            rotation = Quaternion.LookRotation(facingDirect),
-                        };
-                        tech.Tech = ManSpawn.inst.SpawnTank(spawn, true);
-                    }
-                }
-            }
+                tech.Tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
             else
             {
                 tech.delayedSpawn = ManSpawn.inst.SpawnDeliveryBombNew(pos, DeliveryBombSpawner.ImpactMarkerType.Tech);

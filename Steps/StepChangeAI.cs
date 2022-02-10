@@ -12,46 +12,9 @@ namespace Sub_Missions.Steps
 {
     public class StepChangeAI : SMissionStep
     {
-        public override string GetDocumentation()
-        {
-            return
-                "{  // Existing Tech AI changer (REQUIRES TACTICAL AI TO HAVE AN IMPACT [vanilla does not have much control])" +
-                  "\n  \"StepType\": \"ChangeAI\"," +
-                  "\n  \"ProgressID\": 0,             // " + StepDesc +
-                  "\n  // Conditions TO CHECK before executing" +
-                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
-                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
-                  "\n  \"SetMissionVarIndex1\": -1,       // The index that is checked against VaribleType to tell if it should execute." +
-                  "\n  // Input Parameters" +
-                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to change." +
-                  "\n  \"InputStringAux\": null,      // Changes mindsets of the AI (ABCDE)" +
-                  "\n  // A = EnemyHandling" +
-                  "\n  // B = EnemyAttack" +
-                  "\n  // C = EnemyAttitude" +
-                  "\n  // D = EnemySmarts" +
-                  "\n  // E = EnemyBolts" +
-                "\n},";
-        }
+        public override void TrySetup()
+        {  
 
-        public override void OnInit() { }
-
-        public override void FirstSetup()
-        {
-            try
-            {
-                TrackedTech tTech = SMUtil.GetTrackedTechBase(ref Mission, SMission.InputString);
-                if (tTech.Tech.GetComponent<EnemyMind>())
-                {
-                    EnemyMind mind = tTech.Tech.GetComponent<EnemyMind>();
-                    IntToEnemyAI(ref mind, (int)SMission.InputNum);
-                }
-            }
-            catch //(Exception e)
-            {   // Cannot work without TACtical_AI
-                //SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
-                //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                //Debug.Log("SubMissions: Error - " + e);
-            }
         }
         public override void Trigger()
         {   
@@ -64,26 +27,24 @@ namespace Sub_Missions.Steps
                     {
                         EnemyMind mind = tTech.Tech.GetComponent<EnemyMind>();
                         IntToEnemyAI(ref mind, (int)SMission.InputNum);
-                        /*
                         try
                         {
-                            if (SMission.InputStringAux != null && SMission.InputStringAux.Length > 0)
+                            if (SMission.InputStringAux != "" || SMission.InputStringAux != null)
                             {   // allow the AI to change it's form on demand
                                 mind.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToMemoryExternal(SMission.InputStringAux));
                             }
                         }
-                        catch { }*/
+                        catch { }
                     }
                     else
-                    {   // it's allied  (OBSOLETE - HANDLED BY StepTransformTech now)
-                        /*
+                    {   // it's allied 
                         AIECore.TankAIHelper help = tTech.Tech.GetComponent<AIECore.TankAIHelper>();
                         if (help.AIState == 1)
                         {   // it's allied 
                             help.DediAI = (AIType)(int)SMission.InputNum;
                             try
                             {
-                                if (SMission.InputStringAux != null && SMission.InputStringAux.Length > 0)
+                                if (SMission.InputStringAux != "" || SMission.InputStringAux != null)
                                 {   // allow the AI to change it's form on demand
                                     help.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToMemoryExternal(SMission.InputStringAux));
                                 }
@@ -94,13 +55,13 @@ namespace Sub_Missions.Steps
                         {   // it's neutral
                             try
                             {
-                                if (SMission.InputStringAux != null && SMission.InputStringAux.Length > 0)
+                                if (SMission.InputStringAux != "" || SMission.InputStringAux != null)
                                 {   // allow the AI to change it's form on demand
                                     help.TechMemor.MemoryToTech(AIERepair.DesignMemory.JSONToMemoryExternal(SMission.InputStringAux));
                                 }
                             }
                             catch { }
-                        }*/
+                        }
                     }
                 }
                 catch //(Exception e)
@@ -146,9 +107,6 @@ namespace Sub_Missions.Steps
                 }
                 position++;
             }
-        }
-        public override void OnDeInit()
-        {
         }
     }
 }

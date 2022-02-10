@@ -14,7 +14,8 @@ namespace Sub_Missions
         Int,
         IntGreaterThan,
         IntLessThan,
-        //SetPosition,
+        Float,
+        SetPosition,
         DoSuccessID,
     }
 }

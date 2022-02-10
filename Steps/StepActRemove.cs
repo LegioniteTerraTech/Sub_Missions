@@ -10,28 +10,7 @@ namespace Sub_Missions.Steps
 {
     public class StepActRemove : SMissionStep
     {
-        public override string GetDocumentation()
-        {
-            return
-                "{  // Destroys existing TrackedTechs" +
-                  "\n  \"StepType\": \"ActRemove\"," +
-                  "\n  \"ProgressID\": 0,             // " + StepDesc +
-                  "\n  // Conditions TO CHECK before executing" +
-                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
-                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
-                  "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
-                  "\n  // Input Parameters" +
-                  "\n  \"InputNum\": 0.0,             // Greater than 2 to explode, 0 to remove immedeately" +
-                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to remove." +
-                "\n},";
-        }
-
-        public override void OnInit() { }
-
-        public override void OnDeInit()
-        {
-        }
-        public override void FirstSetup()
+        public override void TrySetup()
         {
         }
         public override void Trigger()

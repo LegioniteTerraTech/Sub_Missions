@@ -65,7 +65,6 @@ namespace Sub_Missions.ManWindows
                 }
             }
             GUI.DragWindow();
-            WindowManager.KeepWithinScreenBounds(Display);
         }
 
         public void DelayedUpdate()

@@ -56,7 +56,7 @@ namespace Sub_Missions
      *         If a Step's ProgressID is set to -999, it will update all the time regardless of the CurrentProgressID.
      *     
      */
-    public class ManSubMissions : MonoBehaviour, IWorldTreadmill
+    public class ManSubMissions : MonoBehaviour
     {   // Handle non-Payload missions here
         public static ManSubMissions inst;
 
@@ -93,14 +93,9 @@ namespace Sub_Missions
         public static float timer = 0;
         public static float timerSecondsDelay = 1;
 
-        public static Dictionary<int, GameObject> WorldObjects => ManModularMonuments.WorldObjects;
 
-
-
-        public const float MinLoadedSpawnDist = 250;
-        public const float MaxLoadedSpawnDist = 400;
-        public const float LoadCheckDist = 600;
-        public const float MaxUnloadedSpawnDist = 1250;
+        public const float MinSpawnDist = 250;
+        public const float MaxSpawnDist = 400;
 
 
         // Setup
@@ -112,17 +107,12 @@ namespace Sub_Missions
         public static void Subscribe()
         {
             if (!Subscribed)
-            {
-                KickStart.FullyLoadedGame = true;
-                Singleton.Manager<ManGameMode>.inst.ModeStartEvent.Subscribe(ModeLoad);
-                Singleton.Manager<ManGameMode>.inst.ModeFinishedEvent.Subscribe(ModeFinished);
+            {;
+                Singleton.Manager<ManGameMode>.inst.ModeStartEvent.Subscribe(LoadSubMissionsFromSave);
+                Singleton.Manager<ManGameMode>.inst.ModeFinishedEvent.Subscribe(SaveSubMissionsToSave);
                 Singleton.Manager<ManTechs>.inst.TankDestroyedEvent.Subscribe(BroadcastTechDeath);
-                Singleton.Manager<ManWorld>.inst.TileManager.TilePopulatedEvent.Subscribe(OnTileLoaded);
-                Singleton.Manager<ManWorld>.inst.TileManager.TileDepopulatedEvent.Subscribe(OnTileUnloaded);
-                Singleton.Manager<ManWorldTreadmill>.inst.AddListener(inst);
-                WindowManager.LateInitiate();
 
-                WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.MicroWindow);
+                WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.TinyWindow);
 
                 if (KickStart.Debugger)
                     WindowManager.ShowPopup(new Vector2(0.8f, 1));
@@ -157,7 +147,6 @@ namespace Sub_Missions
                 else
                     SMUtil.Assert(false, "SubMissions: Failed to compress tree " + tree.TreeName + " properly, unable to push to ManSubMissions...");
             }
-            SMissionJSONLoader.BuildAllWorldObjects(trees);
             GetAllPossibleMissions();
         }
         public void GetAllPossibleMissions()
@@ -168,56 +157,7 @@ namespace Sub_Missions
             {
                 anonSubMissions.AddRange(tree.GetReachableMissions());
             }
-            UpdateImmediateMissions();
-            //SaveSubMissionsToSave();
-        }
-        public void UpdateImmediateMissions()
-        {
-            if (KickStart.OverrideRestrictions)
-                return;
-            Debug.Log("SubMissions: Fetching available ImmediateMissions...");
-            foreach (SubMissionTree tree in SubMissionTrees)
-            {
-                List<SubMissionStandby> nowMissions = tree.GetImmediateMissions();
-
-                foreach (SubMissionStandby nM in nowMissions)
-                {
-                    Debug.Log("SubMissions: Forcing mission " + nM.AltName + " to active");
-                    tree.AcceptTreeMission(nM);
-                }
-            }
-        }
-
-        public void OnMoveWorldOrigin(IntVector3 moveDist)
-        {
-            foreach (SubMission step in activeSubMissions)
-            {
-                step.OnMoveWorldOrigin(moveDist);
-            }
-        }
-        public static void OnTileLoaded(WorldTile WT)
-        {
-            ManModularMonuments.LoadAllAtTile(WT.Coord);
-            foreach (SubMission step in activeSubMissions)
-            {
-                if (step.ActiveState == SubMissionLoadState.NeedsFirstInit)
-                {
-                    step.CheckIfCanSpawn();
-                }
-                else if (WT.Coord == step.TilePos)
-                    if (!step.IsActive || step.IgnorePlayerProximity)
-                        step.CheckForReSync();
-            }
-        }
-        public static void OnTileUnloaded(WorldTile WT)
-        {
-            foreach (SubMission step in activeSubMissions)
-            {
-                if (WT.Coord == step.TilePos)
-                    if (step.IsActive && !step.IgnorePlayerProximity)
-                        step.PauseAndUnload();
-            }
-            ManModularMonuments.UnloadAllAtTile(WT.Coord);
+            SaveSubMissionsToSave();
         }
 
         public static SubMissionTree GetTree(string treeName)
@@ -230,7 +170,7 @@ namespace Sub_Missions
 
         // Missions
         public void AcceptMission()
-        {   // We bite the bullet and insure the file has been marked tampered with - because it was
+        {   // We bite the bullet and insure the file has been marked tampered wth - because it was
             Singleton.Manager<ManSaveGame>.inst.CurrentState.m_FileHasBeenTamperedWith = true;
             SelectedAnon.Tree.AcceptTreeMission(SelectedAnon);
             SelectedIsAnon = false;
@@ -243,7 +183,7 @@ namespace Sub_Missions
         {
             foreach (SubMission sub in ActiveSubMissions)
             {
-                sub.CheckForReSync();
+                sub.ReSync();
             }
         }
 
@@ -262,16 +202,14 @@ namespace Sub_Missions
         }
         public void CheckKeyCombos()
         {
-            if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKeyDown(KeyCode.M))
+            if (Input.GetKey(KeyCode.LeftShift) && Input.GetKeyDown(KeyCode.M))
             {
-                if (Input.GetKey(KeyCode.LeftControl))
+                if (Input.GetKey(KeyCode.LeftAlt))
                 {
-                    Debug.Log("SubMissions: Key combination pressed!!");
-                    //ManSMCCorps.ReloadAllCorps(); // Disabled as it's broken... for now.
                     HarvestAllTrees();
                     LoadSubMissionsFromSave();
                 }
-                if (Input.GetKey(KeyCode.LeftShift))
+                if (Input.GetKey(KeyCode.LeftControl))
                 {
                     SMUtil.PushErrors();
                 }
@@ -281,25 +219,22 @@ namespace Sub_Missions
         // UPDATE
         public void Update()
         {
-
-            if (SMCCorpLicense.needsToRenderSkins)
-            {
-                SMCCorpLicense.TryReRenderCSIBacklog();
-            }
-
             UpdateAllSubMissions();
             timer += Time.deltaTime;
             if (timer >= timerSecondsDelay)
             {
                 timer = 0;
 
-                foreach (SubMission step in activeSubMissions)
-                    step.UpdateDistance();
-
                 if (!ActiveSubMissions.Contains(Selected))
+                {
                     Selected = null;
+                    return;
+                }
                 if (!AnonSubMissions.Contains(SelectedAnon))
+                {
                     SelectedAnon = null;
+                    return;
+                }
             }
             CheckKeyCombos();
         }
@@ -345,52 +280,9 @@ namespace Sub_Missions
 
 
         //Saving
-        private static void ClearAllActiveSubMissionsForUnload()
-        {
-            foreach (SubMission SM in activeSubMissions)
-            {
-                SM.Cleanup(true);
-            }
-            activeSubMissions.Clear();
-        }
         public static List<SubMission> GetAllActiveSubMissions()
         {
             return activeSubMissions;
-        }
-        public static void ModeLoad(Mode mode)
-        {
-            if (mode is ModeMain || mode is ModeMisc)
-            {
-                IgnoreSaveThisSession = false;
-                Debug.Log("SubMissions: ManSubMissions Loading from save!");
-                PurgeAllTrees();
-                SaveManSubMissions.LoadDataAutomatic();
-                inst.GetAllPossibleMissions();
-                WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
-                WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
-            }
-            else
-            {
-                if (!KickStart.Debugger)
-                {
-                    WindowManager.HidePopup(Button);
-                    WindowManager.HidePopup(SideUI);
-                }
-            }
-        }
-        public static void ModeFinished(Mode mode)
-        {
-            if (mode is ModeMain && !IgnoreSaveThisSession)
-            {
-                var saver = Singleton.Manager<ManSaveGame>.inst;
-                if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
-                {
-                    Debug.Log("SubMissions: ManSubMissions Saving!");
-                    SaveManSubMissions.SaveDataAutomatic();
-                }
-            }
-            ClearAllActiveSubMissionsForUnload();
-            ManModularMonuments.PurgeAllActive();
         }
         public static void SaveSubMissionsToSave()
         {
@@ -407,6 +299,18 @@ namespace Sub_Missions
                 }
             }
             catch { }
+        }
+        public static void SaveSubMissionsToSave(Mode mode)
+        {
+            if (mode is ModeMain && !IgnoreSaveThisSession)
+            {
+                var saver = Singleton.Manager<ManSaveGame>.inst;
+                if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
+                {
+                    Debug.Log("SubMissions: ManSubMissions Saving!");
+                    SaveManSubMissions.SaveDataAutomatic();
+                }
+            }
         }
         public static void LoadSubMissionsFromSave()
         {
@@ -429,6 +333,26 @@ namespace Sub_Missions
                 }
             }
         }
-
+        public static void LoadSubMissionsFromSave(Mode mode)
+        {
+            if (mode is ModeMain)
+            {
+                IgnoreSaveThisSession = false;
+                Debug.Log("SubMissions: ManSubMissions Loading from save!");
+                PurgeAllTrees();
+                SaveManSubMissions.LoadDataAutomatic();
+                inst.GetAllPossibleMissions();
+                WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+            }
+            else
+            {
+                if (!KickStart.Debugger)
+                {
+                    WindowManager.HidePopup(Button);
+                    WindowManager.HidePopup(SideUI);
+                }
+            }
+        }
     }
 }

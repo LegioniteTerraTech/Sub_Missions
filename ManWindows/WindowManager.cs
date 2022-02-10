@@ -21,13 +21,10 @@ namespace Sub_Missions.ManWindows
         public static Rect WideWindow = new Rect(0, 0, 700, 180);
         public static Rect SideWindow = new Rect(0, 0, 200, 125);
         public static Rect TinyWindow = new Rect(0, 0, 160, 75);
-        public static Rect MicroWindow = new Rect(0, 0, 110, 40);
         public static Rect TinyWideWindow = new Rect(0, 0, 260, 100);
         public static Rect SmallWindow = new Rect(0, 0, 160, 120);
 
         //public static GUIStyle styleSmallFont;
-        public static GUIStyle styleDescFont;
-        public static GUIStyle styleDescLargeFont;
         public static GUIStyle styleLargeFont;
         public static GUIStyle styleHugeFont;
         public static GUIStyle styleGinormusFont;
@@ -54,10 +51,6 @@ namespace Sub_Missions.ManWindows
             inst = Instantiate(new GameObject()).AddComponent<WindowManager>();
             Debug.Log("SubMissions: WindowManager initated");
         }
-        public static void LateInitiate()
-        {
-            ManPauseGame.inst.PauseEvent.Subscribe(inst.SetVisibilityOfAllPopups);
-        }
         public static void SetCurrentPopup(GUIPopupDisplay disp)
         {
             if (AllPopups.Contains(disp))
@@ -73,16 +66,6 @@ namespace Sub_Missions.ManWindows
         {
             return currentGUIWindow;
         }
-        public static void KeepWithinScreenBounds(GUIPopupDisplay disp)
-        {
-            disp.Window.x = Mathf.Clamp(disp.Window.x, 0, Display.main.renderingWidth - disp.Window.width);
-            disp.Window.y = Mathf.Clamp(disp.Window.y, 0, Display.main.renderingHeight - disp.Window.height);
-        }
-        public static void KeepWithinScreenBoundsNonStrict(GUIPopupDisplay disp)
-        {
-            disp.Window.x = Mathf.Clamp(disp.Window.x, 10 - disp.Window.width, Display.main.renderingWidth - 10);
-            disp.Window.y = Mathf.Clamp(disp.Window.y, 10 - disp.Window.height, Display.main.renderingHeight - 10);
-        }
         public static void ChangePopupPositioning(Vector2 screenPos, GUIPopupDisplay disp)
         {
             if (screenPos.x > 1)
@@ -92,15 +75,13 @@ namespace Sub_Missions.ManWindows
             disp.Window.x = (Display.main.renderingWidth - disp.Window.width) * screenPos.x;
             disp.Window.y = (Display.main.renderingHeight - disp.Window.height) * screenPos.y;
         }
-        public static bool DoesPopupExist(string title, GUISetTypes type, out GUIPopupDisplay exists)
+        public static bool DoesPopupExist(string title, GUISetTypes type)
         {
-            int hash = title.GetHashCode();
-            exists = AllPopups.Find(delegate (GUIPopupDisplay cand) 
+            return AllPopups.Exists(delegate (GUIPopupDisplay cand) 
             { 
-                return cand.context.GetHashCode() == hash && cand.type == type; 
+                return cand.context == title && cand.type == type; 
             }
             );
-            return exists;
         }
         public static GUIPopupDisplay GetPopup(string title, GUISetTypes type)
         {
@@ -114,30 +95,30 @@ namespace Sub_Missions.ManWindows
 
         public static bool AddPopupButton(string title, string buttonLabel, bool removeOnPress, string libFunctionName, object windowOverride = null)
         {
-            if (DoesPopupExist(title, GUISetTypes.Button, out GUIPopupDisplay exists))
+            if (DoesPopupExist(title, GUISetTypes.Button))
             {
-                SetCurrentPopup(exists);
-                RefreshPopup(exists, buttonLabel, removeOnPress, libFunctionName, windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.Button));
+                RefreshPopup(GetPopup(title, GUISetTypes.Button), buttonLabel, removeOnPress, libFunctionName, windowOverride);
                 return true;
             }
             return AddPopup(GUISetTypes.Button, title, buttonLabel, removeOnPress, libFunctionName, windowOverride: windowOverride);
         }
         public static bool AddPopupButtonDual(string title, string buttonLabel, bool removeOnPress, string libFunctionName, object windowOverride = null)
         {
-            if (DoesPopupExist(title, GUISetTypes.ButtonDual, out GUIPopupDisplay exists))
+            if (DoesPopupExist(title, GUISetTypes.ButtonDual))
             {
-                SetCurrentPopup(exists);
-                RefreshPopup(exists, buttonLabel, removeOnPress, libFunctionName, windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.ButtonDual));
+                RefreshPopup(GetPopup(title, GUISetTypes.ButtonDual), buttonLabel, removeOnPress, libFunctionName, windowOverride);
                 return true;
             }
             return AddPopup(GUISetTypes.ButtonDual, title, buttonLabel, removeOnPress, libFunctionName, windowOverride: windowOverride);
         }
         public static bool AddPopupButtonDual(string title, string buttonLabel, bool removeOnPress, StepActOptions options, object windowOverride = null)
         {
-            if (DoesPopupExist(title, GUISetTypes.ButtonDual, out GUIPopupDisplay exists))
+            if (DoesPopupExist(title, GUISetTypes.ButtonDual))
             {
-                SetCurrentPopup(exists);
-                RefreshPopup(exists, buttonLabel, removeOnPress, options, windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.ButtonDual));
+                RefreshPopup(GetPopup(title, GUISetTypes.ButtonDual), buttonLabel, removeOnPress, options, windowOverride);
                 return true;
             }
             return AddPopup(GUISetTypes.ButtonDual, title, buttonLabel, removeOnPress, options, windowOverride: windowOverride);
@@ -147,15 +128,15 @@ namespace Sub_Missions.ManWindows
         {
             return AddPopup(GUISetTypes.List, "<b>-- Sub Missions --</b>");
         }
-        public static bool AddPopupMessageScroll(string title, string message, float scrollSpeed = 0.02f, SMissionStep missionStep = null, object windowOverride = null)
+        public static bool AddPopupMessageScroll(string title, string message, float scrollSpeed = 0.02f, object windowOverride = null)
         {
-            if (DoesPopupExist(title, GUISetTypes.MessageScroll, out GUIPopupDisplay exists))
+            if (DoesPopupExist(title, GUISetTypes.MessageScroll))
             {
-                SetCurrentPopup(exists);
-                RefreshPopup(exists, message, scrollSpeed, missionStep, windowOverride: windowOverride);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.MessageScroll));
+                RefreshPopup(GetPopup(title, GUISetTypes.MessageScroll), message, scrollSpeed, windowOverride: windowOverride);
                 return true;
             }
-            return AddPopup(GUISetTypes.MessageScroll, title, message, scrollSpeed, missionStep, windowOverride: windowOverride);
+            return AddPopup(GUISetTypes.MessageScroll, title, message, scrollSpeed, windowOverride: windowOverride);
         }
         public static bool AddPopupMessageSide()
         {
@@ -163,10 +144,10 @@ namespace Sub_Missions.ManWindows
         }
         public static bool AddPopupMessage(string title, string message)
         {
-            if (DoesPopupExist(title, GUISetTypes.Message, out GUIPopupDisplay exists))
+            if (DoesPopupExist(title, GUISetTypes.Message))
             {
-                SetCurrentPopup(exists);
-                RefreshPopup(exists, message);
+                SetCurrentPopup(GetPopup(title, GUISetTypes.Message));
+                RefreshPopup(GetPopup(title, GUISetTypes.Message), message);
                 return true;
             }
             return AddPopup(GUISetTypes.Message, title, message);
@@ -336,46 +317,6 @@ namespace Sub_Missions.ManWindows
             return true;
         }
 
-        private static bool allPopupsOpen = true;
-        private static List<GUIPopupDisplay> PopupsClosed = new List<GUIPopupDisplay>();
-        public void SetVisibilityOfAllPopups(bool Closed)
-        {
-            bool isOpen = !Closed;
-            if (allPopupsOpen != isOpen)
-            {
-                allPopupsOpen = isOpen;
-                if (isOpen)
-                {
-                    foreach (GUIPopupDisplay disp in PopupsClosed)
-                    {
-                        try
-                        {
-                            disp.obj.SetActive(true);
-                            disp.isOpen = true;
-                        }
-                        catch { }
-                    }
-                    PopupsClosed.Clear();
-                }
-                else
-                {
-                    foreach (GUIPopupDisplay disp in AllPopups)
-                    {
-                        try
-                        {
-                            if (disp.obj.activeSelf)
-                            {
-                                disp.obj.SetActive(false);
-                                disp.isOpen = false;
-                                PopupsClosed.Add(disp);
-                            }
-                        }
-                        catch { }
-                    }
-                }
-            }
-        }
-
 
         private void Update()
         {
@@ -463,14 +404,14 @@ namespace Sub_Missions.ManWindows
                     break;
                 case GUISetTypes.MessageScroll:
                     GUIScrollMessage guiSet5 = new GUIScrollMessage();
-                    guiSet5.Setup(this, (string)val1, (float)val2, (SMissionStep)val3);
+                    guiSet5.Setup(this, (string)val1, (float)val2);
                     Window = WindowManager.WideWindow;
                     if (windowOverride != null)
                         Window = (Rect)windowOverride;
                     gui = guiSet5;
                     break;
                 case GUISetTypes.MessageSide:
-                    GUIMissionInfo guiSet6 = new GUIMissionInfo();
+                    GUIMessageSide guiSet6 = new GUIMessageSide();
                     guiSet6.Setup(this);
                     Window = WindowManager.SideWindow;
                     gui = guiSet6;
