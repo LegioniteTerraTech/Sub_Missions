@@ -23,7 +23,7 @@ namespace Sub_Missions
         public StringBuilder builder = new StringBuilder();
 
         [JsonIgnore]
-        private int tickdown = 2;
+        private float tickdown = 2;
         [JsonIgnore]
         private bool setToRemove = false;
 
@@ -39,7 +39,7 @@ namespace Sub_Missions
                             triggerCountdownRemoval = true;
                         break;
                     case VarType.IntOverInt:
-                        if (mission.VarInts[GlobalIndex] > mission.VarInts[GlobalIndex2])
+                        if (mission.VarInts[GlobalIndex] >= mission.VarInts[GlobalIndex2])
                             triggerCountdownRemoval = true;
                         break;
                 }
@@ -54,7 +54,7 @@ namespace Sub_Missions
                     {
                         mission.CheckList.Remove(this);
                     }
-                    tickdown--;
+                    tickdown -= Time.deltaTime;
                 }
             }
             catch 
@@ -97,7 +97,7 @@ namespace Sub_Missions
                         builder.Append("<b>!</b>");
                     break;
                 case VarType.IntOverInt:
-                    if (mission.VarInts[GlobalIndex] > mission.VarInts[GlobalIndex2])
+                    if (mission.VarInts[GlobalIndex] >= mission.VarInts[GlobalIndex2])
                         builder.Append("<b>✓</b>");
                     else
                         builder.Append("<b>"+ mission.VarInts[GlobalIndex] + "/" + mission.VarInts[GlobalIndex2] + "</b>");

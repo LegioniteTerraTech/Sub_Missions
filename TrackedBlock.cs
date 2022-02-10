@@ -15,6 +15,7 @@ namespace Sub_Missions
         [JsonIgnore]
         public SubMission mission;
 
+        public BlockTypes UnofficialBlockID = BlockTypes.GSOAIController_111;
         public string BlockName = "";
         public int blockID = 0;
 
@@ -47,6 +48,21 @@ namespace Sub_Missions
                 loaded = true;
             }
         }
+        public bool SpawnBlock(Vector3 scenePos)
+        {
+            if (Block)
+                return true;
+            if ((int)UnofficialBlockID < 1)
+            {
+                BlockName = ManSpawn.inst.GetBlockPrefab(UnofficialBlockID).name;
+            }
+            else
+            {
+                UnofficialBlockID = (BlockTypes)ManMods.inst.GetBlockID(BlockName);
+            }
+            Block = ManLooseBlocks.inst.HostSpawnBlock(UnofficialBlockID, scenePos, Quaternion.identity, true);
+            return block;
+        }
         public TankBlock TryFindMatchingBlock()
         {
             foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(Singleton.playerPos, 1000, new Bitfield<ObjectTypes>()))
@@ -58,7 +74,25 @@ namespace Sub_Missions
                     return vis.block;
                 }
             }
+            Visible blockUnloaded = ManSaveGame.inst.LookupSerializedVisible(blockID);
+            if (blockUnloaded)
+            {
+                if (!(bool)blockUnloaded.block)
+                {
+                    SMUtil.Assert(false, "SubMissions: TrackedBlock - ID DOES NOT MATCH SUBJECT TARGET");
+                    return null;
+                }
+                if (blockUnloaded == block.visible)
+                return blockUnloaded.block;
+            }
             return null;
+        }
+        public void Remove()
+        {
+            if (block)
+            {
+                ManLooseBlocks.inst.HostDestroyBlock(block);
+            }
         }
     }
 }

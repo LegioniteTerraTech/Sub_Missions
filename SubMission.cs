@@ -17,6 +17,8 @@ namespace Sub_Missions
         //    Core
         [JsonIgnore]
         internal SubMissionTree Tree;
+        [JsonIgnore]
+        public SubMissionType Type = SubMissionType.Basic;
 
         public string Name = "Unset";
         [JsonIgnore]
@@ -28,10 +30,22 @@ namespace Sub_Missions
         public List<string> AltDescs;
         public byte MinProgressX = 0;
         public byte MinProgressY = 0;
+        public bool SinglePlayerOnly = false;
+        public bool IgnorePlayerProximity = false;
         public bool ClearTechsOnClear = true;
+        public bool ClearModularMonumentsOnClear = true;
         public bool ClearSceneryOnSpawn = true;
-        public bool FixatePositionInWorld = false;
+        public SubMissionPosition SpawnPosition = SubMissionPosition.FarFromPlayer;
+
+        // GLOBAL
+        /// <summary>
+        /// The ScenePosition of the mission (If needed)
+        /// </summary>
         public Vector3 Position = Vector3.zero;
+        [JsonIgnore]
+        public Vector3 OffsetFromTile = Vector3.zero;
+        [JsonIgnore]
+        public IntVector2 TilePos = Vector2.zero;
 
 
         public List<MissionChecklist> CheckList; // MUST be set externally via JSON or built C# code!
@@ -44,12 +58,17 @@ namespace Sub_Missions
         //public List<Vector3> VarPositions = new List<Vector3>();    // MUST be set externally via JSON or built C# code!
 
         public List<TrackedTech> TrackedTechs;  // MUST be set externally via JSON or built C# code!
-
+        public List<TrackedBlock> TrackedBlocks;  // MUST be set externally via JSON or built C# code!
+        [JsonIgnore]
+        internal List<SMWorldObject> TrackedMonuments = new List<SMWorldObject>();
 
         public SubMissionReward Rewards; // MUST be set externally via JSON or built C# code!
 
-        public int UpdateSpeedMultiplier = 1; // DON'T TOUCH THIS unless you know EXACTLY what you are doing!
+        public float UpdateSpeedMultiplier = 1; // DON'T TOUCH THIS unless you know EXACTLY what you are doing!
         //  If this value is too high, there WILL be framerate and performance issues!
+
+        [JsonIgnore]
+        public float MissionDist = 1; // Keeps track of how far the mission is
 
         [JsonIgnore]
         private float updateLerp = 0;
@@ -59,7 +78,106 @@ namespace Sub_Missions
         internal int CurrentProgressID = 0;
         [JsonIgnore]
         private bool IsCleaningUp = false;
+        [JsonIgnore]
+        public SubMissionLoadState ActiveState = SubMissionLoadState.NotAvail;
+        /// <summary>
+        /// SubMission is FULLY loaded
+        /// </summary>
+        [JsonIgnore]
+        public bool IsActive => ActiveState == SubMissionLoadState.Loaded;
+        [JsonIgnore]
+        private bool Corrupted = false;
 
+
+        public Vector3 GetWorldPosition()
+        {
+            return OffsetFromTile + ManWorld.inst.TileManager.CalcTileCentre(TilePos);
+        }
+        public static string GetDocumentation()
+        {
+            return
+                 "*   SubMission Missions Syntax" +
+                 "\n*       EventList - handles the Steps in order from top to bottom, and repeats if nesseary"+
+                 "\n*"+
+                 "\n*       There are variables you can add and reference around the case of the entire mission;"+
+                 "\n*       VarTrueFalse, VarInts, VarFloats can be called and pooled later on"+
+                 "\n*       Proper syntax for this would be:"+
+                 "\n*       \"VarTrueFalse\" :{"+
+                 "\n*          false, // Is Target destroyed?"+
+                 "\n*          false, // PlayerIsAlive"+
+                 "\n*          false, // PlayerIsAlive"+
+                 "\n*          true,  // PlayerIsAlive"+
+                 "\n*       }"+
+                 "\n*" +
+                 "\n*      Variables with \"Global\" attached to the beginning:"+
+                 "\n*       To re-reference these (Entire-SubMission level Varibles), in the step's trigger, make sure to "+
+                 "\n*       reference the Zero-Based-Index in the respective mission slot to reference the variable."+
+                 "\n*       Zero-Based-Index [0,1,2]  (normal is [1,2,3])"+
+                 "\n*" +
+                 "\n*       Each Step has a Progress ID, which tells the SubMission where to iterate to."+
+                 "\n*         When a branch ID is set, the values adjacent of it will still be triggered"+
+                 "\n*         this it to allow some keep features to still work like slightly changing the ProgressID to deal with"+
+                 "\n*         players leaving the mission area"+
+                 "\n*         If the CurrentProgressID is '1', the mission will run the Steps in [0,1,2]"+
+                 "\n*" +
+                 "\n*         Steps with a capital \"S\" at the end can offset Step. It is suggested that you only use one step with"+
+                 "\n*         per ProgressID."+
+                 "\n*" +
+                 "\n*         On success, the CurrentProgressID will be set to -98 and do one last loop." +
+                 "\n*         On fail, the CurrentProgressID will be set to -100 and do one last loop."+
+                 "\n*" +
+                 "\n*         If a Step's ProgressID is set to -999, it will update all the time regardless of the CurrentProgressID."+
+                 "\n*" +
+                 "\n{  // Holds ONE whole mission" +
+                  "\n  \"Name\": \"ExampleMission\",     // Must be the same as the file name (leave out the file extension)" +
+                  "\n  \"AltNames\": {  // alternate names for the mission (advised for repeating missions)" +
+                  "\n     \"AltName1\"," +
+                  "\n     \"AltName2\"," +
+                  "\n  },             // " +
+                  "\n  \"Description\": \"This mission is an example\",      // The default description for the mission" +
+                  "\n  \"Position\": {  // The position where this is handled relative to the WORLD's origin." +
+                  "\n    \"x\": 0.0," +
+                  "\n    \"y\": 0.0," +
+                  "\n    \"z\": 0.0" +
+                  "\n  }, //  Note that missions on spawn will always point north." +
+                  "\n  \"Faction\": \"GSO\",      // The corporation to affiliate the mission with" +
+                  "\n  \"GradeRequired\": 0,  // The minimum grade required to have this mission appear" +
+                  "\n  // Conditions TO CHECK before executing" +
+                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
+                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
+                  "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
+                  "\n  // Input Parameters" +
+                  "\n  \"InputNum\": 0.0,             // The Team to set the Tech to if \"InputStringAux\" is set to team" +
+                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to change." +
+                  "\n  \"InputStringAux\": null,      // What to change on the Tracked Tech, or the Tech to swap to." +
+                 "\n},";
+        }
+
+        public void OnMoveWorldOrigin(IntVector3 moveDist)
+        {
+            //Position += moveDist;
+            foreach (SubMissionStep step in GetAllEvents())
+            {
+                step.UpdatePosition(moveDist);
+            }
+        }
+        public void CheckForReSync()
+        {
+            if (!IsActive)
+                ReSync();
+        }
+        public void PauseAndUnload()
+        {
+            ActiveState = SubMissionLoadState.PositionSetReady;
+            foreach (SMWorldObject SMWO in TrackedMonuments)
+            {
+                SMWO.Remove(false);
+            }
+            foreach (SubMissionStep step in GetAllEvents())
+            {
+                step.UnloadStep();
+            }
+        }
 
         public void GetAndSetDisplayName()
         {   // 
@@ -77,64 +195,169 @@ namespace Sub_Missions
                 SelectedAltName = check;
             }
         }
+        
+        [JsonIgnore]
+        private float minRange = 0;
+        /// <summary>
+        /// MUST BE ACTIVATED ON A NON-ACTIVE 
+        /// </summary>
+        /// <returns></returns>
         public float GetMinimumLoadRange()
         {   // 
-            float minRange = 0;
-            foreach (SubMissionStep step in EventList)
+            if (minRange == 0)
             {
-                float mag = step.Position.magnitude;
-                if (mag > minRange)
-                    minRange = mag;
+                if (IsActive)
+                {
+                    SMUtil.Assert(false, "SubMissions: " + Name + " - GetMinimumLoadRange was called after init but was not properly initialised first!");
+                }
+                foreach (SubMissionStep step in GetAllEvents())
+                {
+                    float mag = step.Position.magnitude;
+                    if (mag > minRange)
+                        minRange = mag;
+                }
             }
             return minRange;
         }
+
         public void Startup()
         {   // 
-            if (UpdateSpeedMultiplier < 1)
+            if (UpdateSpeedMultiplier < 0.5f)
             {
-                SMUtil.Assert(false, "SubMissions: " + Name + " UpdateSpeedMultiplier cannot be lower than 1");
-                UpdateSpeedMultiplier = 1;
+                SMUtil.Assert(false, "SubMissions: " + Name + " UpdateSpeedMultiplier cannot be lower than 0.5");
+                UpdateSpeedMultiplier = 0.5f;
             }
+            Debug.Log("SubMissions: Startup for mission " + Name);
 
             IsCleaningUp = false;
-            if (!FixatePositionInWorld)
-                SetPositionFromPlayer();
-            if (ClearSceneryOnSpawn)
-                TryClearAreaForMission();
-            bool isMissionImpossible = true;
-            foreach (SubMissionStep step in EventList)
+            switch (SpawnPosition)
             {
-                step.Mission = this;
-                step.TrySetup();
-                if (step.StepType == SMissionType.ActWin)
+                case SubMissionPosition.ClassicSelect:
+                    SetPositionClassicMission();
+                    break;
+                case SubMissionPosition.FarFromPlayer:
+                    SetPositionFarFromPlayer();
+                    break;
+                case SubMissionPosition.CloseToPlayer:
+                    SetPositionCloseToPlayer();
+                    break;
+                case SubMissionPosition.OffsetFromPlayer:
+                    SetPositionFromPlayer();
+                    break;
+                case SubMissionPosition.OffsetFromPlayerTechFacing:
+                    SetPositionFromPlayerTankFacing();
+                    break;
+                case SubMissionPosition.FixedCoordinate:
+                    break;
+            }
+
+            bool isMissionImpossible = true;
+            foreach (SubMissionStep step in GetAllEvents())
+            {
+                if (step.StepType == SMStepType.ActWin)
                     isMissionImpossible = false;
             }
             if (isMissionImpossible)
                 SMUtil.Assert(false, "SubMissions: " + Name + " is impossible to complete as there are no existing Win Steps in the Event List!!!");
-            try
+            
+            TilePos = ManWorld.inst.TileManager.SceneToTileCoord(Position);
+            OffsetFromTile = Position - ManWorld.inst.TileManager.CalcTileCentreScene(TilePos);
+            ActiveState = SubMissionLoadState.NeedsFirstInit;
+            UpdateDistance();
+            if (IgnorePlayerProximity)
             {
-                foreach (TrackedTech tech in TrackedTechs)
-                {
-                    tech.mission = this;
-                }
+                FirstLoad();
             }
-            catch { }
-            try
-            {
-                foreach (MissionChecklist listEntry in CheckList)
-                {
-                    listEntry.mission = this;
-                }
-            }
-            catch { }
+            else
+                CheckIfCanSpawn();
         }
-        public void ReSync()
+
+
+        public void UpdateDistance()
         {   // 
-            IsCleaningUp = false; 
-            foreach (SubMissionStep step in EventList)
+            if (ActiveState == SubMissionLoadState.NeedsFirstInit || ActiveState == SubMissionLoadState.PositionSetReady)
+            {
+                RunWaypoint(!IgnorePlayerProximity && ManSubMissions.Selected == this);
+            }   
+            else
+                RunWaypoint(false);
+            MissionDist = SMUtil.GetPlayerDist(GetWorldPosition() - ManWorld.inst.GetSceneToGameWorld());
+        }
+        public void CheckIfCanSpawn()
+        {   // 
+            if (IsActive || MissionDist > ManSubMissions.LoadCheckDist)
+                return;
+            if (ManWorld.inst.CheckAllTilesAtPositionHaveReachedLoadStep(Position, GetMinimumLoadRange()))
+            {
+                FirstLoad();
+            }
+        }
+        public void FirstLoad()
+        {   // 
+            if (Corrupted)
+                return; // cannot run!!!
+            try
+            {
+                if (ClearSceneryOnSpawn)
+                    TryClearAreaForMission();
+                foreach (SubMissionStep step in GetAllEvents())
+                {
+                    step.Mission = this;
+                    step.FirstSetup();
+                }
+                try
+                {
+                    foreach (TrackedBlock listEntry in TrackedBlocks)
+                    {
+                        listEntry.mission = this;
+                    }
+                }
+                catch
+                {
+                    SMUtil.Assert(false, "SubMissions: Mission " + Name + " has encountered some errors while loading the TrackedBlocks.  Check your syntax.");
+                }
+                try
+                {
+                    foreach (TrackedTech tech in TrackedTechs)
+                    {
+                        tech.mission = this;
+                    }
+                }
+                catch
+                {
+                    SMUtil.Assert(false, "SubMissions: Mission " + Name + " has encountered some errors while loading the TrackedTechs.  Check your syntax.");
+                }
+                try
+                {
+                    foreach (MissionChecklist listEntry in CheckList)
+                    {
+                        listEntry.mission = this;
+                    }
+                }
+                catch
+                {
+                    SMUtil.Assert(false, "SubMissions: Mission " + Name + " has encountered some errors while loading the CheckList.  Check your syntax.");
+                }
+
+                Debug.Log("SubMissions: Mission " + Name + " has loaded into the world!");
+                ActiveState = SubMissionLoadState.Loaded;
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(true, "SubMissions: Mission " + Name + " has encountered a serious error on spawning and will not be able to load! " + e);
+                Corrupted = true; 
+            }
+        }
+
+        private void ReSync()
+        {   // 
+            Debug.Log("SubMissions: Resync for SubMission " + Name);
+            IsCleaningUp = false;
+            Position = WorldPosition.FromGameWorldPosition(GetWorldPosition()).ScenePosition;
+            foreach (SubMissionStep step in GetAllEvents())
             {
                 step.Mission = this;
-                step.LoadSetup();
+                step.LoadStep();
             }
             try
             {
@@ -152,60 +375,57 @@ namespace Sub_Missions
                 }
             }
             catch { }
+            ActiveState = SubMissionLoadState.Loaded;
             //Debug.Log("SubMissions: ReSynced");
             //Debug.Log("SubMissions: Tree " + Tree.TreeName);
         }
-        public void Cleanup()
+        public void Cleanup(bool isWorldUnloading = false)
         {   //
             IsCleaningUp = true;
             try  // We don't want to crash when the mission maker is still testing
             {       // Will inevitably crash with no checklist items assigned
-                CheckList.Clear();
+                if (CheckList != null)
+                    CheckList.Clear();
             }
             catch { };
-            try  // not all missions involve techs
+            RunWaypoint(false);
+            if (!isWorldUnloading)
             {
-                foreach (TrackedTech tech in TrackedTechs)
+                try  // not all missions involve techs
                 {
-                    try  // not all techs will still exist
+                    foreach (TrackedTech tech in TrackedTechs)
                     {
-                        tech.DestroyTech();
+                        try  // not all techs will still exist
+                        {
+                            tech.DestroyTech();
+                        }
+                        catch { };
                     }
-                    catch { };
+                    TrackedTechs.Clear();
                 }
+                catch { };
             }
-            catch { };
             if (EventList != null)
             {
-                foreach (SubMissionStep step in EventList)
+                foreach (SubMissionStep step in GetAllEvents())
                 {
                     try  // We don't want to crash when the mission maker is still testing
                     {
-                        if (step.AssignedWindow != null)
-                        {
-                            WindowManager.HidePopup(step.AssignedWindow);
-                            WindowManager.RemovePopup(step.AssignedWindow);
-                        }
-                    }
-                    catch { }
-                    try  // We don't want to crash when the mission maker is still testing
-                    {
-                        if (step.AssignedWaypoint != null)
-                        {
-                            step.AssignedWaypoint.visible.RemoveFromGame();
-                        }
-                    }
-                    catch { }
-                    try  // We don't want to crash when the mission maker is still testing
-                    {
-                        if (step.AssignedTracked != null)
-                        {
-                            ManOverlay.inst.RemoveWaypointOverlay(step.AssignedTracked);
-                        }
+                        step.ClearStep();
                     }
                     catch { }
                 }
             }
+            foreach (SMWorldObject WO in TrackedMonuments)
+            {
+                try
+                {
+                    WO.Remove(false);
+                }
+                catch { }
+            }
+            TrackedMonuments.Clear();
+            ActiveState = SubMissionLoadState.NotAvail;
         }
         public void Conclude()
         {   // Like Cleanup but leaves some optional aftermath
@@ -215,6 +435,7 @@ namespace Sub_Missions
                 CheckList.Clear();
             }
             catch { };
+            RunWaypoint(false);
             if (ClearTechsOnClear)
             {
                 try  // not all missions involve techs
@@ -227,45 +448,59 @@ namespace Sub_Missions
                         }
                         catch { };
                     }
+                    TrackedTechs.Clear();
                 }
                 catch { };
             }
             if (EventList != null)
             {
-                foreach (SubMissionStep step in EventList)
+                foreach (SubMissionStep step in GetAllEvents())
                 {
                     try  // We don't want to crash when the mission maker is still testing
                     {
-                        if (step.AssignedWindow != null)
-                        {
-                            WindowManager.HidePopup(step.AssignedWindow);
-                            WindowManager.RemovePopup(step.AssignedWindow);
-                        }
-                    }
-                    catch { }
-                    try  // We don't want to crash when the mission maker is still testing
-                    {
-                        if (step.AssignedWaypoint != null)
-                        {
-                            step.AssignedWaypoint.visible.RemoveFromGame();
-                        }
-                    }
-                    catch { }
-                    try  // We don't want to crash when the mission maker is still testing
-                    {
-                        if (step.AssignedTracked != null)
-                        {
-                            ManOverlay.inst.RemoveWaypointOverlay(step.AssignedTracked);
-                        }
+                        step.ClearStep();
                     }
                     catch { }
                 }
             }
+            if (ClearModularMonumentsOnClear)
+            {
+                foreach (SMWorldObject WO in TrackedMonuments)
+                {
+                    try
+                    {
+                        WO.Remove(false);
+                    }
+                    catch { }
+                }
+            }
+            else
+                ManModularMonuments.GraduateToPerm(TrackedMonuments);
+            TrackedMonuments.Clear();
+            ActiveState = SubMissionLoadState.PositionSetReady;
         }
 
+        public List<SubMissionStep> GetAllEvents()
+        {   //
+            List<SubMissionStep> allEvents = new List<SubMissionStep>();
+            if (EventList != null)
+                allEvents.AddRange(GetEventsRecursive(EventList));
+            return allEvents;
+        }
+        public List<SubMissionStep> GetEventsRecursive(List<SubMissionStep> toSearch)
+        {   //
+            List<SubMissionStep> allEvents = new List<SubMissionStep>();
+            foreach (SubMissionStep step in toSearch)
+            {
+                allEvents.Add(step);
+                if (step.StepType == SMStepType.Folder && step.FolderEventList != null && step.FolderEventList.Count > 0)
+                    allEvents.AddRange(GetEventsRecursive(step.FolderEventList));
+            }
+            return allEvents;
+        }
         public void PurgeAllActiveMessages()
         {   //
-            foreach (SubMissionStep step in EventList)
+            foreach (SubMissionStep step in GetAllEvents())
             {
                 try  // We don't want to crash when the mission maker is still testing
                 {
@@ -306,63 +541,70 @@ namespace Sub_Missions
 
         // UPDATE
         public void TriggerUpdate()
-        {   // updated at least every second
-            updateLerp += Time.deltaTime;
-            if (updateLerp > 1 / UpdateSpeedMultiplier)
+        {   // updated at least every half second
+
+            if (IsActive || IgnorePlayerProximity)
             {
-                updateLerp = 0;
-                int position = 0;
-                foreach (SubMissionStep step in EventList)
+                updateLerp += Time.deltaTime;
+                if (updateLerp * UpdateSpeedMultiplier > 1)
                 {
-                    if (CanRunStep(step.ProgressID))
+                    updateLerp = 0;
+                    int position = 0;
+                    foreach (SubMissionStep step in EventList)
                     {
-                        try
-                        {   // can potentially fire too early before mission is set
-                            step.Trigger();
-                        }
-                        catch 
+                        if (CanRunStep(step.ProgressID))
                         {
-                            Debug.Log("SubMissions: Error on attempting step lerp " + position + " in relation to " + CurrentProgressID + " of mission " + Name + " in tree " + Tree.TreeName);
                             try
-                            {
-                                Debug.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
+                            {   // can potentially fire too early before mission is set
+                                step.Trigger();
                             }
                             catch
                             {
-                                Debug.Log("SubMissions: Confirmed null");
+                                Debug.Log("SubMissions: Error on attempting step lerp " + position + " in relation to " + CurrentProgressID + " of mission " + Name + " in tree " + Tree.TreeName);
+                                try
+                                {
+                                    Debug.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
+                                }
+                                catch
+                                {
+                                    Debug.Log("SubMissions: Confirmed null");
+                                }
                             }
                         }
+                        position++;
                     }
-                    position++;
                 }
-            }
-            try
-            {   // can potentially fire too early before mission is set
-                foreach (MissionChecklist task in CheckList)
-                {
-                    try
-                    {  
-                        task.TestForCompleted();
+                try
+                {   // can potentially fire too early before mission is set
+                    foreach (MissionChecklist task in CheckList)
+                    {
+                        try
+                        {
+                            task.TestForCompleted();
+                        }
+                        catch { }
                     }
-                    catch { }
                 }
+                catch { }
             }
-            catch { }
         }
 
 
         // Utilities
         public bool CanRunStep(int input)
         {
-            return (input <= CurrentProgressID + 1 && input >= CurrentProgressID - 1) || input == -999;
+            return (input == -999 || input <= CurrentProgressID + 1 && input >= CurrentProgressID - 1);
         }
         public bool GetTechPosHeading(string TechName, out Vector3 pos, out Vector3 direction, out int team)
         {   //
-            foreach (SubMissionStep step in EventList)
+            if (!IsActive)
+                Debug.Log("SubMissions: GetTechPosHeading - Called when MISSION IS INACTIVE");
+            int hash = TechName.GetHashCode();
+            foreach (SubMissionStep step in GetAllEvents())
             {
                 if (step.hasTech)
                 {
-                    if (step.InputString == TechName)
+                    if (step.InputString.GetHashCode() == hash)
                     {
                         pos = step.Position;
                         direction = step.Forwards;
@@ -378,7 +620,7 @@ namespace Sub_Missions
         }
         public bool GetBlockPos(string BlockName, out Vector3 pos)
         {   //
-            foreach (SubMissionStep step in EventList)
+            foreach (SubMissionStep step in GetAllEvents())
             {
                 if (step.hasBlock)
                 {
@@ -392,12 +634,102 @@ namespace Sub_Missions
             pos = Vector3.zero;
             return false;
         }
+
+        private const int maxAttempts = 32;
+        private static Bitfield<ObjectTypes> searchTypes = new Bitfield<ObjectTypes>(new ObjectTypes[2] { ObjectTypes.Vehicle, ObjectTypes.Crate });
+        public void SetPositionClassicMission()
+        {
+            Debug.Log("SubMissions: SetPositionClassicMission");
+            List<WorldTile> IV = new List<WorldTile>();
+            Vector2 playerTile = ManWorld.inst.TileManager.SceneToTileCoord(Singleton.playerPos);
+            foreach (WorldTile IVc in ManWorld.inst.TileManager.IterateTiles(WorldTile.State.Created))
+            {
+                if (IVc.Terrain && !IVc.IsPopulated)
+                    IV.Add(IVc);
+            }
+            IV = IV.OrderBy(x => ((Vector2)x.Coord - playerTile).sqrMagnitude).ToList();
+            int missionReqRad = (int)GetMinimumLoadRange();
+            foreach (WorldTile IVc in IV)
+            {
+                if (IVc.LargestFreeSpaceOnTile > missionReqRad)
+                {
+                    Position = IVc.CalcSceneCentre();
+                    Debug.Log("Decided on Scene Position " + Position);
+                    return;
+                }
+            }
+        }
+        public void SetPositionFarFromPlayer()
+        {
+            Debug.Log("SubMissions: SetPositionFarFromPlayer");
+            Vector3 randAngle;
+            float loadRange;
+            float randDistance;
+            int attemptCount = 0;
+            do
+            {
+                attemptCount++;
+                randAngle = new Vector3(UnityEngine.Random.Range(-1000f, 1000f), 0, UnityEngine.Random.Range(-1000f, 1000f)).normalized;
+                loadRange = GetMinimumLoadRange();
+                randDistance = UnityEngine.Random.Range(ManSubMissions.MaxLoadedSpawnDist + loadRange, ManSubMissions.MaxUnloadedSpawnDist - loadRange);
+                Position = Singleton.playerPos + (randAngle * randDistance);
+                if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
+                    Position.y = height;
+            }
+            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0);
+            return;
+        }
+        public void SetPositionCloseToPlayer()
+        {
+            Debug.Log("SubMissions: SetPositionCloseToPlayer");
+            Vector3 randAngle;
+            float loadRange;
+            float randDistance;
+            int attemptCount = 0;
+            do
+            {
+                attemptCount++;
+                randAngle = new Vector3(UnityEngine.Random.Range(-1000f, 1000f), 0, UnityEngine.Random.Range(-1000f, 1000f)).normalized;
+                loadRange = GetMinimumLoadRange();
+                randDistance = UnityEngine.Random.Range(loadRange + ManSubMissions.MinLoadedSpawnDist, ManSubMissions.MaxLoadedSpawnDist - loadRange);
+                Position = Singleton.playerPos + (randAngle * randDistance);
+                if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
+                    Position.y = height;
+            }
+            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0);
+            return;
+        }
         public void SetPositionFromPlayer()
         {
-            Vector3 randAngle = new Vector3(UnityEngine.Random.Range(-1000f, 1000f), 0, UnityEngine.Random.Range(-1000f, 1000f)).normalized;
+            Debug.Log("SubMissions: SetPositionFromPlayer");
             float loadRange = GetMinimumLoadRange();
-            float randDistance = UnityEngine.Random.Range(loadRange + ManSubMissions.MinSpawnDist, ManSubMissions.MaxSpawnDist - loadRange);
-            Position = Singleton.playerPos + (randAngle * randDistance);
+            if (Position.magnitude > loadRange)
+            {
+                Position = (loadRange * Position.normalized) + Singleton.playerPos;
+            }
+            else 
+                Position = Singleton.playerPos + Position;
+            if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
+                Position.y = height;
+            return;
+        }
+        public void SetPositionFromPlayerTankFacing()
+        {
+            Debug.Log("SubMissions: SetPositionFromPlayerTankFacing");
+            float loadRange = GetMinimumLoadRange();
+            if (Position.magnitude > loadRange)
+            {
+                Position = (loadRange * Position.normalized) + Singleton.playerPos;
+            }
+            else
+            {
+                if (Singleton.playerTank)
+                {
+                    Position = Singleton.playerTank.rootBlockTrans.TransformPoint(Position);
+                }
+                else
+                    Position = Singleton.playerPos + Position;
+            }
             if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
                 Position.y = height;
             return;
@@ -415,5 +747,78 @@ namespace Sub_Missions
             }
             Debug.Log("SubMissions: removed " + removeCount + " scenery items around new mission setup");
         }
+
+        // Mission pointer when unloaded
+        [JsonIgnore]
+        Waypoint UnloadedPosWay;
+        [JsonIgnore]
+        TrackedVisible UnloadedPosWayVis;
+        public void RunWaypoint(bool show)
+        {   //N/A
+             if (show && !IgnorePlayerProximity)
+            {
+                if (UnloadedPosWay == null)
+                {
+                    CreateNewWaypoint();
+                }
+
+            }
+            else
+            {
+                if (UnloadedPosWay)
+                {
+                    RemoveWaypoint();
+                }
+            }
+        }
+        private void CreateNewWaypoint()
+        {
+            UnloadedPosWay = ManSpawn.inst.HostSpawnWaypoint(GetWorldPosition() - ManWorld.inst.GetSceneToGameWorld(), Quaternion.identity);
+            UnloadedPosWayVis = new TrackedVisible(UnloadedPosWay.visible.ID, UnloadedPosWay.visible, ObjectTypes.Waypoint, RadarTypes.AreaQuest);
+            ManOverlay.inst.AddWaypointOverlay(UnloadedPosWayVis);
+        }
+        private bool RemoveWaypoint()
+        {
+            try
+            {
+                ManOverlay.inst.RemoveWaypointOverlay(UnloadedPosWayVis);
+                Singleton.Manager<ManVisible>.inst.StopTrackingVisible(UnloadedPosWayVis.ID);
+                UnloadedPosWayVis.StopTracking();
+                if (UnloadedPosWay)
+                    UnloadedPosWay.visible.RemoveFromGame();
+                UnloadedPosWay = null;
+                UnloadedPosWayVis = null;
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(true, "SubMissions: SubMission - Failed: Could not despawn waypoint!");
+                Debug.Log("SubMissions: Error - " + e);
+            }
+            return false;
+        }
+
+    }
+
+    public enum SubMissionPosition
+    {
+        FarFromPlayer,
+        CloseToPlayer,
+        FixedCoordinate,
+        OffsetFromPlayer,
+        OffsetFromPlayerTechFacing,
+        ClassicSelect,
+    }
+    public enum SubMissionType
+    {
+        Basic,
+        Repeating,
+        Immedeate,
+    }
+    public enum SubMissionLoadState
+    {
+        NotAvail,           // Mission
+        NeedsFirstInit,
+        PositionSetReady,
+        Loaded,
     }
 }

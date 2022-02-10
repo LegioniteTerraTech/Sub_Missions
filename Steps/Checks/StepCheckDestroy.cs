@@ -10,11 +10,29 @@ namespace Sub_Missions.Steps
 {
     public class StepCheckDestroy : SMissionStep
     {
-        public override void TrySetup()
+        public override string GetDocumentation()
+        {
+            return
+                "{  // Checks if a certain amount of Techs were destroyed or a TrackedTech was destroyed" +
+                  "\n  \"StepType\": \"CheckDestroy\"," +
+                  "\n  \"ProgressID\": 0,             // " + StepDesc +
+                  "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if the VaribleType is DoProgressID and the subject is destroyed" +
+                  "\n  // Input Parameters" +
+                  "\n  \"InputNum\": 0.0,             // If this value is greater than zero, this will be treated for multiple Techs" +
+                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to watch.  If InputNum is greater than 0, then this tracks the respective corp kills.\n   // Leave empty to track all kills (if InputNum is greater than 0)." +
+                  "\n  // Output Results" +
+                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
+                  "\n  \"SetMissionVarIndex1\": -1,        // the index to apply the output from this" +
+                "\n},";
+        }
+
+        public override void OnInit() { }
+
+        public override void FirstSetup()
         {
             if (SMission.InputNum != 0)
             {   //track kills
-                if (Enum.TryParse(SMission.InputString, out FactionSubTypes result))
+                if (SubMissionTree.GetTreeCorp(SMission.InputString, out FactionSubTypes result))
                 {   // Get the kill count of a certain Corp if applicable
                     SMission.SavedInt = Singleton.Manager<ManStats>.inst.GetNumEnemyTechsDestroyedByFaction(result);
                 }
@@ -28,7 +46,7 @@ namespace Sub_Missions.Steps
             {   //track kills
                 try
                 {
-                    if (Enum.TryParse(SMission.InputString, out FactionSubTypes result))
+                    if (SubMissionTree.GetTreeCorp(SMission.InputString, out FactionSubTypes result))
                     {   // Get the kill count of a certain Corp if applicable
                         while (SMission.SavedInt < Singleton.Manager<ManStats>.inst.GetNumEnemyTechsDestroyedByFaction(result))
                         {
@@ -54,6 +72,9 @@ namespace Sub_Missions.Steps
                     SMUtil.ConcludeGlobal1(ref SMission);
                 }
             }
+        }
+        public override void OnDeInit()
+        {
         }
     }
 }

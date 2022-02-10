@@ -1,56 +1,54 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using HarmonyLib;
+using UnityEngine;
 
 namespace Sub_Missions
 {
-    class NetworkHandler
+    /*
+     * Plan: Host is the only one testing for conditions and spawning normal game content
+     *   Only the state is sent to clients during the mission
+     * 
+     * 
+     * 
+     */
+    public class NetworkHandler
     {
         static UnityEngine.Networking.NetworkInstanceId Host;
         static bool HostExists = false;
 
-        const TTMsgType SubMissionSpawned = (TTMsgType)4590;
-        const TTMsgType SubMissionEvent = (TTMsgType)4591;
+        const TTMsgType SubMissionComplete = (TTMsgType)4590;
+        const TTMsgType SubMissionProgress = (TTMsgType)4591;
+        const TTMsgType SubMissionAccepted = (TTMsgType)4592;
+        const TTMsgType SubMissionCanceled = (TTMsgType)4593;
 
 
-        public class AITypeChangeMessage : UnityEngine.Networking.MessageBase
+        public class SubMissionFinished : UnityEngine.Networking.MessageBase
         {
-            public AITypeChangeMessage() { }
-            public AITypeChangeMessage(uint netTechID, AIType AIType)
+            public SubMissionFinished() { }
+            public SubMissionFinished(int MissionHash, bool Success)
             {
-                this.netTechID = netTechID;
-                this.AIType = AIType;
-            }
-            public override void Deserialize(UnityEngine.Networking.NetworkReader reader)
-            {
-                Vector2 output = reader.ReadVector2();
-                netTechID = (uint)output.x;
-                AIType = (AIType)(int)output.y;
+                this.MissionHash = MissionHash;
+                this.Success = Success;
             }
 
-            public override void Serialize(UnityEngine.Networking.NetworkWriter writer)
-            {
-                writer.Write(new Vector2(netTechID, (int)AIType));
-            }
-
-            public uint netTechID;
-            public AIType AIType;
+            public int MissionHash;
+            public bool Success;
         }
 
-        public static void TryBroadcastNewAIState(uint netTechID, AIType AIType)
+        public static void TryBroadcastSubMissionFinished(int MissionHash, bool Success)
         {
             if (HostExists) try
                 {
-                    Singleton.Manager<ManNetwork>.inst.SendToAllClients(AIADVTypeChange, new AITypeChangeMessage(netTechID, AIType), Host);
+                    Singleton.Manager<ManNetwork>.inst.SendToAllClients(SubMissionComplete, new SubMissionFinished(MissionHash, Success), Host);
                     Debug.Log("Sent new AdvancedAI update to all");
                 }
                 catch { Debug.Log("TACtical_AI: Failed to send new AdvancedAI update, shouldn't be too bad in the long run"); }
         }
-        public static void OnClientChangeNewAIState(UnityEngine.Networking.NetworkMessage netMsg)
+        public static void OnClientSubMissionFinished(UnityEngine.Networking.NetworkMessage netMsg)
         {
-            var reader = new AITypeChangeMessage();
+            var reader = new SubMissionFinished();
             netMsg.ReadMessage(reader);
             try
             {
