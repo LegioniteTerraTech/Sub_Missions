@@ -27,6 +27,14 @@ namespace Sub_Missions.ManWindows
         {
             if (!WindowManager.SetupAltWins)
             {
+                WindowManager.styleDescLargeFont = new GUIStyle(GUI.skin.textField);
+                WindowManager.styleDescLargeFont.fontSize = 16;
+                WindowManager.styleDescLargeFont.alignment = TextAnchor.MiddleLeft;
+                WindowManager.styleDescLargeFont.wordWrap = true;
+                WindowManager.styleDescFont = new GUIStyle(GUI.skin.textField);
+                WindowManager.styleDescFont.fontSize = GUI.skin.label.fontSize + 2;
+                WindowManager.styleDescFont.alignment = TextAnchor.UpperLeft;
+                WindowManager.styleDescFont.wordWrap = true;
                 WindowManager.styleLargeFont = new GUIStyle(GUI.skin.label);
                 WindowManager.styleLargeFont.fontSize = 16;
                 WindowManager.styleHugeFont = new GUIStyle(GUI.skin.button);
@@ -36,7 +44,7 @@ namespace Sub_Missions.ManWindows
                 WindowManager.SetupAltWins = true;
             }
 
-            if (GUI.Button(new Rect(15, 15, Display.Window.width - 30, Display.Window.height - 30), buttonMessage, WindowManager.styleHugeFont))
+            if (GUI.Button(new Rect(0, 10, Display.Window.width, Display.Window.height - 10), buttonMessage, WindowManager.styleHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 ButtonAct.inst.Invoke(InvokeAction, 0);// has frame delay
@@ -48,6 +56,7 @@ namespace Sub_Missions.ManWindows
                 }
             }
             GUI.DragWindow();
+            WindowManager.KeepWithinScreenBounds(Display);
         }
 
         public void DelayedUpdate()

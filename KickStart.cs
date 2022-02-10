@@ -17,36 +17,82 @@ namespace Sub_Missions
         const string ModName = "Sub_Missions";
         
         public static bool Debugger = false;
-        public static bool OverrideRestrictions = true;
+        public static bool ExportPrefabExample = false;
+        public static bool OverrideRestrictions
+        {
+            get
+            {
+                bool yes = Debugger;
+                try
+                {
+                    ManGameMode.GameType current = ManGameMode.inst.GetCurrentGameType();
+                    if (current == ManGameMode.GameType.MainGame || current == ManGameMode.GameType.CoOpCampaign)
+                        yes = false;
+                }
+                catch { yes = false; }
+                return yes;
+            }
+        }
 
         public static ModConfig Saver;
 
         public static void Main()
         {
+
+            CheckActiveMods();
+            SMissionJSONLoader.SetupWorkingDirectories();
             Harmony harmonyInstance = new Harmony("legioniteterratech.sub_missions");
             try
             {
-                harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                try
+                {
+                    harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                }
+                catch (Exception e)
+                {
+                    Debug.Log("SubMissions: Error on mass patch");
+                    Debug.Log(e);
+                }
+                List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
+                foreach (MethodBase MB in MP)
+                {
+                    if (MB.Name == "PatchCCModding")
+                    {
+                        if (isBlockInjectorPresent)
+                        {
+                            Debug.Log("SubMissions: Patching " + MB.Name);
+                            //harmonyInstance.Patch(Patches.);
+                        }
+                        else
+                        {
+                            Debug.Log("SubMissions: UnPatching " + MB.Name);
+                            harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                        }
+                    }
+                    else
+                    {
+                        Debug.Log("SubMissions: Patching " + MB.Name);
+                        //harmonyInstance.Patch(MB);
+                    }
+                }
             }
             catch (Exception e)
             {
                 Debug.Log("SubMissions: Error on patch");
                 Debug.Log(e);
             }
+            WindowManager.Initiate();
+            ManSubMissions.Initiate();
+            ButtonAct.Initiate();
 
-            CheckActiveMods();
             if (!isTACAIPresent)
             {
                 TACAIRequiredWarning();
             }
 
-            SMissionJSONLoader.SetupWorkingDirectories();
-            WindowManager.Initiate();
-            ManSubMissions.Initiate();
-            ButtonAct.Initiate();
-
             Saver = new ModConfig();
             Saver.BindConfig<KickStart>(null, "Debugger");
+            Saver.BindConfig<KickStart>(null, "ExportPrefabExample");
             Saver.BindConfig<KickStart>(null, "FirstTime");
 
             if (FirstTime)
@@ -75,13 +121,15 @@ namespace Sub_Missions
                 }
                 catch { }
             });
-            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, Debugger);
+            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, ExportPrefabExample);
             exportTemplate.onValueSaved.AddListener(() => 
-            { 
-                Debugger = editor.SavedValue; 
+            {
+                ExportPrefabExample = exportTemplate.SavedValue; 
                 SMissionJSONLoader.MakePrefabMissionTreeToFile("Template"); 
                 Save();
             });
+            //if (ExportPrefabExample)
+            //    SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
 
             ManSubMissions.inst.HarvestAllTrees();
         }
@@ -90,6 +138,7 @@ namespace Sub_Missions
         public static OptionToggle exportTemplate;
 
         public static bool FirstTime = true;
+        public static bool FullyLoadedGame = false;
 
 
         internal static bool isTACAIPresent = false;
@@ -138,7 +187,7 @@ namespace Sub_Missions
         }
         public static void TACAIRequiredWarning()
         {
-            Debug.Log("SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
+            SMUtil.Assert(false, "SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
         }
         public static bool LookForMod(string name)
         {

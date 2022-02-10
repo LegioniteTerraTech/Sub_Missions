@@ -26,6 +26,7 @@ namespace Sub_Missions.ManWindows
             {
                 WindowManager.styleLargeFont = new GUIStyle(GUI.skin.label);
                 WindowManager.styleLargeFont.fontSize = 16;
+                WindowManager.styleLargeFont.wordWrap = true;
                 WindowManager.styleHugeFont = new GUIStyle(GUI.skin.button);
                 WindowManager.styleHugeFont.fontSize = 20;
                 WindowManager.SetupAltWins = true;
@@ -39,6 +40,7 @@ namespace Sub_Missions.ManWindows
                 WindowManager.RemovePopup(Display);
             }
             GUI.DragWindow();
+            WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
 
         public void DelayedUpdate()
