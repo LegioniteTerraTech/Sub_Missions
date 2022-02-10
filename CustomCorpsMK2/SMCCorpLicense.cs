@@ -19,7 +19,7 @@ namespace Sub_Missions
         static FieldInfo skinS = typeof(ManCustomSkins).GetField("m_SkinUIInfos", BindingFlags.NonPublic | BindingFlags.Instance);
         [JsonIgnore]
         static FieldInfo crateS = typeof(ManSpawn).GetField("m_CorpCratePrefabsDict", BindingFlags.NonPublic | BindingFlags.Instance);
-
+        
         //
         public string FullName = "NuLl";    // The FULL Name
         public string Faction = "NULL";     // The SHORTENED name

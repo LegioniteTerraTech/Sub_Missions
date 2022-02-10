@@ -8,7 +8,7 @@ using Newtonsoft.Json;
 namespace Sub_Missions
 {
     internal class SMWorldObject : MonoBehaviour, IWorldTreadmill
-    {
+    { 
         private const float MaxTransitionSpeedUp = 4;
         private const float MaxTransitionSpeedDown = 16;
         private const float TransitionLerpSmooth = 45;
