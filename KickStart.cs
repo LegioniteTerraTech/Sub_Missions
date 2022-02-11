@@ -105,7 +105,6 @@ namespace Sub_Missions
             editor.onValueSaved.AddListener(() => 
             { 
                 Debugger = editor.SavedValue; 
-                Save();
                 try
                 {
                     if (Debugger)
@@ -126,10 +125,10 @@ namespace Sub_Missions
             {
                 ExportPrefabExample = exportTemplate.SavedValue; 
                 SMissionJSONLoader.MakePrefabMissionTreeToFile("Template"); 
-                Save();
             });
             //if (ExportPrefabExample)
             //    SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
+            NativeOptionsMod.onOptionsSaved.AddListener(() => { Save(); });
 
             ManSubMissions.inst.HarvestAllTrees();
         }
