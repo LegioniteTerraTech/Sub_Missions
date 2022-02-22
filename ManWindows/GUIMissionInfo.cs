@@ -31,7 +31,7 @@ namespace Sub_Missions.ManWindows
             GUI.Label(new Rect(10, 25, Display.Window.width - 20, Display.Window.height - 40), CurrentMissionObjectives);
         
             GUI.DragWindow();
-            WindowManager.KeepWithinScreenBounds(Display);
+            WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
 
         public void DelayedUpdate()

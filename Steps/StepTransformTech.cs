@@ -97,18 +97,19 @@ namespace Sub_Missions.Steps
                         }
                         else
                         {
-                            SMUtil.Assert(true, "SubMissions: StepTransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
+                            SMUtil.Assert(true, "SubMissions: TransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
                         }
                     }
                     catch (Exception e)
                     {   // Cannot work without TACtical_AI
                         if (KickStart.isTACAIPresent)
                         {
-                            SMUtil.Assert(true, "SubMissions: StepTransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!");
+                            SMUtil.Assert(true, "SubMissions: TransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!");
                             Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
                             Debug.Log("SubMissions: Error - " + e);
                         }
-                        Debug.Log("SubMissions: StepTransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
+                        else
+                            Debug.Log("SubMissions: TransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
                     }
                     //SMission.SavedInt++;
                 }

@@ -18,11 +18,11 @@ namespace Sub_Missions.Steps
         /// </summary>
         public SubMissionStep SMission;
 
-        public static string StepDesc = " Use -999 to always update.  Else:\n" +
-        "  // 0 = Align with Mission Origin\n" +
-        "  // 1 = Snap to Terrain if Position Lower\n" +
-        "  // 2 = Align with terrain + offset by position\n" +
-        "  // 3 = Snap to Terrain";
+        /// <summary>
+        /// ProgressID Description
+        /// </summary>
+        public static string StepDesc = " Use " + SubMission.alwaysRunValue + " to always update.  Else, whatever \n" +
+        "  //  number that is ADJACENT TO or directly on SubMission's CurrentProgressID will be triggered.";
 
         public static string TerrainHandlingDesc = "\n" +
         "  // 0 = Align with Mission Origin\n" +

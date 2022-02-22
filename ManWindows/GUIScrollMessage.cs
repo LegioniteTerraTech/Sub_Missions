@@ -42,13 +42,13 @@ namespace Sub_Missions.ManWindows
             if (Image)
             {
                 GUI.DrawTexture(new Rect(15, 15, Display.Window.height - 30, Display.Window.height - 30), Image);
-                GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleLargeFont);
+                GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFont);
             }
             else
-                GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleLargeFont);
+                GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFont);
             if (!DenySkip)
             {
-                if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 35, 40, 25), "<b>OK</b>", WindowManager.styleHugeFont))
+                if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 38, 40, 28), "<b>OK</b>", WindowManager.styleHugeFont))
                 {
                     Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
                     OnRemoval();
@@ -66,6 +66,8 @@ namespace Sub_Missions.ManWindows
         private static FieldInfo clank = typeof(ManOnScreenMessages).GetField("m_NewLineSfxEvent", BindingFlags.NonPublic | BindingFlags.Instance);
         private static FMODEvent soundSteal2 = (FMODEvent)clank.GetValue(Singleton.Manager<ManOnScreenMessages>.inst);
 
+        private bool BOLD = false;
+        private bool stopped = false;
         private FMODEventInstance fInst;
         public void MessageStepBuilder()
         {
@@ -101,19 +103,41 @@ namespace Sub_Missions.ManWindows
             //Debug.Log("SubMissions: stepchek");
             for (int stepSped = 0; stepSped < StepRate; stepSped++)
             {
+                try
+                {
+                    if (!BOLD)
+                    {
+                        if (Message.Substring(step, 3).Equals("<b>"))
+                        {
+                            MessageBuilder.Append("<b>");
+                            BOLD = true;
+                            step += 3;
+                        }
+                    }
+                    else
+                    {
+                        if (Message.Substring(step, 4).Equals("</b>"))
+                        {
+                            BOLD = false;
+                            step += 4;
+                            MessageBuilder.Append("</b>");
+                        }
+                    }
+                }
+                catch { }
                 if (step + stepSped < Message.Length)
                     MessageBuilder.Append(Message.ElementAt(step + stepSped));
             }
             try
             {
-                bleep = Message.ElementAt(step + StepRate) != ' ';
+                bleep = Message.ElementAt(step + StepRate) != '\n';
             }
             catch
             {
                 bleep = false;
             }
             //Debug.Log("SubMissions: stepchek2");
-            MessageOut = MessageBuilder.ToString();
+            MessageOut = MessageBuilder.ToString() + (BOLD ? "</b>" : "");
             step += StepRate;
         }
         public void BleepCommand()
@@ -122,7 +146,7 @@ namespace Sub_Missions.ManWindows
             {
                 try
                 {
-                    if (fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.PLAYING))
+                    if (fInst.IsInited)
                     {
                         fInst.StopAndRelease();
                     }
@@ -130,20 +154,35 @@ namespace Sub_Missions.ManWindows
                 catch { }
                 return;
             }
-            if (step >= Message.Length - 1 || (!bleep && bleepPrev))
+            if (!bleep && bleepPrev)
             {
                 try
                 {
-                    fInst.StopAndRelease();
+                    if (fInst.IsInited)
+                        fInst.StopAndRelease();
                     soundSteal2.PlayOneShot();
                 }
                 catch { }
             }
-            else if (step < Message.Length - 1)
+            else if (step >= Message.Length - 1)
+            {
+                if (!stopped)
+                {
+                    try
+                    {
+                        if (fInst.IsInited)
+                            fInst.StopAndRelease();
+                        soundSteal2.PlayOneShot();
+                    }
+                    catch { }
+                    stopped = true;
+                }
+            }
+            else
             {
                 try
                 {
-                    if (!fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.PLAYING))
+                    if (!fInst.IsInited)
                     {
                         fInst = soundSteal.PlayEvent();
                     }

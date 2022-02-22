@@ -53,22 +53,28 @@ namespace Sub_Missions
      *         On success, the CurrentProgressID will be set to -98 and do one last loop.
      *         On fail, the CurrentProgressID will be set to -100 and do one last loop.
      *         
-     *         If a Step's ProgressID is set to -999, it will update all the time regardless of the CurrentProgressID.
+     *         If a Step's ProgressID is set to SubMission.alwaysRunValue, it will update all the time regardless of the CurrentProgressID.
      *     
      */
+    /// <summary>
+    /// The saving is handled within SaveManSubMissions.
+    /// <para></para>
+    /// Most of the methods in the classes in this mod are internal or private because invoking them out of order 
+    /// may break this mod entirely.
+    /// </summary>
     public class ManSubMissions : MonoBehaviour, IWorldTreadmill
     {   // Handle non-Payload missions here
-        public static ManSubMissions inst;
+        internal static ManSubMissions inst;
 
-        public static bool Subscribed = false;
-        public static bool SelectedIsAnon = false;
-        public static bool IgnoreSaveThisSession = false;
+        internal static bool Subscribed = false;
+        internal static bool SelectedIsAnon = false;
+        internal static bool IgnoreSaveThisSession = false;
 
-        public static List<SubMissionTree> SubMissionTrees = new List<SubMissionTree>();
+        internal static List<SubMissionTree> SubMissionTrees = new List<SubMissionTree>();
 
 
-        private static List<SubMission> activeSubMissions = new List<SubMission>();
-        public static List<SubMission> ActiveSubMissions
+        internal static List<SubMission> activeSubMissions = new List<SubMission>();
+        internal static List<SubMission> ActiveSubMissions
         {
             get
             {
@@ -79,19 +85,19 @@ namespace Sub_Missions
             }
         }
 
-
+        // Ignore the Message here as making it auto will break JSON saving
         private static List<SubMissionStandby> anonSubMissions = new List<SubMissionStandby>();
-        public static List<SubMissionStandby> AnonSubMissions => anonSubMissions;
+        internal static List<SubMissionStandby> AnonSubMissions => anonSubMissions;
 
-        public static SubMission Selected;
-        public static SubMissionStandby SelectedAnon;
+        internal static SubMission Selected;
+        internal static SubMissionStandby SelectedAnon;
 
-        public static GUIPopupDisplay Button;
-        public static GUISMissionsList Board;
-        public static GUIPopupDisplay SideUI;
+        internal static GUIPopupDisplay Button;
+        internal static GUISMissionsList Board;
+        internal static GUIPopupDisplay SideUI;
 
-        public static float timer = 0;
-        public static float timerSecondsDelay = 1;
+        private static float timer = 0;
+        private static float timerSecondsDelay = 1;
 
         public static Dictionary<int, GameObject> WorldObjects => ManModularMonuments.WorldObjects;
 
@@ -104,12 +110,12 @@ namespace Sub_Missions
 
 
         // Setup
-        public static void Initiate()
+        internal static void Initiate()
         {
             inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
             Debug.Log("SubMissions: ManSubMissions initated");
         }
-        public static void Subscribe()
+        internal static void Subscribe()
         {
             if (!Subscribed)
             {
@@ -139,10 +145,11 @@ namespace Sub_Missions
                 SideUI = WindowManager.GetCurrentPopup();
 
                 Debug.Log("SubMissions: ManSubMissions subscribed");
+                ManSMCCorps.Subscribe();
                 Subscribed = true;
             }
         }
-        public void HarvestAllTrees()
+        internal void HarvestAllTrees()
         {
             Debug.Log("SubMissions: HARVESTING ALL TREES!!!");
             SubMissionTrees.Clear();
@@ -160,7 +167,7 @@ namespace Sub_Missions
             SMissionJSONLoader.BuildAllWorldObjects(trees);
             GetAllPossibleMissions();
         }
-        public void GetAllPossibleMissions()
+        internal void GetAllPossibleMissions()
         {
             Debug.Log("SubMissions: Fetching available missions...");
             anonSubMissions.Clear();
@@ -171,7 +178,7 @@ namespace Sub_Missions
             UpdateImmediateMissions();
             //SaveSubMissionsToSave();
         }
-        public void UpdateImmediateMissions()
+        internal void UpdateImmediateMissions()
         {
             if (KickStart.OverrideRestrictions)
                 return;
@@ -195,7 +202,7 @@ namespace Sub_Missions
                 step.OnMoveWorldOrigin(moveDist);
             }
         }
-        public static void OnTileLoaded(WorldTile WT)
+        internal static void OnTileLoaded(WorldTile WT)
         {
             ManModularMonuments.LoadAllAtTile(WT.Coord);
             foreach (SubMission step in activeSubMissions)
@@ -209,7 +216,7 @@ namespace Sub_Missions
                         step.CheckForReSync();
             }
         }
-        public static void OnTileUnloaded(WorldTile WT)
+        internal static void OnTileUnloaded(WorldTile WT)
         {
             foreach (SubMission step in activeSubMissions)
             {
@@ -229,17 +236,17 @@ namespace Sub_Missions
         }
 
         // Missions
-        public void AcceptMission()
+        internal void AcceptMission()
         {   // We bite the bullet and insure the file has been marked tampered with - because it was
             Singleton.Manager<ManSaveGame>.inst.CurrentState.m_FileHasBeenTamperedWith = true;
             SelectedAnon.Tree.AcceptTreeMission(SelectedAnon);
             SelectedIsAnon = false;
         }
-        public void CancelMission()
+        internal void CancelMission()
         {
             Selected.Tree.CancelTreeMission(Selected);
         }
-        public static void ReSyncSubMissions()
+        internal static void ReSyncSubMissions()
         {
             foreach (SubMission sub in ActiveSubMissions)
             {
@@ -247,9 +254,44 @@ namespace Sub_Missions
             }
         }
 
+        //Does not account for missions larger than two tiles - but if you have a mission bigger than 2 tiles,
+        // you probably already have a bunch of more problems...
+        internal static bool IsTooCloseToOtherMission(IntVector2 tileWorld)
+        {  
+            List<SubMissionStandby> SMS = GetAllFinishedMissions();
+
+            IntVector2 tWIU = tileWorld + (IntVector2.one * 2);
+            foreach (SubMission sub in ActiveSubMissions)
+            {
+                IntVector2 tWI = sub.TilePos;
+                if (tWI.x <= tWIU.x && tWI.x >= -tWIU.x && tWI.y <= tWIU.y && tWI.y >= -tWIU.y)
+                {
+                    return true;
+                }
+            }
+            foreach (SubMissionStandby sub in SMS)
+            {
+                IntVector2 tWI = sub.TilePosWorld;
+                if (tWI.x <= tWIU.x && tWI.x >= -tWIU.x && tWI.y <= tWIU.y && tWI.y >= -tWIU.y)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static List<SubMissionStandby> GetAllFinishedMissions()
+        {
+            List<SubMissionStandby> SMS = new List<SubMissionStandby>();
+            foreach (SubMissionTree sub in SubMissionTrees)
+            {
+                SMS.AddRange(sub.CompletedMissions);
+            }
+            return SMS;
+        }
+
 
         // 
-        public static void ToggleList()
+        internal static void ToggleList()
         {
             if (Board.Display.isOpen)
             {
@@ -260,7 +302,7 @@ namespace Sub_Missions
                 WindowManager.ShowPopup(new Vector2(0.5f, 0.5f), Board.Display);
             }
         }
-        public void CheckKeyCombos()
+        private void CheckKeyCombos()
         {
             if (Input.GetKey(KeyCode.LeftAlt) && Input.GetKeyDown(KeyCode.M))
             {
@@ -279,7 +321,7 @@ namespace Sub_Missions
         }
 
         // UPDATE
-        public void Update()
+        private void Update()
         {
 
             if (SMCCorpLicense.needsToRenderSkins)
@@ -303,7 +345,7 @@ namespace Sub_Missions
             }
             CheckKeyCombos();
         }
-        public void UpdateAllSubMissions()
+        private void UpdateAllSubMissions()
         {
             foreach (SubMission sub in ActiveSubMissions)
             {
@@ -311,7 +353,7 @@ namespace Sub_Missions
             }
         }
 
-        public static void PurgeAllTrees()
+        private static void PurgeAllTrees()
         {
             inst.GetAllPossibleMissions();
             foreach (SubMissionTree tree in SubMissionTrees)
@@ -320,7 +362,7 @@ namespace Sub_Missions
             }
             inst.GetAllPossibleMissions();
         }
-        public static void BroadcastTechDeath(Tank techIn, ManDamage.DamageInfo oof)
+        internal static void BroadcastTechDeath(Tank techIn, ManDamage.DamageInfo oof)
         {
             //Debug.Log("SubMissions: Tech " + techIn.name + " of ID " + techIn.visible.ID + " was destroyed");
             foreach (SubMissionTree tree in SubMissionTrees)
@@ -357,7 +399,7 @@ namespace Sub_Missions
         {
             return activeSubMissions;
         }
-        public static void ModeLoad(Mode mode)
+        private static void ModeLoad(Mode mode)
         {
             if (mode is ModeMain || mode is ModeMisc)
             {
@@ -378,7 +420,7 @@ namespace Sub_Missions
                 }
             }
         }
-        public static void ModeFinished(Mode mode)
+        private static void ModeFinished(Mode mode)
         {
             if (mode is ModeMain && !IgnoreSaveThisSession)
             {
@@ -392,7 +434,7 @@ namespace Sub_Missions
             ClearAllActiveSubMissionsForUnload();
             ManModularMonuments.PurgeAllActive();
         }
-        public static void SaveSubMissionsToSave()
+        private static void SaveSubMissionsToSave()
         {
             try
             {
@@ -408,7 +450,7 @@ namespace Sub_Missions
             }
             catch { }
         }
-        public static void LoadSubMissionsFromSave()
+        private static void LoadSubMissionsFromSave()
         {
             if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
             {
@@ -429,6 +471,10 @@ namespace Sub_Missions
                 }
             }
         }
+
+
+        // testing
+
 
     }
 }

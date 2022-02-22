@@ -25,6 +25,7 @@ namespace Sub_Missions
         public string VisualMeshName;
         public string ColliderMeshName;
         public bool aboveGround;
+        public SMWOTerrain TerrainType;
 
         public float aimedHeight;
         public IntVector2 tilePos;
@@ -110,6 +111,7 @@ namespace Sub_Missions
             VisualMeshName = toSetFrom.VisualMeshName;
             ColliderMeshName = toSetFrom.ColliderMeshName;
             aboveGround = toSetFrom.aboveGround;
+            TerrainType = toSetFrom.TerrainType;
         }
         public SMWorldObjectJSON GetJSON()
         {
@@ -122,6 +124,8 @@ namespace Sub_Missions
                 VisualMeshName = VisualMeshName,
                 ColliderMeshName = ColliderMeshName,
                 aboveGround = aboveGround,
+                TerrainType = TerrainType,
+
             };
             return final;
         }
@@ -147,7 +151,15 @@ namespace Sub_Missions
         public string VisualMeshName;
         public string ColliderMeshName;
         public bool aboveGround = false;
+        public SMWOTerrain TerrainType = SMWOTerrain.Standard;
 
         public Dictionary<string, object> WorldObjectJSON;
+    }
+    public enum SMWOTerrain
+    {
+        Standard,
+        Rubber,
+        Ice,
+        Frictionless,
     }
 }

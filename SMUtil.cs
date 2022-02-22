@@ -51,10 +51,21 @@ namespace Sub_Missions
             {
                 try
                 {
-                    if (input.Contains("SubMissions: "))
+                    if (input.NullOrEmpty())
                     {
-                        countError++;
-                        input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                        input = "Sub_Missions.SMUtil.Assert has no information set for an edge case, please notify Legionite (or some SubMissions maintainer) to add an assert. " +
+                                "\n Thanks!" +
+                                "\n Unresolvable error! - No automatic debugging context was thrown in for this edge case!" +
+                                "\n At " + StackTraceUtility.ExtractStackTrace();
+                        repeatingError = true;
+                    }
+                    else
+                    {
+                        if (input.Contains("SubMissions: "))
+                        {
+                            countError++;
+                            input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                        }
                     }
                     if (repeatingError)
                     {
@@ -62,14 +73,15 @@ namespace Sub_Missions
                         repeatingErrored = true;
                     }
                     errorList += input + "\n";
+                    Debug.Log(input);
                 }
-                catch
+                catch (Exception e)
                 {
-                    errorList = "Error collector failed, please contact Legionite";
+                    errorList = "Error collector failed, please contact Legionite (or some SubMissions maintainer).";
+                    Debug.Log(errorList + e);
                 }
                 errorQueued = true;
             }
-            Debug.Log(input);
         }
 
 
@@ -310,11 +322,16 @@ namespace Sub_Missions
         public static Tank SpawnTechAuto(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
         {
             // Load from folder
+            Tank tech;
             string dest = "Custom SMissions" + SMissionJSONLoader.up +  mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-            //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
+            //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);if ("__Airstrike".Equals(TechName))
             if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
             {
-                return RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
+                tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
+
+                if (Team == ManSpawn.NeutralTeam)
+                    tech.SetInvulnerable(true, true);
+                return tech;
             }
             else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
             {   // Supports normal snapshots
@@ -322,7 +339,7 @@ namespace Sub_Missions
                 {
                     ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
                     {
-                        isInvulnerable = Team == 0,
+                        isInvulnerable = Team == ManSpawn.NeutralTeam,
                         teamID = Team,
                         blockIDs = null,
                         isPopulation = Team == -1,
@@ -330,8 +347,8 @@ namespace Sub_Missions
                         position = pos,
                         rotation = Quaternion.LookRotation(facingDirect),
                     };
-    
-                    return ManSpawn.inst.SpawnTank(spawn, true);
+                    tech = ManSpawn.inst.SpawnTank(spawn, true);
+                    return tech;
                 }
             }
 
@@ -350,6 +367,8 @@ namespace Sub_Missions
                 {
                     tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
                     SetTrackedTech(ref mission, tech);
+                    if (Team == ManSpawn.NeutralTeam)
+                        tech.SetInvulnerable(true, true);
                 }
                 else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
                 {   // Supports normal snapshots
@@ -365,8 +384,10 @@ namespace Sub_Missions
                             position = pos,
                             rotation = Quaternion.LookRotation(facingDirect),
                         };
-
-                        SetTrackedTech(ref mission, ManSpawn.inst.SpawnTank(spawn, true));
+                        tech = ManSpawn.inst.SpawnTank(spawn, true);
+                        SetTrackedTech(ref mission, tech);
+                        if (Team == ManSpawn.NeutralTeam)
+                            tech.SetInvulnerable(true, true);
                         return TechName;
                     }
                 }
@@ -407,7 +428,7 @@ namespace Sub_Missions
                     {
                         ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
                         {
-                            isInvulnerable = Team == 0,
+                            isInvulnerable = Team == ManSpawn.NeutralTeam,
                             teamID = Team,
                             blockIDs = null,
                             isPopulation = Team == -1,
@@ -434,10 +455,17 @@ namespace Sub_Missions
         }
         public static bool DoesTrackedTechExist(ref SubMissionStep mission, string TechName)
         {
+            if (TechName == "Player Tech")
+                return Singleton.playerTank;
             return mission.Mission.TrackedTechs.Exists(delegate (TrackedTech cand) { return cand.TechName == TechName; });
         }
         public static bool GetTrackedTech(ref SubMissionStep mission, string TechName, out Tank tech)
         {
+            if (TechName == "Player Tech")
+            {
+                tech = Singleton.playerTank;
+                return Singleton.playerTank;
+            }
             tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;
             if (tech == null)
                 return false;
@@ -445,6 +473,10 @@ namespace Sub_Missions
         }
         public static TrackedTech GetTrackedTechBase(ref SubMissionStep mission, string TechName)
         {
+            if (TechName == "Player Tech")
+            {
+                Assert(true, "SubMissions: GetTrackedTechBase - Called for \"Player Tech\", but the player tech is not trackable!");
+            }
             return mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; });
         }
         public static TrackedTech GetTrackedTechBase(ref SubMission mission, string TechName)
@@ -459,5 +491,7 @@ namespace Sub_Missions
         {
             mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == tech.name; }).Tech = tech;
         }
+
+
     }
 }

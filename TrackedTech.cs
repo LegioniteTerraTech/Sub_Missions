@@ -79,6 +79,7 @@ namespace Sub_Missions
                     return; // denied as it's been removed from the pool
                 if (!mission.GetTechPosHeading(TechName, out _, out Vector3 direction, out int team))
                     SMUtil.Assert(true, "SubMissions: Tech in TrackedTechs list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
+                
                 Tech = SMUtil.SpawnTechAuto(ref mission, pos, team, direction, TechName);
                 //Tech = RawTechLoader.SpawnTechExternal(pos, team, (Singleton.playerPos -  pos).normalized, RawTechExporter.LoadTechFromRawJSON(TechName, "Custom SMissions\\" + mission.Tree.TreeName + "\\Raw Techs"));
                 DeliQueued = false;

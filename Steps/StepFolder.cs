@@ -19,12 +19,13 @@ namespace Sub_Missions.Steps
                   "\n  \"VaribleType\": \"None\",       // See the top of this file." +
                   "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
                   "\n  \"SetMissionVarIndex1\": -1,        // An Index to check (-1 means always true)" +
+                  "\n  \"InputStringAux\": \"Default\",  // The special trigger case this folder should take when active" +
                   "\n  // The Folder" +
                   "\n  \"FolderEventList\": {},        // Insert your events here" +
                 "\n},";
         }
         public override void OnInit() {
-            SMission.ProgressID = -999;
+            SMission.ProgressID = SubMission.alwaysRunValue;
             if (SMission.FolderEventList == null)
                 SMission.FolderEventList = new List<SubMissionStep>();
         }
@@ -34,7 +35,7 @@ namespace Sub_Missions.Steps
         }
         public override void FirstSetup()
         {
-            SMission.ProgressID = -999;
+            SMission.ProgressID = SubMission.alwaysRunValue;
             if (SMission.FolderEventList == null)
                 SMission.FolderEventList = new List<SubMissionStep>();
         }

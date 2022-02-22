@@ -90,7 +90,7 @@ namespace Sub_Missions.ManWindows
                     }
                     //GUI.Label(new Rect(40, posLerp * 25, 300, 25), charI.GetCharacterFullName());
                     //GUI.DrawTexture(new Rect(70, (posLerp * 55) + 20, 50, 50), charI.Look);
-                    if (active.Type != SubMissionType.Immedeate || KickStart.OverrideRestrictions)
+                    if ((active.MissionDist >= ManSubMissions.MaxLoadedSpawnDist && active.Type != SubMissionType.Immedeate) || KickStart.OverrideRestrictions)
                     {
                         if (GUI.Button(new Rect(buttonSideSpacing + buttonWidth, (posLerp * 55) + 20, 50, 50), "<b>D</b>", WindowManager.styleHugeFont))
                         {   // Remove this mission

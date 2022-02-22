@@ -13,7 +13,7 @@ namespace Sub_Missions.Steps
         public override string GetDocumentation()
         {
             return
-                "{  // Keeps Track of Resource/Chunk Mining/Creation" +
+                "{  // Creates a Tech to use during the mission" +
                   "\n  \"StepType\": \"SetupTech\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +
@@ -34,7 +34,9 @@ namespace Sub_Missions.Steps
                   "\n  // Input Parameters" +
                   "\n  \"InputNum\": 0,             // The Team to set the new Tech(s) to" +
                   "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to spawn." +
-                  "\n  \"InputStringAux\": null, //\"Infinite\",  // Allow infinite spawning while conditions are true and within the progress ID range" +
+                  "\n  \"InputStringAux\": null, // Leave empty to fire on first Mission Spawning" +
+                  "\n  //\"OnTriggerOnce\", // Spawn once when this is triggered and it's SetMissionVarIndex1 is true" +
+                  "\n  //\"Infinite\",  // Allow infinite spawning while conditions are true and within the progress ID range" +
                 "\n},";
         }
         public override void OnInit() { }
@@ -45,51 +47,83 @@ namespace Sub_Missions.Steps
             SMission.hasTech = true;
             if (ManNetwork.IsHost)
             {
-                try
-                {
-                    SMUtil.SpawnTechTracked(ref Mission, SMission.Position, (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
-                }
-                catch (Exception e)
+                if (SMission.InputStringAux.NullOrEmpty())
                 {
                     try
                     {
-                        SMUtil.Assert(false, "SubMissions: StepSetupTech - Failed: " + SMission.InputString + " finding failed.");
-                        SMUtil.Assert(false, "SubMissions: StepSetupTech - Team " + SMission.InputNum);
-                        SMUtil.Assert(false, "SubMissions: StepSetupTech - Mission " + Mission.Name);
+                        SMUtil.SpawnTechTracked(ref Mission, SMission.Position, (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
                     }
-                    catch
+                    catch (Exception e)
                     {
-                        SMUtil.Assert(false, "SubMissions: StepSetupTech - Failed: COULD NOT FETCH INFORMATION!!!");
+                        try
+                        {
+                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Failed: " + SMission.InputString + " finding failed.");
+                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Team " + SMission.InputNum);
+                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Mission " + Mission.Name);
+                        }
+                        catch
+                        {
+                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Failed: COULD NOT FETCH INFORMATION!!!");
+                        }
+                        Debug.Log("SubMissions: Error - " + e);
                     }
-                    Debug.Log("SubMissions: Error - " + e);
                 }
             }
         }
         public override void Trigger()
         {
             SMission.hasTech = true;
-            if (!ManNetwork.IsNetworked || ManNetwork.IsHost)
+            if (ManNetwork.IsHost)
             {
-                if (SMUtil.BoolOut(ref SMission) && SMission.InputStringAux == "Infinite")
-                {   // we spawn infinite techs every second while this is active
-                    try
-                    {
-                        SMUtil.SpawnTechAddTracked(ref Mission, SMission.Position + (SMission.VaribleCheckNum * UnityEngine.Random.insideUnitCircle.ToVector3XZ()), (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
+                if (SMUtil.BoolOut(ref SMission))
+                {
+                    if (SMission.InputStringAux == "OnTriggerOnce")
+                    {   // we spawn only ONE tech!
+                        if (SMission.SavedInt == 0)
+                        {
+                            try
+                            {
+                                SMUtil.SpawnTechAddTracked(ref Mission, SMission.Position + (SMission.VaribleCheckNum * UnityEngine.Random.insideUnitCircle.ToVector3XZ()), (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
+                            }
+                            catch (Exception e)
+                            {
+                                try
+                                {
+                                    SMUtil.Assert(false, "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: " + SMission.InputString + " finding failed.");
+                                    SMUtil.Assert(false, "SubMissions: StepSetupTech (OnTriggerOnce) - Team " + SMission.InputNum);
+                                    SMUtil.Assert(true, "SubMissions: StepSetupTech (OnTriggerOnce) - Mission " + Mission.Name);
+                                }
+                                catch
+                                {
+                                    SMUtil.Assert(true, "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: COULD NOT FETCH INFORMATION!!!");
+                                }
+                                //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                                Debug.Log("SubMissions: Error - " + e);
+                            }
+                            SMission.SavedInt = 1;
+                        }
                     }
-                    catch (Exception e)
-                    {
+                    else if (SMission.InputStringAux == "Infinite")
+                    {   // we spawn infinite techs every second while this is active
                         try
                         {
-                            SMUtil.Assert(false, "SubMissions: StepSetupTech (Infinite) - Failed: " + SMission.InputString + " finding failed.");
-                            SMUtil.Assert(false, "SubMissions: StepSetupTech (Infinite) - Team " + SMission.InputNum);
-                            SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Mission " + Mission.Name);
+                            SMUtil.SpawnTechAddTracked(ref Mission, SMission.Position + (SMission.VaribleCheckNum * UnityEngine.Random.insideUnitCircle.ToVector3XZ()), (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
+                            try
+                            {
+                                SMUtil.Assert(false, "SubMissions: StepSetupTech (Infinite) - Failed: " + SMission.InputString + " finding failed.");
+                                SMUtil.Assert(false, "SubMissions: StepSetupTech (Infinite) - Team " + SMission.InputNum);
+                                SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Mission " + Mission.Name);
+                            }
+                            catch
+                            {
+                                SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
+                            }
+                            //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                            Debug.Log("SubMissions: Error - " + e);
                         }
-                        //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                        Debug.Log("SubMissions: Error - " + e);
                     }
                 }
             }

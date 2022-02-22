@@ -61,13 +61,13 @@ namespace Sub_Missions
 
         // Documentation
         public static string GetDocumentation()
-        {
+        {   
             throw new NotImplementedException();
-            return null;
+            //return null;
         }
 
         // Initialization
-        public bool CompileMissionTree(out SubMissionTree newTree)
+        internal bool CompileMissionTree(out SubMissionTree newTree)
         {   // Reduce memory loads
             if (!SMissionJSONLoader.TreeLoader(TreeName, out SubMissionTree tree))
             {
@@ -142,13 +142,14 @@ namespace Sub_Missions
         }
 
         // Accessing
-        public void SetupTreeCorp()
+        private void SetupTreeCorp()
         {   //
             FactionSubTypes FST = ManMods.inst.GetCorpIndex(Faction);
             if (FST == (FactionSubTypes)(-1))
             {
                 if (ManSMCCorps.GetSMCID(Faction, out FactionSubTypes FST1))
                 {
+                    Debug.Log("SubMissions: linked MissionTree ith unofficial Custom Corp " + Faction + " of ID " + FST1);
                 }
                 else if (CustomCorpInfo != null)
                 {
@@ -248,10 +249,10 @@ namespace Sub_Missions
                 return FST;
             return FactionSubTypes.NULL;
         }
-       
+
 
         // Actions
-        public void AcceptTreeMission(SubMissionStandby Anon)
+        internal void AcceptTreeMission(SubMissionStandby Anon)
         {   //
             if (DeployMission(TreeName, Anon, out SubMission Deployed))
             {
@@ -265,7 +266,7 @@ namespace Sub_Missions
             else
                 SMUtil.Assert(false, "<b> Could not deploy mission! </b>");
         }
-        public void CancelTreeMission(SubMission Active)
+        internal void CancelTreeMission(SubMission Active)
         {   //
             try
             {
@@ -285,6 +286,20 @@ namespace Sub_Missions
             {
                 Debug.Log("SubMissions: CancelTreeMission - Could not cancel mission!  Mission " + Active.Name + " of Tree" + TreeName);
             }
+        }
+
+        /// <summary>
+        /// For external use
+        /// </summary>
+        public void ExternalCancelTreeMission(SubMission toCancel)
+        {   //
+            Debug.Log("SubMissions: SubMissionTree.ExternalCancelTreeMission - Externally invoked: " + StackTraceUtility.ExtractStackTrace());
+            CancelTreeMission(toCancel);
+        }
+        public void ExternalResetALLTreeMissions()
+        {   //
+            Debug.Log("SubMissions: SubMissionTree.ExternalResetALLTreeMissions - Externally invoked: " + StackTraceUtility.ExtractStackTrace());
+            ResetALLTreeMissions();
         }
 
         public List<SubMissionStandby> GetImmediateMissions()
@@ -377,10 +392,24 @@ namespace Sub_Missions
                     continue;
                 }
                 if (mission.SPOnly && ManNetwork.IsNetworked)
-                    continue;
+                    continue; 
+                switch (mission.placementMethod)
+                {
+                    case SubMissionPosition.CloseToPlayer:
+                    case SubMissionPosition.OffsetFromPlayer:
+                    case SubMissionPosition.OffsetFromPlayerTechFacing:
+                    case SubMissionPosition.FixedCoordinate:
+                        if (ManSubMissions.IsTooCloseToOtherMission(WorldPosition.FromScenePosition(Singleton.playerPos).TileCoord))
+                        {
+                            Debug.Log("SubMissions: " + mission.Name + " - another mission is too close!");
+                            continue;
+                        }
+                        break;
+                }
                 try
                 {
                     FactionLicense licence = Singleton.Manager<ManLicenses>.inst.GetLicense(GetTreeCorp(mission.Faction));
+                 
                     if (licence.IsDiscovered && licence.CurrentLevel >= mission.GradeRequired)
                     {
                         mission.GetAndSetDisplayName();
@@ -457,7 +486,7 @@ namespace Sub_Missions
 
 
         // COMPILER
-        public List<SubMission> DeployMissions(string treeName, List<SubMissionStandby> toDeploy)
+        private List<SubMission> DeployMissions(string treeName, List<SubMissionStandby> toDeploy)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
             List<SubMission> missionsLoaded = new List<SubMission>();
@@ -468,7 +497,7 @@ namespace Sub_Missions
             }
             return missionsLoaded;
         }
-        public bool DeployMission(string treeName, SubMissionStandby toDeploy, out SubMission Deployed)
+        private bool DeployMission(string treeName, SubMissionStandby toDeploy, out SubMission Deployed)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
             Deployed = SMissionJSONLoader.MissionLoader(treeName, toDeploy.Name, this);
@@ -482,7 +511,7 @@ namespace Sub_Missions
             Deployed.Type = toDeploy.Type;
             return true;
         }
-        public static List<SubMissionStandby> CompileToStandby(List<SubMission> MissionsLoaded)
+        private static List<SubMissionStandby> CompileToStandby(List<SubMission> MissionsLoaded)
         {   // Reduce memory loads
             List<SubMissionStandby> missions = new List<SubMissionStandby>();
             foreach (SubMission mission in MissionsLoaded)
@@ -491,7 +520,7 @@ namespace Sub_Missions
             }
             return missions;
         }
-        public static SubMissionStandby CompileToStandby(SubMission mission)
+        private static SubMissionStandby CompileToStandby(SubMission mission)
         {   // Reduce memory loads
             SubMissionStandby missionCompiled = new SubMissionStandby
             {
@@ -508,6 +537,8 @@ namespace Sub_Missions
                 MinProgressX = mission.MinProgressX,
                 MinProgressY = mission.MinProgressY,
                 SPOnly = mission.SinglePlayerOnly,
+                TilePosWorld = mission.TilePos,
+                placementMethod = mission.SpawnPosition,
             };
             missionCompiled.LoadRadius = mission.GetMinimumLoadRange();
             return missionCompiled;
@@ -515,7 +546,7 @@ namespace Sub_Missions
 
 
         // Events
-        public void FinishedMission(SubMission finished)
+        internal void FinishedMission(SubMission finished)
         {
             Debug.Log("SubMissions: Finished mission " + finished.Name + " of Tree " + TreeName + ".");
             int hashName = finished.Name.GetHashCode();
@@ -540,7 +571,7 @@ namespace Sub_Missions
             }
             ManSubMissions.inst.GetAllPossibleMissions();
         }
-        public void ResetALLTreeMissions()
+        internal void ResetALLTreeMissions()
         {
             ManSubMissions.Selected = null;
             ManSubMissions.SelectedAnon = null;
@@ -605,6 +636,10 @@ namespace Sub_Missions
         public byte MinProgressX = 0;
         public byte MinProgressY = 0;
         public bool SPOnly = false;
+
+        // Mostly just to prevent overlapping
+        public IntVector2 TilePosWorld = IntVector2.zero;
+        public SubMissionPosition placementMethod;
 
         public float LoadRadius = 0;
 

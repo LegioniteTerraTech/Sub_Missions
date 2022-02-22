@@ -15,6 +15,8 @@ namespace Sub_Missions
     public class SubMission
     {   //  Build the mission!
         //    Core
+        public const int alwaysRunValue = int.MinValue;
+
         [JsonIgnore]
         internal SubMissionTree Tree;
         [JsonIgnore]
@@ -97,36 +99,38 @@ namespace Sub_Missions
         {
             return
                  "*   SubMission Missions Syntax" +
-                 "\n*       EventList - handles the Steps in order from top to bottom, and repeats if nesseary"+
-                 "\n*"+
-                 "\n*       There are variables you can add and reference around the case of the entire mission;"+
-                 "\n*       VarTrueFalse, VarInts, VarFloats can be called and pooled later on"+
-                 "\n*       Proper syntax for this would be:"+
-                 "\n*       \"VarTrueFalse\" :{"+
-                 "\n*          false, // Is Target destroyed?"+
-                 "\n*          false, // PlayerIsAlive"+
-                 "\n*          false, // PlayerIsAlive"+
-                 "\n*          true,  // PlayerIsAlive"+
-                 "\n*       }"+
+                 "\n*       Every mission starts on the CurrentProgressID of 0." +
                  "\n*" +
-                 "\n*      Variables with \"Global\" attached to the beginning:"+
-                 "\n*       To re-reference these (Entire-SubMission level Varibles), in the step's trigger, make sure to "+
-                 "\n*       reference the Zero-Based-Index in the respective mission slot to reference the variable."+
-                 "\n*       Zero-Based-Index [0,1,2]  (normal is [1,2,3])"+
+                 "\n*       EventList - handles the Steps in order from top to bottom, and repeats if nesseary" +
                  "\n*" +
-                 "\n*       Each Step has a Progress ID, which tells the SubMission where to iterate to."+
-                 "\n*         When a branch ID is set, the values adjacent of it will still be triggered"+
-                 "\n*         this it to allow some keep features to still work like slightly changing the ProgressID to deal with"+
-                 "\n*         players leaving the mission area"+
-                 "\n*         If the CurrentProgressID is '1', the mission will run the Steps in [0,1,2]"+
+                 "\n*       There are variables you can add and reference around the case of the entire mission;" +
+                 "\n*       VarTrueFalse, VarInts, VarFloats can be called and pooled later on" +
+                 "\n*       Proper syntax for this would be:" +
+                 "\n*       \"VarTrueFalse\" :{" +
+                 "\n*          false, // Is Target destroyed?" +
+                 "\n*          false, // PlayerIsAlive" +
+                 "\n*          false, // next bool" +
+                 "\n*          true,  // whatever" +
+                 "\n*       }" +
                  "\n*" +
-                 "\n*         Steps with a capital \"S\" at the end can offset Step. It is suggested that you only use one step with"+
-                 "\n*         per ProgressID."+
+                 "\n*      Variables with \"Global\" attached to the beginning:" +
+                 "\n*       To re-reference these (Entire-SubMission level Varibles), in the step's trigger, make sure to " +
+                 "\n*       reference the Zero-Based-Index in the respective mission slot to reference the variable." +
+                 "\n*       Zero-Based-Index [0,1,2]  (normal is [1,2,3])" +
+                 "\n*" +
+                 "\n*       Each Step has a Progress ID, which tells the SubMission where to iterate to." +
+                 "\n*         When a branch ID is set, the values adjacent of it will still be triggered" +
+                 "\n*         this it to allow some keep features to still work like slightly changing the ProgressID to deal with" +
+                 "\n*         players leaving the mission area" +
+                 "\n*         If the CurrentProgressID is '1', the mission will run the Steps in [0,1,2]" +
+                 "\n*" +
+                 "\n*         Steps with a capital \"S\" at the end can offset Step. It is suggested that you only use one step with" +
+                 "\n*         per ProgressID." +
                  "\n*" +
                  "\n*         On success, the CurrentProgressID will be set to -98 and do one last loop." +
-                 "\n*         On fail, the CurrentProgressID will be set to -100 and do one last loop."+
+                 "\n*         On fail, the CurrentProgressID will be set to -100 and do one last loop." +
                  "\n*" +
-                 "\n*         If a Step's ProgressID is set to -999, it will update all the time regardless of the CurrentProgressID."+
+                 "\n*         If a Step's ProgressID is set to alwaysRunValue (" + alwaysRunValue + "), it will update all the time regardless of the CurrentProgressID." +
                  "\n*" +
                  "\n{  // Holds ONE whole mission" +
                   "\n  \"Name\": \"ExampleMission\",     // Must be the same as the file name (leave out the file extension)" +
@@ -142,18 +146,26 @@ namespace Sub_Missions
                   "\n  }, //  Note that missions on spawn will always point north." +
                   "\n  \"Faction\": \"GSO\",      // The corporation to affiliate the mission with" +
                   "\n  \"GradeRequired\": 0,  // The minimum grade required to have this mission appear" +
-                  "\n  // Conditions TO CHECK before executing" +
-                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
-                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
-                  "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
+                  "\n  \"SpawnPosition\": \"FarFromPlayer\",   // The position where the mission should be spawned in relation to the player." +
+                  "\n  // Conditions TO CHECK before offering mission" +
+                  "\n  \"MinProgressX\": 0,   // Your SubMissionTree.json's ProgressXName required for this mission." +
+                  "\n  //  If this value is negative, then it checks based on At Most." +
+                  "\n  \"MinProgressX\": 0,   // Your SubMissionTree.json's ProgressXName required for this mission." +
+                  "\n  //   If this value is negative, then it checks based on At Most." +
                   "\n  // Input Parameters" +
-                  "\n  \"InputNum\": 0.0,             // The Team to set the Tech to if \"InputStringAux\" is set to team" +
-                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to change." +
-                  "\n  \"InputStringAux\": null,      // What to change on the Tracked Tech, or the Tech to swap to." +
-                 "\n},";
-        }
+                  "\n  \"SinglePlayerOnly\": true,       // Set if it should only be offered in single-player (MP is pending)." +
+                  "\n  // This will not allow illegal blocks to spawn." +
+                  "\n  \"IgnorePlayerProximity\": 0.0,   // Use this for SubMissions that don't have to have a proximity" +
+                  "\n  // Post-SubMission cleanup" +
+                  "\n  //  - Everything should clear anyways if the mission is cancelled or failed" +
+                  "\n  \"ClearTechsOnClear\": true,      // Clear all the mission techs on successful mission finish." +
+                  "\n  \"ClearModularMonumentsOnClear\": true,  // Gets rid of all ModularMonuments in this mission." +
+                  "\n  \"ClearSceneryOnSpawn\": true,  // Clears the mission area." +
+                 "\n}," +
+                 "\n //Note:  Repeating missions do not reserve their position - do not use for missions with persistant elements!";
+    }
 
-        public void OnMoveWorldOrigin(IntVector3 moveDist)
+        internal void OnMoveWorldOrigin(IntVector3 moveDist)
         {
             //Position += moveDist;
             foreach (SubMissionStep step in GetAllEvents())
@@ -161,12 +173,12 @@ namespace Sub_Missions
                 step.UpdatePosition(moveDist);
             }
         }
-        public void CheckForReSync()
+        internal void CheckForReSync()
         {
             if (!IsActive)
                 ReSync();
         }
-        public void PauseAndUnload()
+        internal void PauseAndUnload()
         {
             ActiveState = SubMissionLoadState.PositionSetReady;
             foreach (SMWorldObject SMWO in TrackedMonuments)
@@ -179,7 +191,7 @@ namespace Sub_Missions
             }
         }
 
-        public void GetAndSetDisplayName()
+        internal void GetAndSetDisplayName()
         {   // 
             if (!SelectedAltName.NullOrEmpty())
                 return;
@@ -220,7 +232,7 @@ namespace Sub_Missions
             return minRange;
         }
 
-        public void Startup()
+        internal void Startup()
         {   // 
             if (UpdateSpeedMultiplier < 0.5f)
             {
@@ -273,7 +285,7 @@ namespace Sub_Missions
         }
 
 
-        public void UpdateDistance()
+        internal void UpdateDistance()
         {   // 
             if (ActiveState == SubMissionLoadState.NeedsFirstInit || ActiveState == SubMissionLoadState.PositionSetReady)
             {
@@ -292,7 +304,7 @@ namespace Sub_Missions
                 FirstLoad();
             }
         }
-        public void FirstLoad()
+        private void FirstLoad()
         {   // 
             if (Corrupted)
                 return; // cannot run!!!
@@ -379,7 +391,7 @@ namespace Sub_Missions
             //Debug.Log("SubMissions: ReSynced");
             //Debug.Log("SubMissions: Tree " + Tree.TreeName);
         }
-        public void Cleanup(bool isWorldUnloading = false)
+        internal void Cleanup(bool isWorldUnloading = false)
         {   //
             IsCleaningUp = true;
             try  // We don't want to crash when the mission maker is still testing
@@ -427,7 +439,7 @@ namespace Sub_Missions
             TrackedMonuments.Clear();
             ActiveState = SubMissionLoadState.NotAvail;
         }
-        public void Conclude()
+        private void Conclude()
         {   // Like Cleanup but leaves some optional aftermath
             IsCleaningUp = true;
             try  // We don't want to crash when the mission maker is still testing
@@ -487,7 +499,7 @@ namespace Sub_Missions
                 allEvents.AddRange(GetEventsRecursive(EventList));
             return allEvents;
         }
-        public List<SubMissionStep> GetEventsRecursive(List<SubMissionStep> toSearch)
+        private List<SubMissionStep> GetEventsRecursive(List<SubMissionStep> toSearch)
         {   //
             List<SubMissionStep> allEvents = new List<SubMissionStep>();
             foreach (SubMissionStep step in toSearch)
@@ -498,7 +510,7 @@ namespace Sub_Missions
             }
             return allEvents;
         }
-        public void PurgeAllActiveMessages()
+        internal void PurgeAllActiveMessages()
         {   //
             foreach (SubMissionStep step in GetAllEvents())
             {
@@ -518,7 +530,7 @@ namespace Sub_Missions
         }
 
         // Endings
-        public void Finish()
+        internal void Finish()
         {   //
             if (IsCleaningUp)
                 return;
@@ -529,7 +541,7 @@ namespace Sub_Missions
             Conclude();
             Tree.FinishedMission(this);
         }
-        public void Fail()
+        internal void Fail()
         {   //
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
             CurrentProgressID = -100;
@@ -540,7 +552,7 @@ namespace Sub_Missions
 
 
         // UPDATE
-        public void TriggerUpdate()
+        internal void TriggerUpdate()
         {   // updated at least every half second
 
             if (IsActive || IgnorePlayerProximity)
@@ -591,9 +603,9 @@ namespace Sub_Missions
 
 
         // Utilities
-        public bool CanRunStep(int input)
+        internal bool CanRunStep(int input)
         {
-            return (input == -999 || input <= CurrentProgressID + 1 && input >= CurrentProgressID - 1);
+            return (input == alwaysRunValue || input <= CurrentProgressID + 1 && input >= CurrentProgressID - 1);
         }
         public bool GetTechPosHeading(string TechName, out Vector3 pos, out Vector3 direction, out int team)
         {   //
@@ -637,7 +649,7 @@ namespace Sub_Missions
 
         private const int maxAttempts = 32;
         private static Bitfield<ObjectTypes> searchTypes = new Bitfield<ObjectTypes>(new ObjectTypes[2] { ObjectTypes.Vehicle, ObjectTypes.Crate });
-        public void SetPositionClassicMission()
+        private void SetPositionClassicMission()
         {
             Debug.Log("SubMissions: SetPositionClassicMission");
             List<WorldTile> IV = new List<WorldTile>();
@@ -651,15 +663,41 @@ namespace Sub_Missions
             int missionReqRad = (int)GetMinimumLoadRange();
             foreach (WorldTile IVc in IV)
             {
-                if (IVc.LargestFreeSpaceOnTile > missionReqRad)
+                if (IVc.LargestFreeSpaceOnTile > missionReqRad && !ManSubMissions.IsTooCloseToOtherMission(IVc.Coord))
                 {
                     Position = IVc.CalcSceneCentre();
                     Debug.Log("Decided on Scene Position " + Position);
-                    return;
+                    break;
                 }
             }
+
+            /*
+            // Will try configuring later
+            string NameCase = "MOD_SubMission_" + Name;
+            FreeSpaceFinder FSF = new FreeSpaceFinder();
+            ManFreeSpace.FreeSpaceParams FSP = new ManFreeSpace.FreeSpaceParams
+            {
+                m_AllowSpawnInSceneryBlocker = ClearSceneryOnSpawn,
+                m_AllowUnloadedTiles = true,
+                m_AvoidLandmarks = true,
+                m_CenterPos = Position,
+                m_CenterPosWorld = WorldPosition.FromScenePosition(Position),
+                m_CameraSpawnConditions = ManSpawn.CameraSpawnConditions.OffCamera,
+                m_CheckSafeArea = true,
+                m_CircleRadius = GetMinimumLoadRange(),
+                m_DebugName = NameCase,
+                m_ObjectsToAvoid = new Bitfield<ObjectTypes>(new ObjectTypes[2] { ObjectTypes.Vehicle, ObjectTypes.Crate }),
+                m_CircleIndex = 0,
+                m_RejectFunc = null,//new ManFreeSpace.FreeSpaceParams.RejectFunction(),
+                m_SearchRadiusMultiplier = 1,
+                m_SilentFailIfNoSpaceFound = true,
+                m_RejectFuncContext = null,
+            };
+            //FSP.CustomValidator = new ManFreeSpace.FreeSpaceParams.CustomValidatorFunc(FSP, Position);
+            FSF.Setup(FSP, NameCase, true);
+            */
         }
-        public void SetPositionFarFromPlayer()
+        private void SetPositionFarFromPlayer()
         {
             Debug.Log("SubMissions: SetPositionFarFromPlayer");
             Vector3 randAngle;
@@ -676,10 +714,13 @@ namespace Sub_Missions
                 if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
                     Position.y = height;
             }
-            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0);
+            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0 &&
+                !ManSubMissions.IsTooCloseToOtherMission(ManWorld.inst.TileManager.SceneToTileCoord(Position)));
+            if (maxAttempts == attemptCount)
+                Debug.Log("SubMissions: SetPositionFarFromPlayer - FAILED TO FIND A REASONABLE POSITION");
             return;
         }
-        public void SetPositionCloseToPlayer()
+        private void SetPositionCloseToPlayer()
         {
             Debug.Log("SubMissions: SetPositionCloseToPlayer");
             Vector3 randAngle;
@@ -699,7 +740,7 @@ namespace Sub_Missions
             while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0);
             return;
         }
-        public void SetPositionFromPlayer()
+        private void SetPositionFromPlayer()
         {
             Debug.Log("SubMissions: SetPositionFromPlayer");
             float loadRange = GetMinimumLoadRange();
@@ -713,7 +754,7 @@ namespace Sub_Missions
                 Position.y = height;
             return;
         }
-        public void SetPositionFromPlayerTankFacing()
+        private void SetPositionFromPlayerTankFacing()
         {
             Debug.Log("SubMissions: SetPositionFromPlayerTankFacing");
             float loadRange = GetMinimumLoadRange();
@@ -734,14 +775,14 @@ namespace Sub_Missions
                 Position.y = height;
             return;
         }
-        public void TryClearAreaForMission()
+        private void TryClearAreaForMission()
         {   //N/A
             int removeCount = 0;
             foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(Position, GetMinimumLoadRange(), new Bitfield<ObjectTypes>(new ObjectTypes[1] { ObjectTypes.Scenery })))
             {   
                 if (vis.resdisp.IsNotNull())
                 {
-                    vis.resdisp.RemoveFromWorld(false);
+                    vis.resdisp.RemoveFromWorld(false, true, true, true);
                     removeCount++;
                 }
             }
@@ -750,16 +791,20 @@ namespace Sub_Missions
 
         // Mission pointer when unloaded
         [JsonIgnore]
-        Waypoint UnloadedPosWay;
+        private Waypoint UnloadedPosWay;
         [JsonIgnore]
-        TrackedVisible UnloadedPosWayVis;
-        public void RunWaypoint(bool show)
+        private TrackedVisible UnloadedPosWayVis;
+        internal void RunWaypoint(bool show)
         {   //N/A
              if (show && !IgnorePlayerProximity)
             {
                 if (UnloadedPosWay == null)
                 {
                     CreateNewWaypoint();
+                }
+                else
+                {
+                    UnloadedPosWayVis.SetPos(Position);
                 }
 
             }

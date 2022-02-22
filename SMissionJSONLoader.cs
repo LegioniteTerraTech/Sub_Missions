@@ -52,6 +52,30 @@ namespace Sub_Missions
             frictionCombine = PhysicMaterialCombine.Maximum,
             staticFriction = 0.75f,
         };
+        public static readonly PhysicMaterial PMR = new PhysicMaterial("RUBR")
+        {
+            dynamicFriction = 0.75f,
+            bounciness = 0.9f,
+            bounceCombine = PhysicMaterialCombine.Maximum,
+            frictionCombine = PhysicMaterialCombine.Maximum,
+            staticFriction = 0.75f,
+        };
+        public static readonly PhysicMaterial PMI = new PhysicMaterial("ICE")
+        {
+            dynamicFriction = 0.1f,
+            bounciness = 0.0f,
+            bounceCombine = PhysicMaterialCombine.Average,
+            frictionCombine = PhysicMaterialCombine.Average,
+            staticFriction = 0.1f,
+        };
+        public static readonly PhysicMaterial PMN = new PhysicMaterial("NOFRICT")
+        {
+            dynamicFriction = 0.0f,
+            bounciness = 0.0f,
+            bounceCombine = PhysicMaterialCombine.Average,
+            frictionCombine = PhysicMaterialCombine.Minimum,
+            staticFriction = 0.0f,
+        };
 
         private static JsonSerializerSettings JSONSaver = new JsonSerializerSettings
         {
@@ -161,6 +185,8 @@ namespace Sub_Missions
             mission1.Description = "A complex showcase mission with an NPC involved";
             mission1.GradeRequired = 1;
             mission1.Faction = "GSO";
+            mission1.Position = Vector3.forward * 40;
+            mission1.SpawnPosition = SubMissionPosition.OffsetFromPlayerTechFacing;
             mission1.ClearTechsOnClear = false; // off for now to show the StepActRemove Step
             mission1.VarTrueFalse = new List<bool>
             {
@@ -197,7 +223,7 @@ namespace Sub_Missions
                 new SubMissionStep
                 {
                     StepType = SMStepType.SetupWaypoint,
-                    ProgressID = -999,// update For all time. Always.
+                    ProgressID = SubMission.alwaysRunValue,// update For all time. Always.
                     Position = new Vector3(2,0,6),
                     VaribleType = EVaribleType.None,
                     InputString = "Garrett Gruntle", // give it a TrackedTech Tech name to assign it to that tech
@@ -522,7 +548,7 @@ namespace Sub_Missions
                 new SubMissionStep
                 {
                     StepType = SMStepType.SetupWaypoint,
-                    ProgressID = -999,// update For all time. Always.
+                    ProgressID = SubMission.alwaysRunValue,// update For all time. Always.
                     Position = new Vector3(2,0,6),
                     VaribleType = EVaribleType.None,
                     InputString = "TestTarget"
@@ -562,6 +588,7 @@ namespace Sub_Missions
             mission3.GradeRequired = 1;
             mission3.MinProgressX = 1;
             mission3.Faction = "GSO";
+            mission3.IgnorePlayerProximity = true;
             mission3.ClearTechsOnClear = true;
             mission3.VarTrueFalse = new List<bool>
             {
@@ -683,6 +710,8 @@ namespace Sub_Missions
             mission4.MinProgressX = 0;
             mission4.Faction = "GSO";
             mission4.ClearTechsOnClear = true;
+            mission4.Position = Vector3.forward * 32;
+            mission4.SpawnPosition = SubMissionPosition.OffsetFromPlayer;
             mission4.VarTrueFalse = new List<bool>
             {
                 //Simple mission using only ProgressIDs
@@ -829,6 +858,10 @@ namespace Sub_Missions
             //Debug.Log("SubMissions: Cleaning Name " + output);
             return true;
         }
+        public static bool DirectoryExists(string DirectoryIn)
+        {
+            return Directory.Exists(DirectoryIn);
+        }
         public static void ValidateDirectory(string DirectoryIn)
         {
             if (!GetName(DirectoryIn, out string name))
@@ -856,6 +889,21 @@ namespace Sub_Missions
             {
                 File.WriteAllText(FileDirectory + ".json", ToOverwrite);
                 Debug.Log("SubMissions: Saved " + name + ".json successfully.");
+            }
+            catch
+            {
+                SMUtil.Assert(false, "SubMissions: Could not edit " + name + ".json.  \n   This could be due to a bug with this mod or file permissions.");
+                return;
+            }
+        }
+        public static void TryWriteToTextFile(string FileDirectory, string ToOverwrite)
+        {
+            if (!GetName(FileDirectory, out string name))
+                return;// error
+            try
+            {
+                File.WriteAllText(FileDirectory + ".txt", ToOverwrite);
+                Debug.Log("SubMissions: Saved " + name + ".txt successfully.");
             }
             catch
             {
@@ -1050,7 +1098,21 @@ namespace Sub_Missions
                 foreach (Collider Col in gameObj.GetComponentsInChildren<Collider>())
                 {
                     Col.gameObject.layer = layerSet;
-                    Col.sharedMaterial = PM;
+                    switch (worldObj.TerrainType)
+                    {
+                        case SMWOTerrain.Rubber:
+                            Col.sharedMaterial = PMR;
+                            break;
+                        case SMWOTerrain.Ice:
+                            Col.sharedMaterial = PMI;
+                            break;
+                        case SMWOTerrain.Frictionless:
+                            Col.sharedMaterial = PMN;
+                            break;
+                        default:
+                            Col.sharedMaterial = PM;
+                            break;
+                    }
                 }
                 gameObj.transform.position = Vector3.down * 50;
                 gameObj.SetActive(false);
@@ -1107,8 +1169,9 @@ namespace Sub_Missions
                                     }
                                 }
                             }
-                            catch 
+                            catch
                             {   // report missing component 
+                                SMUtil.Assert(false, "SubMissions: Error in " + baseCase.name + " WorldObjectJSON Tree: " + SMT.TreeName + "\n No such variable exists: " + (entry.Key.NullOrEmpty() ? entry.Key : "ENTRY IS NULL OR EMPTY"));
                             }
                         }
                     }

@@ -84,7 +84,7 @@ namespace Sub_Missions
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)
             {
                 List<BlockTypes> items = new List<BlockTypes>(BlocksToSpawn);
-                if ((int)FST > ManSMCCorps.UCorpRange)
+                if (ManSMCCorps.IsSMCCorpLicense(FST))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out SMCCorpLicense CL))
                     {
@@ -123,7 +123,7 @@ namespace Sub_Missions
                         step--;
                     }
                 }
-                if ((int)FST > ManSMCCorps.UCorpRange)
+                if (ManSMCCorps.IsSMCCorpLicense(FST))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out SMCCorpLicense CL))
                     {

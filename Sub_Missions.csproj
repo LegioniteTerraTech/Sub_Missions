@@ -123,6 +123,10 @@
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.FileSystemHttpModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.FileSystemHttpModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.ImageConversionModule">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.ImageConversionModule.dll</HintPath>
       <Private>False</Private>
@@ -137,6 +141,10 @@
     </Reference>
     <Reference Include="UnityEngine.Networking">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.Networking.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="UnityEngine.ParticleSystemModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="UnityEngine.PhysicsModule">
@@ -184,6 +192,8 @@
     <Compile Include="CustomCorpsMK2\ManSMCCorps.cs" />
     <Compile Include="CustomCorpsMK2\SMCCorpBlockRange.cs" />
     <Compile Include="CustomCorpsMK2\SMCSkinID.cs" />
+    <Compile Include="SMExplosion.cs" />
+    <Compile Include="Steps\StepAirstrike.cs" />
     <Compile Include="Steps\StepFolder.cs" />
     <Compile Include="CustomCorpsMK2\UICCorpLicenses.cs" />
     <Compile Include="CustomCorpsMK2\UICustomCorpSkinsTEMP.CS" />

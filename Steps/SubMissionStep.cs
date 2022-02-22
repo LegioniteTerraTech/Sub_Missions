@@ -34,8 +34,8 @@ namespace Sub_Missions.Steps
         [DefaultValue(SMStepType.NULL)]
         public SMStepType StepType = SMStepType.NULL;           // The type this is
 
-        [DefaultValue(-999)]
-        public int ProgressID = -999;       // Progress ID this runs on. Set to -999 to always run.
+        [DefaultValue(SubMission.alwaysRunValue)]
+        public int ProgressID = SubMission.alwaysRunValue;       // Progress ID this runs on. Set to SubMission.alwaysRunValue to always run.
         public int SuccessProgressID = 0;   // transfer to this when successful
 
         public Vector3 Position = Vector3.zero;     // Offset from Mission Origin
@@ -226,6 +226,9 @@ namespace Sub_Missions.Steps
                 case SMStepType.ActRandom:
                     stepGenerated = new StepActRandom();
                     break;
+                case SMStepType.ActAirstrike:
+                    stepGenerated = new StepAirstrike();
+                    break;
                 case SMStepType.CheckLogic:
                     stepGenerated = new StepCheckLogic();
                     break;
@@ -306,6 +309,7 @@ namespace Sub_Missions.Steps
         ActOptions,
         ActMessagePurge,
         ActRandom,
+        ActAirstrike,
 
         // CHECKS
         CheckLogic,
