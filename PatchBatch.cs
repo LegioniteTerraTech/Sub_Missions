@@ -23,7 +23,6 @@ namespace Sub_Missions
             private static void Postfix()
             {
                 ManSubMissions.Subscribe();
-                Debug.Log("SubMissions: Core module hooks launched");
             }
         }
         
@@ -148,6 +147,7 @@ namespace Sub_Missions
             }
         }
 
+        [HarmonyPriority(-998)]
         [HarmonyPatch(typeof(BlockLoader))]
         [HarmonyPatch("FixBlockUnlockTable")]// SAAAAAVVE
         private static class PatchCCModdingAfter
@@ -161,7 +161,7 @@ namespace Sub_Missions
                     error++;
                     foreach (SMCCorpLicense CL in ManSMCCorps.GetAllSMCCorps())
                     {
-                        if (block.Name.StartsWith(CL.Faction))
+                        if (block.Name.StartsWith(CL.GetCorpNameForBlocks()))
                         {
                             return false;
                         }
@@ -176,6 +176,7 @@ namespace Sub_Missions
                 return true;
             }
         }
+        [HarmonyPriority(-999)]
         [HarmonyPatch(typeof(BlockLoader))]
         [HarmonyPatch("Register", new Type[] { typeof(CustomBlock) })]// SAAAAAVVE
         private static class PatchCCModding
@@ -229,7 +230,7 @@ namespace Sub_Missions
                     error++;
                     foreach (SMCCorpLicense CL in ManSMCCorps.GetAllSMCCorps())
                     {
-                        if (block.Name.StartsWith(CL.Faction))
+                        if (block.Name.StartsWith(CL.GetCorpNameForBlocks()))
                         {
                             FST = (FactionSubTypes)CL.ID;
                             neededReassign = true;

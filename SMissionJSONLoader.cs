@@ -100,12 +100,12 @@ namespace Sub_Missions
             DirectoryInfo di = new DirectoryInfo(Assembly.GetExecutingAssembly().Location);
             di = di.Parent; // off of this DLL
             DLLDirectory = di.ToString();
-            di = di.Parent; // out of the DLL folder
-            di = di.Parent; // out of QMods
-            BaseDirectory = di.ToString();
-            MissionsDirectory = di.ToString() + up + "Custom SMissions";
-            MissionSavesDirectory = di.ToString() + up + "SMissions Saves";
-            MissionCorpsDirectory = di.ToString() + up + "SMissions Corps";
+            DirectoryInfo game = new DirectoryInfo(Application.dataPath);
+            game = game.Parent; // out of the game folder
+            BaseDirectory = game.ToString();
+            MissionsDirectory = game.ToString() + up + "Custom SMissions";
+            MissionSavesDirectory = game.ToString() + up + "SMissions Saves";
+            MissionCorpsDirectory = game.ToString() + up + "SMissions Corps";
             ValidateDirectory(MissionsDirectory);
             ValidateDirectory(MissionSavesDirectory);
             ValidateDirectory(MissionCorpsDirectory);

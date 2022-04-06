@@ -79,6 +79,10 @@
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\RandomAdditions\RandomAdditions.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="SafeSaves">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\SafeSaves\SafeSaves.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="ScaleableTechs">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\Scale Techs\ScaleableTechs.dll</HintPath>
       <Private>False</Private>

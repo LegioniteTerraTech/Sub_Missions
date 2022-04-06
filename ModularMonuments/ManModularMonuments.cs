@@ -60,7 +60,11 @@ namespace Sub_Missions
 
         internal static void Unregister(SMWorldObject remove)
         {
-            ActiveWorldObjects.Remove(remove.gameObject);
+            try
+            {
+                ActiveWorldObjects.Remove(remove.gameObject);
+            }
+            catch { }
         }
         internal static void GraduateToPerm(List<SMWorldObject> makePerm)
         {

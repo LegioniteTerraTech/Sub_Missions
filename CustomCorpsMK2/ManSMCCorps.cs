@@ -73,6 +73,19 @@ namespace Sub_Missions
             }
             return null;
         }
+        public static SMCCorpLicense GetSMCCorpBlocks(string corpName)
+        {   //
+            try
+            {
+                int hash = corpName.GetHashCode();
+                return corpsStored.Values.ToList().Find(delegate (SMCCorpLicense cand) { return cand.GetNameHashForBlocks() == hash; });
+            }
+            catch
+            {
+                Debug.Log("SubMissions: Tried to fetch value but corpsStored is null!?  ");
+            }
+            return null;
+        }
         public static bool GetSMCCorp(string corpName, out SMCCorpLicense CL)
         {   //
             CL = GetSMCCorp(corpName);
@@ -232,9 +245,10 @@ namespace Sub_Missions
                     int skinCount = corpEntry.Value.importedSkins.Count + corpEntry.Value.registeredSkins.Count;
                     Debug.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - count " + skinCount);
                     bool worked = false;
+                    List<SkinTextures> STs = new List<SkinTextures>();
                     try
                     {
-                        ManCustomSkins.inst.GetCorpSkinTextureInfos((FactionSubTypes)corpEntry.Key);
+                        STs = ManCustomSkins.inst.GetCorpSkinTextureInfos((FactionSubTypes)corpEntry.Key);
                         worked = true;
                     }
                     catch { }
@@ -250,12 +264,30 @@ namespace Sub_Missions
                     List<ManTechMaterialSwap.MatReplacePairs> stuff = (List<ManTechMaterialSwap.MatReplacePairs>)skinSwapInsts.GetValue(ManTechMaterialSwap.inst);
                     List<Material> mats = new List<Material>();
                     Material newMat = new Material(stuff.First().m_Materials.First());
+
+                    Debug.Log("SubMissions: Size Alb: "
+                        + newMat.GetTexture("_MainTex").width
+                        + " Size Met: "
+                        + newMat.GetTexture("_MetallicGlossMap").width
+                        + " Size Emissive: " +
+                        newMat.GetTexture("_EmissionMap").width);
+
+                    SkinTextures ST = STs.First();
+                    //newMat.SetTexturesToMaterial(ST.m_Albedo, ST.m_Metal, ST.m_Emissive, false);
                     newMat.name = corpEntry.Value.Faction + "_Main";
                     mats.Add(newMat);
                     for (int step = 1; step < skinCount; step++)
                     {
                         mats.Add(newMat);
                     }
+                    /*
+                    Debug.Log("SubMissions: new Size Alb: " 
+                        + newMat.GetTexture("_MainTex").width
+                        + " Size Met: "
+                        + newMat.GetTexture("_MetallicGlossMap").width
+                        + " Size Emissive: " + 
+                        newMat.GetTexture("_EmissionMap").width);
+                    */
                     Debug.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - skin count " + skinCount);
                     if (skinCount < 2)
                     {
@@ -273,8 +305,10 @@ namespace Sub_Missions
                     ManTechMaterialSwap.MatSwapGroup MSG = new ManTechMaterialSwap.MatSwapGroup();
                     MSG.m_Corp = (FactionSubTypes)corpEntry.Key;
                     List<ManTechMaterialSwap.MatSwapInfo> MSIL = new List<ManTechMaterialSwap.MatSwapInfo>();
+                    ManTechMaterialSwap.MatSwapInfo MSI = ManTechMaterialSwap.inst.m_MaterialsToSwap.First().m_Materials.First();
+                    //ManTechMaterialSwap.MatSwapInfo MSI2 = new ManTechMaterialSwap.MatSwapInfo { m_Material = newMat, m_Scroll = MSI.m_Scroll, };
                     for (int step = 0; step < skinCount; step++)
-                        MSIL.Add(ManTechMaterialSwap.inst.m_MaterialsToSwap.First().m_Materials.First());
+                        MSIL.Add(MSI);
                     MSG.m_Materials = MSIL.ToArray();
                     Debug.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 4");
 
@@ -467,6 +501,7 @@ namespace Sub_Missions
                 List<string> names = GetNameList(CL.Faction + SMissionJSONLoader.up + "Skins");
                 Debug.Log("SubMissions: Found " + names.Count + " skins...");
                 CL.TexturesCache.Clear();
+                List<CorporationSkinInfo> CSISort = new List<CorporationSkinInfo>();
                 foreach (string name in names)
                 {
                     CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
@@ -474,11 +509,27 @@ namespace Sub_Missions
                     {
                         Debug.Log("SubMissions: Added Skin " + name);
                         CL.importedSkins.Add(CSI.m_SkinUniqueID);
-                        ManCustomSkins.inst.AddSkinToCorp(CSI, true);
+                        CSISort.Add(CSI);
                     }
                     else
                         SMUtil.Assert(false, "Could not load Skin " + name);
                 }
+                if (CL.SkinReferenceFaction == FactionSubTypes.NULL && CL.importedSkins.Count() == 1)
+                {
+                    string name = names.First();
+                    CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
+                    if (LoadSkinForCorp(CL, name, directorySkins + SMissionJSONLoader.up + name, ref CSI, true))
+                    {
+                        Debug.Log("SubMissions: Added Skin " + name);
+                        CL.importedSkins.Add(CSI.m_SkinUniqueID);
+                        CSISort.Add(CSI);
+                    }
+                    else
+                        SMUtil.Assert(false, "Could not load Skin " + name);
+                }
+                CSISort = CSISort.OrderBy(x => x.m_SkinUniqueID).ToList();
+                foreach (var CSIC in CSISort)
+                    ManCustomSkins.inst.AddSkinToCorp(CSIC, true);
                 return true;
 
             }
@@ -488,7 +539,7 @@ namespace Sub_Missions
                 return false;
             }
         }
-        private static bool LoadSkinForCorp(SMCCorpLicense CL, string folderName, string destination, ref CorporationSkinInfo CSI)
+        private static bool LoadSkinForCorp(SMCCorpLicense CL, string folderName, string destination, ref CorporationSkinInfo CSI, bool stackTemp = false)
         {
             try
             {
@@ -503,7 +554,7 @@ namespace Sub_Missions
                     else
                     {
                         SID = new SMCSkinID();
-                        int IDFind = 1; // 0 is taken by the default block textures
+                        int IDFind = 0;
                         if (CL.SkinReferenceFaction != FactionSubTypes.NULL)
                             IDFind = AdvisedCorpSkinIDStartRef;
                         while (CL.registeredSkins.Contains(IDFind) || CL.importedSkins.Contains(IDFind))//CL.importedSkins.Exists(delegate (CorporationSkinInfo cand) { return cand.m_SkinUniqueID == IDFind; }))
@@ -513,9 +564,13 @@ namespace Sub_Missions
                         SMUtil.Assert(false, "SubMissions: \nMade a new Skin.json for " + folderName + " with ID " + IDFind + " - use this to set your skin information \n Only change UniqueID if ABSOLUETLY NESSEARY (There can only be one skin to one UniqueID)");
                         SMUtil.PushErrors();
                     }
-                    if (SID.UniqueID < 1)
+                    if (stackTemp && CL.importedSkins.Contains(SID.UniqueID))
                     {
-                        SMUtil.Assert(false, "SubMissions: Skin UniqueID for skin " + folderName + ".  is below 1 - 0 is already auto-generated with existing blocks and below is not allowed!!");
+                        SID.UniqueID++;
+                    }
+                    if (SID.UniqueID < 0)
+                    {
+                        SMUtil.Assert(false, "SubMissions: Skin UniqueID for skin " + folderName + " (is below 1) is out of range!!");
                         return false;
                     }
                     else if (CL.registeredSkins.Contains(SID.UniqueID))
@@ -537,15 +592,27 @@ namespace Sub_Missions
                     // Setup skins
                     //SkinTextures refs = ManCustomSkins.inst.GetCorpSkinTextureInfos((FactionSubTypes)CL.SkinReferenceFaction).First();
                     SkinTextures ST = new SkinTextures();
+                    int SSD = 1024;
                     ST.m_Albedo = TryGetPNG(destination, SID.Albedo);
-                    //ST.m_Albedo.Resize(refs.m_Albedo.width, refs.m_Albedo.height);
+                    if (ST.m_Albedo.width != SSD || ST.m_Albedo.height != SSD)
+                    {
+                        TextureScale.Bilinear(ST.m_Albedo, SSD, SSD);
+                    }
                     CL.TexturesCache.Add(ST.m_Albedo);
-                    ST.m_Emissive = TryGetPNG(destination, SID.Emissive);
-                    //ST.m_Emissive.Resize(refs.m_Emissive.width, refs.m_Emissive.height);
-                    CL.TexturesCache.Add(ST.m_Emissive);
                     ST.m_Metal = TryGetPNG(destination, SID.Metal);
-                    //ST.m_Metal.Resize(refs.m_Metal.width, refs.m_Metal.height);
+                    if (ST.m_Metal.width != SSD || ST.m_Metal.height != SSD)
+                    {
+                        TextureScale.Bilinear(ST.m_Metal, SSD, SSD);
+                    }
                     CL.TexturesCache.Add(ST.m_Metal);
+                    int SSDE = 512;
+                    ST.m_Emissive = TryGetPNG(destination, SID.Emissive);
+                    if (ST.m_Emissive.width != SSDE || ST.m_Emissive.height != SSDE)
+                    {
+                        TextureScale.Bilinear(ST.m_Emissive, SSDE, SSDE);
+                    }
+                    CL.TexturesCache.Add(ST.m_Emissive);
+
                     CSI.m_SkinTextureInfo = ST;
                     
                     // Setup UI
@@ -610,6 +677,15 @@ namespace Sub_Missions
             return ManUI.inst.GetModernCorpIcon(FactionSubTypes.GSO).texture;
         }
 
+        internal static void ReloadSkins()
+        {
+            foreach (var SMCCL in corpsStored)
+            {
+                if (ManLicenses.inst.GetAllCorpIDs().Contains(SMCCL.Key))
+                    SMCCL.Value.BuildSkins();
+            }
+        }
+
 
         // AUDIO
         private const float fadeINRatePreDelay = 0.2f;
@@ -624,11 +700,12 @@ namespace Sub_Missions
         internal FMOD.ChannelGroup CG;
         internal FMOD.Sound MusicCurrent;
         internal FMOD.Channel ActiveMusic;
-        internal int enemyBlockCount = 0;
+        internal int enemyBlockCountCurrent = 0;
         internal int enemyID = int.MinValue;
         public FactionSubTypes faction = FactionSubTypes.NULL;
         private bool isDangerValid = false;
         private bool isPaused = false;
+        private bool queuedChange = false;
         private float justAssignedTime = 0;
         public static void Initiate()
         {
@@ -679,20 +756,53 @@ namespace Sub_Missions
 
         public static void SetDangerContext(SMCCorpLicense CL, int enemyBlockCount, int enemyVisID)
         {
+            inst.SetDangerContextInternal(CL, enemyBlockCount, enemyVisID);
+        }
+        public void SetDangerContextInternal(SMCCorpLicense CL, int enemyBlockCount, int enemyVisID)
+        {
             FactionSubTypes FST = (FactionSubTypes)CL.ID;
-            if (musicOpening && (inst.faction != FST || inst.enemyID != enemyVisID)) //&& inst.enemyBlockCount != enemyBlockCount)
-            {   // Set the music
-                inst.MusicCurrent = CL.combatMusicLoaded.GetRandomEntry();
-                inst.isDangerValid = true;
-                inst.faction = FST;
-                inst.enemyBlockCount = enemyBlockCount;
-                inst.enemyID = enemyVisID;
-                currentVolPercent = 0.01f;
-                inst.ForceReboot();
-                Debug.Log("SubMissions: ManSMCCorps Playing danger music for " + CL.Faction);
-                ManMusic.inst.SetMusicMixerVolume(0);
+            if (queuedChange)
+            {
+                if (!isDangerValid && faction != FST)
+                {
+                    MusicCurrent = CL.combatMusicLoaded.GetRandomEntry();
+                    isDangerValid = true;
+                    faction = FST;
+                    enemyBlockCountCurrent = enemyBlockCount;
+                    enemyID = enemyVisID;
+                    currentVolPercent = 0.01f;
+                    ForceReboot();
+                    Debug.Log("SubMissions: ManSMCCorps Playing danger music (Transition) for " + CL.Faction);
+                    ManMusic.inst.SetMusicMixerVolume(0);
+                    queuedChange = false;
+                }
+                else if (musicOpening)
+                    queuedChange = false;
             }
-            if (inst.faction == FST)
+            else if ((musicOpening || enemyBlockCount > enemyBlockCountCurrent) && (faction != FST || enemyID != enemyVisID))
+            {   // Set the music
+                if (isDangerValid)
+                {
+                    if (!queuedChange)
+                    {
+                        Debug.Log("SubMissions: ManSMCCorps Transitioning danger music...");
+                        queuedChange = true;
+                    }
+                }
+                else
+                {
+                    MusicCurrent = CL.combatMusicLoaded.GetRandomEntry();
+                    isDangerValid = true;
+                    faction = FST;
+                    enemyBlockCountCurrent = enemyBlockCount;
+                    enemyID = enemyVisID;
+                    currentVolPercent = 0.01f;
+                    ForceReboot();
+                    Debug.Log("SubMissions: ManSMCCorps Playing danger music for " + CL.Faction);
+                    ManMusic.inst.SetMusicMixerVolume(0);
+                }
+            }
+            if (faction == FST && !queuedChange)
             {   // Sustain the music
                 ManProfile.Profile Prof = ManProfile.inst.GetCurrentUser();
                 if (currentVolPercent < 0.03f)
@@ -702,7 +812,7 @@ namespace Sub_Missions
                 else
                     currentVolPercent = 1;
                 currentVol = Prof.m_SoundSettings.m_MusicVolume;
-                inst.justAssignedTime = 3;
+                justAssignedTime = 3;
             }
         }
         public static void HaltDanger()
@@ -713,7 +823,7 @@ namespace Sub_Missions
             {
                 inst.isDangerValid = false;
                 inst.faction = FactionSubTypes.NULL;
-                inst.enemyBlockCount = 0;
+                inst.enemyBlockCountCurrent = 0;
                 inst.enemyID = -1;
                 inst.ActiveMusic.stop();
                 Debug.Log("SubMissions: ManSMCCorps Stopping danger music");

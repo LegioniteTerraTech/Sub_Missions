@@ -126,6 +126,29 @@ namespace Sub_Missions
 
             return input;
         }
+        public static Vector3 RealignWithTerrain(ref Vector3 input, int terrainHanding)
+        {
+            switch (terrainHanding)
+            {
+                case 1:
+                    if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(input, out float height))
+                    {
+                        if (height > input.y)
+                            input.y = height;
+                    }
+                    break;
+                case 2:
+                    input = VectorOnTerrain(input, input.y);
+                    break;
+                case 3:
+                    input = VectorOnTerrain(input, 0);
+                    break;
+                default:
+                    break;
+            }
+
+            return input;
+        }
 
 
         // PLAYER

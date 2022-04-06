@@ -126,6 +126,7 @@ namespace Sub_Missions
                 Singleton.Manager<ManWorld>.inst.TileManager.TilePopulatedEvent.Subscribe(OnTileLoaded);
                 Singleton.Manager<ManWorld>.inst.TileManager.TileDepopulatedEvent.Subscribe(OnTileUnloaded);
                 Singleton.Manager<ManWorldTreadmill>.inst.AddListener(inst);
+                Debug.Log("SubMissions: Core module hooks launched");
                 WindowManager.LateInitiate();
 
                 WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.MicroWindow);
@@ -312,6 +313,7 @@ namespace Sub_Missions
                     //ManSMCCorps.ReloadAllCorps(); // Disabled as it's broken... for now.
                     HarvestAllTrees();
                     LoadSubMissionsFromSave();
+                    ManSMCCorps.ReloadSkins();
                 }
                 if (Input.GetKey(KeyCode.LeftShift))
                 {

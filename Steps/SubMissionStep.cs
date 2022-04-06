@@ -102,7 +102,7 @@ namespace Sub_Missions.Steps
             {
                 if (Forwards == Vector3.zero)
                     Forwards = Vector3.forward;
-                SMUtil.SetPosTerrain(ref Position, Mission.Position, TerrainHandling);
+                SMUtil.RealignWithTerrain(ref Position, TerrainHandling);
                 TrySetupOnType();
                 stepGenerated.Mission = Mission;
                 stepGenerated.SMission = this;

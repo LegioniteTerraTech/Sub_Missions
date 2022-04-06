@@ -12,6 +12,9 @@ using Sub_Missions.ManWindows;
 
 namespace Sub_Missions
 {
+    /// <summary>
+    /// Cannot port to steam - too heavily reliant on external file positioning
+    /// </summary>
     public class KickStart
     {
         const string ModName = "Sub_Missions";
