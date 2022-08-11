@@ -37,9 +37,13 @@ namespace Sub_Missions
         public bool ClearTechsOnClear = true;
         public bool ClearModularMonumentsOnClear = true;
         public bool ClearSceneryOnSpawn = true;
+        public bool CannotCancel = false;
         public SubMissionPosition SpawnPosition = SubMissionPosition.FarFromPlayer;
 
+        internal FactionSubTypes FactionType => SubMissionTree.GetTreeCorp(Faction);
+
         // GLOBAL
+        public WorldPosition WorldPos => new WorldPosition(TilePos, OffsetFromTile);
         /// <summary>
         /// The ScenePosition of the mission (If needed)
         /// </summary>
@@ -155,7 +159,7 @@ namespace Sub_Missions
                   "\n  // Input Parameters" +
                   "\n  \"SinglePlayerOnly\": true,       // Set if it should only be offered in single-player (MP is pending)." +
                   "\n  // This will not allow illegal blocks to spawn." +
-                  "\n  \"IgnorePlayerProximity\": 0.0,   // Use this for SubMissions that don't have to have a proximity" +
+                  "\n  \"IgnorePlayerProximity\": false,   // Use this for SubMissions that don't have to have a proximity" +
                   "\n  // Post-SubMission cleanup" +
                   "\n  //  - Everything should clear anyways if the mission is cancelled or failed" +
                   "\n  \"ClearTechsOnClear\": true,      // Clear all the mission techs on successful mission finish." +
@@ -537,6 +541,7 @@ namespace Sub_Missions
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionComplete);
             Rewards.Reward(Tree, this);
             CurrentProgressID = -98;
+            EncounterShoehorn.FinishSubMission(this, ManEncounter.FinishState.Completed);
             TriggerUpdate();
             Conclude();
             Tree.FinishedMission(this);
@@ -545,6 +550,7 @@ namespace Sub_Missions
         {   //
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
             CurrentProgressID = -100;
+            EncounterShoehorn.FinishSubMission(this, ManEncounter.FinishState.Failed);
             TriggerUpdate();
             Cleanup();
             ManSubMissions.ActiveSubMissions.Remove(this);
@@ -599,6 +605,26 @@ namespace Sub_Missions
                 }
                 catch { }
             }
+        }
+
+        internal Encounter GetEncounterInfoL()
+        {
+            return null;
+        }
+        /*
+        internal Encounter GetEncounterInfo()
+        {
+            GameObject tempOb = new GameObject("Temp - " + Name);
+            EncounterDetails encD = tempOb.AddComponent<EncounterDetails>();
+            encD.
+            encD.AwardBB = Rewards ? Rewards.MoneyGain : 0;
+            Encounter enc = tempOb.AddComponent<Encounter>();
+        }*/
+
+        internal EncounterDisplayData GetEncounterDisplayInfo()
+        {
+            EncounterDisplayData EDD = EncounterShoehorn.GetEncounterDisplayInfo(this);
+            return EDD;
         }
 
 

@@ -25,7 +25,132 @@ namespace Sub_Missions
                 ManSubMissions.Subscribe();
             }
         }
-        
+
+
+        /*
+        [HarmonyPatch(typeof(ManEncounter))]
+        [HarmonyPatch("SetupTechs")]// Get Mission info
+        internal static class Subscribe
+        {
+            private static void Postfix()
+            {
+                ManSubMissions.Subscribe();
+            }
+        }*/
+
+        [HarmonyPatch(typeof(Encounter))]
+        [HarmonyPatch("Save")]// Get Mission info
+        internal static class BlockSavingForDummies
+        {
+            private static bool Prefix(Encounter __instance)
+            {
+                if (__instance.GetComponent<DenySave>())
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+        [HarmonyPatch(typeof(Encounter))]
+        [HarmonyPatch("Load")]// Get Mission info
+        internal static class BlockLoadingForDummies
+        {
+            private static bool Prefix(Encounter __instance)
+            {
+                if (__instance.GetComponent<DenySave>())
+                {
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(EncounterDetails))]
+        [HarmonyPatch("GetString")]// Get Mission info
+        internal static class EnableCustomText
+        {
+            private static bool Prefix(EncounterDetails __instance, ref int stringBankIdx, ref string stringID, ref string __result)
+            {
+                if (stringBankIdx < -100000)
+                {
+                    __result = stringID;
+                    return false;
+                }
+                return true;
+            }
+        }
+
+        [HarmonyPatch(typeof(ManProgression))]
+        [HarmonyPatch("PopulateListOfRandomEncountersAvailable")]// Get Mission info
+        internal static class ShoehornInExternalMissions
+        {
+            private static void Postfix(ManProgression __instance, ref Dictionary<FactionSubTypes, List<EncounterToSpawn>> randomEncounters)
+            {
+                ManSubMissions.inst.GetAllPossibleMissions();
+                Debug.Log("MISSIONS FOR MISSION BOARD INLINING");
+                foreach (var item in ManSubMissions.AnonSubMissions)
+                {
+                    FactionSubTypes FST = SubMissionTree.GetTreeCorp(item.Faction);
+                    if (randomEncounters.TryGetValue(FST, out List<EncounterToSpawn> encounters))
+                    {
+                        if (!encounters.Exists(delegate (EncounterToSpawn cand) { return cand.m_EncounterDef.m_Name == item.Name; }))
+                        {
+                            encounters.Add(EncounterShoehorn.GetEncounterSpawnDisplayInfo(item));
+                            Debug.Log("MISSION BOARD - new mission " + item.Name);
+                        }
+                    }
+                    else
+                    {
+                        randomEncounters.Add(FST, new List<EncounterToSpawn> { EncounterShoehorn.GetEncounterSpawnDisplayInfo(item) });
+                        Debug.Log("MISSION BOARD [New corp added - " + FST + "] - new mission " + item.Name);
+                    }
+                }
+            }
+        }
+
+
+        [HarmonyPatch(typeof(ManEncounter))]
+        [HarmonyPatch("StartEncounter")]// Get Mission info
+        internal static class StartMissionVanillaInterface
+        {
+            private static void Prefix(ManEncounter __instance, ref EncounterToSpawn spawnParams)
+            {
+                if (spawnParams?.m_EncounterData?.m_Name != null)
+                {
+                    int hashName = spawnParams.m_EncounterData.m_Name.GetHashCode();
+                    SubMissionStandby SMS = ManSubMissions.AnonSubMissions.Find(delegate (SubMissionStandby cand) { return cand.Name.GetHashCode() == hashName; });
+                    if (SMS != null)
+                    {
+                        ManSubMissions.SelectedAnon = SMS;
+                        ManSubMissions.SelectedIsAnon = true;
+                        ManSubMissions.inst.AcceptMission();
+                    }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(ManEncounter))]
+        [HarmonyPatch("CancelEncounter")]// Get Mission info
+        internal static class StopMissionVanillaInterface
+        {
+            private static void Prefix(ManEncounter __instance, ref Encounter encounter)
+            {
+                if (encounter != null)
+                {
+                    int hashName = encounter.EncounterName.GetHashCode();
+                    SubMission SM = ManSubMissions.activeSubMissions.Find(delegate (SubMission cand) { return cand.Name.GetHashCode() == hashName; });
+                    if (SM != null)
+                    {
+                        ManSubMissions.Selected = SM;
+                        ManSubMissions.SelectedIsAnon = false;
+                        ManSubMissions.inst.CancelMission();
+                    }
+                }
+            }
+        }
+
+
+
         [HarmonyPatch(typeof(TileManager))]
         [HarmonyPatch("CreateTile")]// Setup main menu techs
         internal static class ExpandWorld
@@ -85,7 +210,7 @@ namespace Sub_Missions
                 int corpIndex = (int)enemyTech.GetMainCorp();
                 if (ManSMCCorps.IsSMCCorpLicense(corpIndex))
                 {
-                    if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
+                    if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL) && !CL.OfficialCorp)
                     {
                         if (CL.combatMusicLoaded.Count > 0)
                         {
@@ -202,6 +327,7 @@ namespace Sub_Missions
                     spacer.Add(new CodeInstruction(opcode: OpCodes.Nop));
                 codesOut.AddRange(spacer);
                 codesOut.AddRange(codes.Skip(skipUntil + skipBit).ToList());
+                Debug.Log("SubMissions: PatchCCModding - ------------ TRANSPILED ------------");
                 //codesOut.AddRange(codes);
                 /*
                 Debug.Log("\n");
@@ -226,20 +352,17 @@ namespace Sub_Missions
                 {
                     error++;
                     FactionSubTypes FST = block.Faction;
-                    bool neededReassign = false;
                     error++;
                     foreach (SMCCorpLicense CL in ManSMCCorps.GetAllSMCCorps())
                     {
                         if (block.Name.StartsWith(CL.GetCorpNameForBlocks()))
                         {
                             FST = (FactionSubTypes)CL.ID;
-                            neededReassign = true;
+                            Debug.Log("SubMissions: PatchCCModding - Reassigned Corp of " + block.Name + " to " + CL.ID);
                             break;
                         }
                     }
                     error++;
-                    if (neededReassign)
-                        Debug.Log("SubMissions: PatchCCModding - Reassigned Corp of " + block.Name);
                     int hash = ItemTypeInfo.GetHashCode(ObjectTypes.Block, block.RuntimeID);
                     error++;
                     ManSpawn.inst.VisibleTypeInfo.SetDescriptor<FactionSubTypes>(hash, FST);
@@ -247,6 +370,22 @@ namespace Sub_Missions
                 catch (Exception e)
                 {
                     Debug.Log("SubMissions: PatchCCModding - Error on block " + block.Name + " " + e);
+                }
+            }
+            private static void Postfix(ref CustomBlock block)
+            {
+                //Debug.Log("SubMissions: PatchCCModding - CALLED FOR " + block.Name);
+                int error = 0;
+                try
+                {
+                    if (block.Prefab)
+                    {
+                        //block.Prefab.GetComponent<MaterialSwapper>().SetupMaterial()
+                    }
+                }
+                catch (Exception e)
+                {
+                    Debug.Log("SubMissions: PatchCCModding(Postfix) - Error on block " + block.Name + " " + e);
                 }
             }
         }
@@ -301,7 +440,7 @@ namespace Sub_Missions
                 List<Transform> transs = (List<Transform>)trans.GetValue(__instance);
                 if (ManSMCCorps.IsSMCCorpLicense(corp))
                 {
-                    if (transs != null)
+                    if (transs != null && transs.Count > 0)
                         transs.Last().gameObject.SetActive(false);
 
                     //there's no corp button, so we do everything BUT that
@@ -317,7 +456,7 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    if (transs != null)
+                    if (transs != null && transs.Count > 0)
                         transs.Last().gameObject.SetActive(true);
                 }
                 return true;
@@ -346,6 +485,7 @@ namespace Sub_Missions
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                     {
+                        Debug.Log("AddUnOfficialCorpsToInventory - Called");
                         __result = CL.UnofficialGetCorpBlockData();
                         return false;
                     }

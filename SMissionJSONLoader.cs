@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using System.Reflection;
+using System.Reflection; 
 using UnityEngine;
 using Sub_Missions.Steps;
 using Newtonsoft.Json;
@@ -120,6 +120,8 @@ namespace Sub_Missions
             //SMCCorpLicense.SaveTemplateToDisk();
 #endif
         }
+
+
 
         // First Startup
         public static void MakePrefabMissionTreeToFile(string TreeName)
@@ -772,13 +774,31 @@ namespace Sub_Missions
         // Majors
         public static List<SubMissionTree> LoadAllTrees()
         {
-            Debug.Log("SubMissions: Searching Custom SMissions Folder...");
-            List<string> names = GetNameList();
-            Debug.Log("SubMissions: Found " + names.Count + " trees...");
             List<SubMissionTree> temps = new List<SubMissionTree>();
-            foreach (string name in names)
+            Debug.Log("SubMissions: Searching Official Mods Folder...");
+            List<string> directories = GetTreeDirectoriesOfficial();
+            Debug.Log("SubMissions: Found " + directories.Count + " trees...");
+            foreach (string directed in directories)
             {
-                if (TreeLoader(name, out SubMissionTree Tree))
+                if (GetName(directed, out string name, true))
+                {
+                    if (TreeLoader(name, directed, out SubMissionTree Tree))
+                    {
+                        Debug.Log("SubMissions: Added Tree " + name);
+                        temps.Add(Tree);
+                    }
+                    else
+                        SMUtil.Assert(false, "Could not load mission tree " + name);
+                }
+
+            }
+            ValidateDirectory(MissionsDirectory);
+            Debug.Log("SubMissions: Searching Custom SMissions Folder...");
+            List<string> namesUnofficial = GetCleanedNamesInDirectory();
+            Debug.Log("SubMissions: Found " + namesUnofficial.Count + " trees...");
+            foreach (string name in namesUnofficial)
+            {
+                if (TreeLoader(name, MissionsDirectory + up + name, out SubMissionTree Tree))
                 {
                     Debug.Log("SubMissions: Added Tree " + name);
                     temps.Add(Tree);
@@ -789,14 +809,14 @@ namespace Sub_Missions
             }
             return temps;
         }
-        public static List<SubMission> LoadAllMissions(string TreeName, SubMissionTree tree)
+        public static List<SubMission> LoadAllMissions(SubMissionTree tree)
         {
             ValidateDirectory(MissionsDirectory);
-            List<string> names = GetNameList(TreeName + up + "Missions", true);
+            List<string> names = GetCleanedNamesInDirectory(tree.TreeName + up + "Missions", true);
             List<SubMission> temps = new List<SubMission>();
             foreach (string name in names)
             {
-                var mission = MissionLoader(TreeName, name, tree);
+                var mission = MissionLoader(tree, name);
                 if (mission == null)
                 {
                     SMUtil.Assert(false, "<b> CRITICAL ERROR IN HANDLING MISSION " + name + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
@@ -810,7 +830,48 @@ namespace Sub_Missions
 
 
         // Utilities
-        public static List<string> GetNameList(string directoryFromMissionsDirectory = "", bool doJSON = false)
+        public static List<string> GetTreeDirectoriesOfficial()
+        {
+            List<string> Cleaned = new List<string>();
+            string location = new DirectoryInfo(Assembly.GetExecutingAssembly().Location).Parent.Parent.ToString();
+            // Goes to the cluster directory where all the mods are
+
+            foreach (int cCorp in ManMods.inst.GetCustomCorpIDs())
+            {
+                int attempts = 0;
+                foreach (string directoryLoc in Directory.GetDirectories(location))
+                {
+                    while (true)
+                    {
+                        try
+                        {
+                            string GO;
+                            string fileName = ManMods.inst.FindCorpShortName((FactionSubTypes)cCorp) + "_MissionTree_" + attempts + ".json";
+                            GO = directoryLoc + "\\" + fileName;
+                            if (File.Exists(GO))
+                            {
+                                UnityEngine.Debug.Log("SubMissions: GetTreeNamesOfficial - " + GO);
+                                attempts++;
+                                if (GetName(fileName, out string cleanName, true))
+                                {
+                                    Cleaned.Add(cleanName);
+                                }
+                            }
+                            else
+                                break;
+                        }
+                        catch (Exception e)
+                        {
+                            UnityEngine.Debug.Log("LocalModCorpAudio: RegisterCorpMusics - Error on Music search " + cCorp + " | " + e);
+                            break;
+                        }
+                    }
+                    attempts = 0;
+                }
+            }
+            return Cleaned;
+        }
+        public static List<string> GetCleanedNamesInDirectory(string directoryFromMissionsDirectory = "", bool doJSON = false)
         {
             string search;
             if (directoryFromMissionsDirectory == "")
@@ -930,14 +991,15 @@ namespace Sub_Missions
 
 
         // JSON Handlers
-        public static bool TreeLoader(string TreeName, out SubMissionTree Tree)
+        public static bool TreeLoader(string TreeName, string TreeDirectory, out SubMissionTree Tree)
         {
             try
             {
-                string output = LoadMissionTreeFromFile(TreeName, out Dictionary<int, Texture> album, out Dictionary<int, Mesh> models);
+                string output = LoadMissionTreeFromFile(TreeName, TreeDirectory, out Dictionary<int, Texture> album, out Dictionary<int, Mesh> models);
                 Tree = JsonConvert.DeserializeObject<SubMissionTree>(output, new MissionTypeEnumConverter());
                 Tree.MissionTextures = album;
                 Tree.MissionMeshes = models;
+                Tree.TreeDirectory = TreeDirectory;
                 return true;
             }
             catch
@@ -947,18 +1009,18 @@ namespace Sub_Missions
                 return false;
             }
         }
-        public static SubMission MissionLoader(string TreeName, string MissionName, SubMissionTree tree)
+        public static SubMission MissionLoader(SubMissionTree tree, string MissionName)
         {
             try
             {
-                string output = LoadMissionTreeMissionFromFile(TreeName, MissionName);
+                string output = LoadMissionTreeMissionFromFile(tree, MissionName);
                 SubMission mission = JsonConvert.DeserializeObject<SubMission>(output, JSONSaverMission);
                 mission.Tree = tree;
                 return mission;
             }
             catch
             {
-                SMUtil.Assert(false, "SubMissions: Check your Mission file names, cases where you referenced the names and make sure they match!!!  Tree: " + TreeName + ", Mission: " + MissionName);
+                SMUtil.Assert(false, "SubMissions: Check your Mission file names, cases where you referenced the names and make sure they match!!!  Tree: " + tree.TreeName + ", Mission: " + MissionName);
                 return null;
             }
         }
@@ -1033,7 +1095,7 @@ namespace Sub_Missions
         {
             try
             {
-                string output = LoadMissionTreeWorldObjectFromFile(SMT.TreeName, ObjectName);
+                string output = LoadMissionTreeWorldObjectFromFile(SMT, ObjectName);
                 GameObject gameObj = Instantiate(new GameObject("Unset"), null);
                 SMWorldObject worldObj = gameObj.AddComponent<SMWorldObject>();
                 worldObj.SetFromJSON(JsonConvert.DeserializeObject<SMWorldObjectJSON>(output));
@@ -1204,18 +1266,16 @@ namespace Sub_Missions
 
 
         // Loaders
-        private static string LoadMissionTreeFromFile(string TreeName, out Dictionary<int, Texture> album, out Dictionary<int, Mesh> models)
+        private static string LoadMissionTreeFromFile(string TreeName, string TreeDirectory, out Dictionary<int, Texture> album, out Dictionary<int, Mesh> models)
         {
             album = null;
             models = null;
-            string destination = MissionsDirectory + up + TreeName;
-            ValidateDirectory(MissionsDirectory);
-            ValidateDirectory(destination);
+            ValidateDirectory(TreeDirectory);
             try
             {
-                string output = File.ReadAllText(destination + up + "MissionTree.json");
-                album = LoadTreePNGs(TreeName, destination);
-                models = LoadTreeMeshes(TreeName, destination);
+                string output = File.ReadAllText(TreeDirectory + up + "MissionTree.json");
+                album = LoadTreePNGs(TreeName, TreeDirectory);
+                models = LoadTreeMeshes(TreeName, TreeDirectory);
                 Debug.Log("SubMissions: Loaded MissionTree.json for " + TreeName + " successfully.");
                 return output;
             }
@@ -1225,12 +1285,10 @@ namespace Sub_Missions
                 return null;
             }
         }
-        private static string LoadMissionTreeMissionFromFile(string TreeName, string MissionName)
+        private static string LoadMissionTreeMissionFromFile(SubMissionTree tree, string MissionName)
         {
-            string destination = MissionsDirectory + up + TreeName + up + "Missions";
+            string destination = tree.TreeDirectory + up + "Missions";
 
-            ValidateDirectory(MissionsDirectory);
-            ValidateDirectory(MissionsDirectory + up + TreeName);
             ValidateDirectory(destination);
             try
             {
@@ -1244,12 +1302,10 @@ namespace Sub_Missions
                 return null;
             }
         }
-        private static string LoadMissionTreeWorldObjectFromFile(string TreeName, string ObjectName)
+        private static string LoadMissionTreeWorldObjectFromFile(SubMissionTree tree, string ObjectName)
         {
-            string destination = MissionsDirectory + up + TreeName + up + "Pieces";
+            string destination = tree.TreeDirectory + up + "Pieces";
 
-            ValidateDirectory(MissionsDirectory);
-            ValidateDirectory(MissionsDirectory + up + TreeName);
             ValidateDirectory(destination);
             try
             {
@@ -1267,12 +1323,12 @@ namespace Sub_Missions
 
 
         // ETC
-        private static Dictionary<int, Texture> LoadTreePNGs(string TreeName, string destination)
+        private static Dictionary<int, Texture> LoadTreePNGs(string TreeName, string TreeDirectory)
         {
             Dictionary<int, Texture> dictionary = new Dictionary<int, Texture>();
             try
             {
-                string[] outputs = Directory.GetFiles(destination);
+                string[] outputs = Directory.GetFiles(TreeDirectory);
                 bool foundAny = false;
                 foreach (string str in outputs)
                 {
@@ -1296,12 +1352,12 @@ namespace Sub_Missions
                 return null;
             }
         }
-        private static Dictionary<int, Mesh> LoadTreeMeshes(string TreeName, string destination)
+        private static Dictionary<int, Mesh> LoadTreeMeshes(string TreeName, string TreeDirectory)
         {
             Dictionary<int, Mesh> dictionary = new Dictionary<int, Mesh>();
             try
             {
-                string[] outputs = Directory.GetFiles(destination);
+                string[] outputs = Directory.GetFiles(TreeDirectory);
                 bool foundAny = false;
                 foreach (string str in outputs)
                 {
@@ -1325,9 +1381,9 @@ namespace Sub_Missions
                 return null;
             }
         }
-        internal static Mesh LoadMesh(string destination)
+        internal static Mesh LoadMesh(string TreeDirectory)
         {
-            Mesh mesh = ObjImporter.ImportFileFromPath(destination);
+            Mesh mesh = ObjImporter.ImportFileFromPath(TreeDirectory);
             if (!mesh)
             {
                 throw new NullReferenceException("The object could not be imported at all: ");

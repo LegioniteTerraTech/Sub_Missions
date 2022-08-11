@@ -63,7 +63,7 @@ namespace Sub_Missions
                     }
                     else
                     {
-                        FST = tree.GetTreeCorp(CorpToGiveEXP);
+                        FST = SubMissionTree.GetTreeCorp(CorpToGiveEXP);
                         if (Singleton.Manager<ManLicenses>.inst.IsLicenseDiscovered(FST))
                             Singleton.Manager<ManLicenses>.inst.AddXP(FST, EXPGain, true);
                         else

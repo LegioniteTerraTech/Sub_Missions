@@ -20,7 +20,7 @@ namespace Sub_Missions
         public int GlobalIndex2 = 0;
 
         [JsonIgnore]
-        public StringBuilder builder = new StringBuilder();
+        private StringBuilder builder = new StringBuilder();
 
         [JsonIgnore]
         private float tickdown = 2;

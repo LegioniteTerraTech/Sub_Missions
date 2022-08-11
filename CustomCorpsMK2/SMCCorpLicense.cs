@@ -85,6 +85,8 @@ namespace Sub_Missions
         [JsonIgnore]
         public static int countWorked = 0;
 
+        internal bool OfficialCorp = false;
+
         private static FieldInfo TPTechData = typeof(TankPreset)
                    .GetField("m_TechData", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
 
@@ -208,7 +210,8 @@ namespace Sub_Missions
             FullName = ManMods.inst.FindCorpName(ID);
             Faction = ManMods.inst.FindCorpShortName(ID);
             this.ID = (int)ID;
-            GradesXP = new int[3] { 100, 250, 1000 };
+            GradesXP = new int[3] { 100, 250, 1000 }; 
+            OfficialCorp = true;
             UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - Init");
             TryInitFactionEXPSys();
         }
@@ -802,7 +805,7 @@ namespace Sub_Missions
                         //TB.GetComponent<MaterialSwapper>().SetupMaterial(null, FST);
                     }
                 }
-                //UnityEngine.Debug.Log("SubMissions: Pushed all blocks textures to corp " + ID);
+                UnityEngine.Debug.Log("SubMissions: Pushed all blocks textures to corp " + ID);
             }
             else
                 UnityEngine.Debug.Log("SubMissions: ManTechMaterialSwap - Failed. Could not push all blocks textures to corp " + ID);
@@ -992,7 +995,7 @@ namespace Sub_Missions
 
                 BlockUnlockTable.CorpBlockData CBD = new BlockUnlockTable.CorpBlockData { m_GradeList = GDl.ToArray(), };
                 corpBlockData = CBD;
-                UnityEngine.Debug.Log("SubMissions: UnofficialGetCorpBlockData(SMCCorpLicense) - corpBlockData was built.");
+                UnityEngine.Debug.Log("SubMissions: UnofficialGetCorpBlockData(SMCCorpLicense) - corpBlockData was built for " + Faction + ".");
             }
             return corpBlockData;
         }
@@ -1046,18 +1049,8 @@ namespace Sub_Missions
                             UnityEngine.Debug.Log("Just using defaults for " + Faction + " crate which is " + CrateReferenceFaction);
                             return;
                         }
-                        mesh = SMissionJSONLoader.LoadMesh(GetDirectory() + SMissionJSONLoader.up + "Crate_A.obj");
-                        if (mesh != null)
-                        {
-                            trans = GO.transform.Find(crateName + "Crate_A");
-                            trans.GetComponent<MeshFilter>().sharedMesh = mesh;
-                        }
-                        mesh = SMissionJSONLoader.LoadMesh(GetDirectory() + SMissionJSONLoader.up + "Crate_B.obj");
-                        if (mesh != null)
-                        {
-                            trans = GO.transform.Find(crateName + "Crate_B");
-                            trans.GetComponent<MeshFilter>().sharedMesh = mesh;
-                        }
+                        BuildCratePart(crateName, GO, "Crate_A");
+                        BuildCratePart(crateName, GO, "Crate_B");
 
                         GO.SetActive(false);
                         HasCratePrefab = true;
@@ -1078,6 +1071,23 @@ namespace Sub_Missions
             }
             UnityEngine.Debug.Log("Failiure on crate addition for corp " + Faction + " | The crate has missing models: Make sure you have a: ");
             UnityEngine.Debug.Log("\"Crate_Base.obj\", \"Crate_A.obj\", \"Crate_B.obj\", \"Crate_A_Lock.obj\", \"Crate_B_Lock.obj\", \"Crate_B_LightRed.obj\", \"Crate_B_LightGreen.obj\"");
+        }
+        internal void BuildCratePart(string crateName, GameObject GO, string partName)
+        {   //
+            try
+            {
+                Mesh mesh = SMissionJSONLoader.LoadMesh(GetDirectory() + SMissionJSONLoader.up + partName + ".obj");
+                if (mesh != null)
+                {
+                    Transform trans = GO.transform.Find(crateName + partName);
+                    trans.GetComponent<MeshFilter>().sharedMesh = mesh;
+                }
+            }
+            catch (Exception e)
+            {
+                UnityEngine.Debug.Log("Failiure on crate addition for corp " + Faction + " | " + e);
+                return;
+            }
         }
 
         // Fallback

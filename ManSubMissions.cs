@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using TAC_AI.Templates;
 using Sub_Missions.ManWindows;
+using Nuterra.BlockInjector;
 using Sub_Missions.Steps;
 using Newtonsoft.Json;
 
@@ -349,10 +350,14 @@ namespace Sub_Missions
         }
         private void UpdateAllSubMissions()
         {
-            foreach (SubMission sub in ActiveSubMissions)
+            try
             {
-                sub.TriggerUpdate();
+                foreach (SubMission sub in ActiveSubMissions)
+                {
+                    sub.TriggerUpdate();
+                }
             }
+            catch { } //Probably just a mission cleaning up...
         }
 
         private static void PurgeAllTrees()
@@ -362,6 +367,7 @@ namespace Sub_Missions
             {
                 tree.ResetALLTreeMissions();
             }
+            EncounterShoehorn.DestroyAllFakeEncounters();
             inst.GetAllPossibleMissions();
         }
         internal static void BroadcastTechDeath(Tank techIn, ManDamage.DamageInfo oof)
@@ -403,7 +409,7 @@ namespace Sub_Missions
         }
         private static void ModeLoad(Mode mode)
         {
-            if (mode is ModeMain || mode is ModeMisc)
+            if ((mode is ModeMain && KickStart.Debugger) || mode is ModeMisc)
             {
                 IgnoreSaveThisSession = false;
                 Debug.Log("SubMissions: ManSubMissions Loading from save!");
@@ -476,7 +482,6 @@ namespace Sub_Missions
 
 
         // testing
-
 
     }
 }

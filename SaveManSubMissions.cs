@@ -284,7 +284,7 @@ namespace Sub_Missions
                         //}
                         //else
                         //{
-                            SubMission add = SMissionJSONLoader.MissionLoader(missionTree.TreeName, mission.Name, missionTree);
+                            SubMission add = SMissionJSONLoader.MissionLoader(missionTree, mission.Name);
                             if (add == null)
                             {
                                 missingMissions.Append(treeSaved.TreeName + ":" + mission.Name);

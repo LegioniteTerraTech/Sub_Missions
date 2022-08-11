@@ -22,11 +22,11 @@ namespace Sub_Missions
 
         // Cache
         [JsonIgnore]
-        internal List<SubMissionStandby> Missions = new List<SubMissionStandby>();          //MUST BE SET VIA JSON
+        internal readonly List<SubMissionStandby> Missions = new List<SubMissionStandby>();          //MUST BE SET VIA JSON
         [JsonIgnore]
-        internal List<SubMissionStandby> RepeatMissions = new List<SubMissionStandby>();    //MUST BE SET VIA JSON
+        internal readonly List<SubMissionStandby> RepeatMissions = new List<SubMissionStandby>();    //MUST BE SET VIA JSON
         [JsonIgnore]
-        internal List<SubMissionStandby> ImmedeateMissions = new List<SubMissionStandby>();    //MUST BE SET VIA JSON
+        internal readonly List<SubMissionStandby> ImmedeateMissions = new List<SubMissionStandby>();    //MUST BE SET VIA JSON
 
         // JSON string linking
         public List<string> WorldObjectFileNames = new List<string>(); //MUST BE SET VIA JSON
@@ -58,6 +58,8 @@ namespace Sub_Missions
         internal Dictionary<int, Mesh> MissionMeshes = new Dictionary<int, Mesh>();// Compiled on tree building.
         [JsonIgnore]
         internal Dictionary<int, GameObject> MissionPieces = new Dictionary<int, GameObject>();// Compiled on tree building.
+        [JsonIgnore]
+        internal string TreeDirectory = "error";// Compiled on tree building.
 
         // Documentation
         public static string GetDocumentation()
@@ -69,7 +71,7 @@ namespace Sub_Missions
         // Initialization
         internal bool CompileMissionTree(out SubMissionTree newTree)
         {   // Reduce memory loads
-            if (!SMissionJSONLoader.TreeLoader(TreeName, out SubMissionTree tree))
+            if (!SMissionJSONLoader.TreeLoader(TreeName, TreeDirectory, out SubMissionTree tree))
             {
                 newTree = null;
                 return false;
@@ -77,7 +79,7 @@ namespace Sub_Missions
             if (tree.TreeName == null)
                 tree.TreeName = "NULL_INVALID";
             SetupTreeCorp();
-            List<SubMission> MissionsLoaded = SMissionJSONLoader.LoadAllMissions(TreeName, tree);
+            List<SubMission> MissionsLoaded = SMissionJSONLoader.LoadAllMissions(tree);
             List<SubMissionStandby> compiled = CompileToStandby(MissionsLoaded);
 
             // Now we sort them based on input strings
@@ -149,7 +151,7 @@ namespace Sub_Missions
             {
                 if (ManSMCCorps.GetSMCID(Faction, out FactionSubTypes FST1))
                 {
-                    Debug.Log("SubMissions: linked MissionTree ith unofficial Custom Corp " + Faction + " of ID " + FST1);
+                    Debug.Log("SubMissions: linked MissionTree with unofficial Custom Corp " + Faction + " of ID " + FST1);
                 }
                 else if (CustomCorpInfo != null)
                 {
@@ -167,10 +169,19 @@ namespace Sub_Missions
                     }
                 }
             }
+            else
+            { 
+            }
         }
         public static bool GetTreeCorp(string factionName, out FactionSubTypes FST)
         {   //
-            FST = ManMods.inst.GetCorpIndex(factionName);
+            FST = (FactionSubTypes)(-1);
+            try
+            {
+                FST = ManMods.inst.GetCorpIndex(factionName);
+            }
+            catch { }
+
             if (FST == (FactionSubTypes)(-1))
             {
                 if (ManSMCCorps.GetSMCID(factionName, out FactionSubTypes FST1))
@@ -197,7 +208,13 @@ namespace Sub_Missions
         }
         public FactionSubTypes GetTreeCorp()
         {   //
-            FactionSubTypes FST = ManMods.inst.GetCorpIndex(Faction);
+            FactionSubTypes FST = (FactionSubTypes)(-1);
+            try
+            {
+                FST = ManMods.inst.GetCorpIndex(Faction);
+            }
+            catch { }
+
             if (FST == (FactionSubTypes)(-1))
             {
                 if (ManSMCCorps.GetSMCID(Faction, out FactionSubTypes FST1))
@@ -225,12 +242,22 @@ namespace Sub_Missions
                 return FST;
             return FactionSubTypes.GSO;
         }
-        public FactionSubTypes GetTreeCorp(string factionName)
+        public static FactionSubTypes GetTreeCorp(string factionName)
         {   //
-            FactionSubTypes FST = ManMods.inst.GetCorpIndex(factionName);
+            FactionSubTypes FST = (FactionSubTypes)(-1);
+            try
+            {
+                FST = ManMods.inst.GetCorpIndex(factionName);
+            }
+            catch { }
+
             if (FST == (FactionSubTypes)(-1))
             {
-                if (KickStart.isBlockInjectorPresent)
+                if (ManSMCCorps.GetSMCID(factionName, out FactionSubTypes FST1))
+                {
+                    return FST1;
+                }
+                else if (KickStart.isBlockInjectorPresent)
                 {
                     int hash = factionName.GetHashCode();
                     List<CustomCorporation> CC = BlockLoader.CustomCorps.Values.ToList();
@@ -277,6 +304,7 @@ namespace Sub_Missions
                     else
                         ManSubMissions.Selected = null;
                 }
+                EncounterShoehorn.FinishSubMission(Active, ManEncounter.FinishState.Cancelled);
                 Active.Cleanup();
                 if (!ActiveMissions.Remove(Active))
                     Debug.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on CancelTreeMission!");
@@ -392,20 +420,24 @@ namespace Sub_Missions
                     continue;
                 }
                 if (mission.SPOnly && ManNetwork.IsNetworked)
-                    continue; 
-                switch (mission.placementMethod)
+                    continue;
+                try
                 {
-                    case SubMissionPosition.CloseToPlayer:
-                    case SubMissionPosition.OffsetFromPlayer:
-                    case SubMissionPosition.OffsetFromPlayerTechFacing:
-                    case SubMissionPosition.FixedCoordinate:
-                        if (ManSubMissions.IsTooCloseToOtherMission(WorldPosition.FromScenePosition(Singleton.playerPos).TileCoord))
-                        {
-                            Debug.Log("SubMissions: " + mission.Name + " - another mission is too close!");
-                            continue;
-                        }
-                        break;
+                    switch (mission.placementMethod)
+                    {
+                        case SubMissionPosition.CloseToPlayer:
+                        case SubMissionPosition.OffsetFromPlayer:
+                        case SubMissionPosition.OffsetFromPlayerTechFacing:
+                        case SubMissionPosition.FixedCoordinate:
+                            if (ManSubMissions.IsTooCloseToOtherMission(WorldPosition.FromScenePosition(Singleton.playerPos).TileCoord))
+                            {
+                                Debug.Log("SubMissions: " + mission.Name + " - another mission is too close!");
+                                continue;
+                            }
+                            break;
+                    }
                 }
+                catch { Debug.Log("Player does not exist yet"); }
                 try
                 {
                     FactionLicense licence = Singleton.Manager<ManLicenses>.inst.GetLicense(GetTreeCorp(mission.Faction));
@@ -500,7 +532,7 @@ namespace Sub_Missions
         private bool DeployMission(string treeName, SubMissionStandby toDeploy, out SubMission Deployed)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
-            Deployed = SMissionJSONLoader.MissionLoader(treeName, toDeploy.Name, this);
+            Deployed = SMissionJSONLoader.MissionLoader(this, toDeploy.Name);
             if (Deployed == null)
             {
                 SMUtil.Assert(false, "<b> CRITICAL ERROR IN HANDLING " + toDeploy.Name + " of tree " + treeName + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
@@ -522,6 +554,25 @@ namespace Sub_Missions
         }
         private static SubMissionStandby CompileToStandby(SubMission mission)
         {   // Reduce memory loads
+            List<MissionChecklist> augmentedList = new List<MissionChecklist>();
+            int lengthList = mission.CheckList.Count;
+            for (int step = 0; step < lengthList; step++)
+            {
+                MissionChecklist listEle = mission.CheckList[step];
+                MissionChecklist listEleC = new MissionChecklist
+                {
+                    BoolToEnable = listEle.BoolToEnable,
+                    GlobalIndex = listEle.GlobalIndex,
+                    GlobalIndex2 = listEle.GlobalIndex2,
+                    ListArticle = listEle.ListArticle,
+                    ValueType = listEle.ValueType,
+                };
+
+                if (mission.VarInts.Count > listEle.GlobalIndex)
+                    listEleC.GlobalIndex = mission.VarInts[listEle.GlobalIndex];
+                augmentedList.Add(listEleC);
+            }
+
             SubMissionStandby missionCompiled = new SubMissionStandby
             {
                 Tree = mission.Tree,
@@ -533,12 +584,14 @@ namespace Sub_Missions
                 GradeRequired = mission.GradeRequired,
                 Faction = mission.Faction,
                 Type = mission.Type,
+                Checklist = augmentedList,
                 Rewards = mission.Rewards,
                 MinProgressX = mission.MinProgressX,
                 MinProgressY = mission.MinProgressY,
                 SPOnly = mission.SinglePlayerOnly,
                 TilePosWorld = mission.TilePos,
                 placementMethod = mission.SpawnPosition,
+                CannotCancel = mission.CannotCancel,
             };
             missionCompiled.LoadRadius = mission.GetMinimumLoadRange();
             return missionCompiled;
@@ -636,6 +689,7 @@ namespace Sub_Missions
         public byte MinProgressX = 0;
         public byte MinProgressY = 0;
         public bool SPOnly = false;
+        public bool CannotCancel = false;
 
         // Mostly just to prevent overlapping
         public IntVector2 TilePosWorld = IntVector2.zero;
@@ -643,6 +697,7 @@ namespace Sub_Missions
 
         public float LoadRadius = 0;
 
+        public List<MissionChecklist> Checklist;
         public SubMissionReward Rewards; //
 
         public void GetAndSetDisplayName()
