@@ -47,21 +47,26 @@ namespace Sub_Missions
             RadU = FIFetch(typeof(Encounter), "m_EncounterRadius");
 
         internal static Dictionary<string, GameObject> FakeEncounters = new Dictionary<string, GameObject>();
-        private static Encounter GetFakeEncounterInternal(string name, out EncounterDetails EDl)
+        private static Encounter GetFakeEncounterInternal(string name, out EncounterDetails EDl, bool New = false)
         {
-            if (FakeEncounters.TryGetValue("temp - " + name, out GameObject val))
+            string searchTerm = "temp - " + name;
+            if (FakeEncounters.TryGetValue(searchTerm, out GameObject val))
             {
-                EDl = val.GetComponent<EncounterDetails>();
-                return val.GetComponent<Encounter>();
+                if (New)
+                {
+                    FakeEncounters.Remove(searchTerm);
+                }
+                else
+                {
+                    EDl = val.GetComponent<EncounterDetails>();
+                    return val.GetComponent<Encounter>();
+                }
             }
-            else
-            {
-                GameObject temp = new GameObject("temp - " + name);
-                temp.AddComponent<DenySave>();
-                EDl = temp.AddComponent<EncounterDetails>();
-                Encounter dummyEmpty = temp.AddComponent<Encounter>();
-                return dummyEmpty;
-            }
+            GameObject temp = new GameObject("temp - " + name);
+            temp.AddComponent<DenySave>();
+            EDl = temp.AddComponent<EncounterDetails>();
+            Encounter dummyEmpty = temp.AddComponent<Encounter>();
+            return dummyEmpty;
         }
         internal static void DestroyAllFakeEncounters()
         {
@@ -72,9 +77,9 @@ namespace Sub_Missions
             FakeEncounters.Clear();
         }
 
-        internal static Encounter GetFakeEncounter(SubMission mission, out EncounterDetails EDl)
+        internal static Encounter GetFakeEncounter(SubMission mission, out EncounterDetails EDl, bool New = false)
         {
-            Encounter dummyEmpty = GetFakeEncounterInternal(mission.Name, out EDl);
+            Encounter dummyEmpty = GetFakeEncounterInternal(mission.Name, out EDl, New);
 
             int errorl = 0;
             try
@@ -151,9 +156,9 @@ namespace Sub_Missions
 
             return dummyEmpty;
         }
-        internal static Encounter GetFakeEncounter(SubMissionStandby mission, out EncounterDetails EDl)
+        internal static Encounter GetFakeEncounter(SubMissionStandby mission, out EncounterDetails EDl, bool New = false)
         {
-            Encounter dummyEmpty = GetFakeEncounterInternal(mission.Name, out EDl);
+            Encounter dummyEmpty = GetFakeEncounterInternal(mission.Name, out EDl, New);
 
             int error = 0;
             try
@@ -294,6 +299,8 @@ namespace Sub_Missions
             obj = FIFetch(typeof(EncounterDisplayData), "m_EncounterObjectives"),
             can = FIFetch(typeof(EncounterDisplayData), "m_CanBeCancelled"),
 
+            encIDCat = FIFetch(typeof(EncounterIdentifier), "m_Category"),
+
             manMod = FIFetch(typeof(ManEncounter), "m_EncounterDataLookup");
 
 
@@ -344,15 +351,20 @@ namespace Sub_Missions
         }
 
         internal static Dictionary<string, EncounterToSpawn> cache = new Dictionary<string, EncounterToSpawn>();
-        internal static EncounterToSpawn GetEncounterSpawnDisplayInfo(SubMissionStandby mission)
+        internal static EncounterToSpawn GetEncounterSpawnDisplayInfo(SubMissionStandby mission, bool New = false, bool ForceTop = false)
         {
+            if (New)
+                cache.Remove(mission.Name);
+
             if (!cache.TryGetValue(mission.Name, out EncounterToSpawn ETS))
             {
-                EncounterIdentifier EI = new EncounterIdentifier(SubMissionTree.GetTreeCorp(mission.Faction), mission.GradeRequired, mission.Name, mission.Name);
+                EncounterIdentifier EI = new EncounterIdentifier(SubMissionTree.GetTreeCorp(mission.Faction), mission.GradeRequired, ForceTop ? "Core" : "Side", mission.Name);
                 Dictionary<EncounterIdentifier, EncounterData> knab = (Dictionary<EncounterIdentifier, EncounterData>)manMod.GetValue(ManEncounter.inst);
+                if (New)
+                    knab.Remove(EI);
                 if (!knab.TryGetValue(EI, out EncounterData ED))
                 {
-                    Encounter encounter = GetFakeEncounter(mission, out _);
+                    Encounter encounter = GetFakeEncounter(mission, out _, New);
 
                     ED = GetEncounterData(mission, encounter);
 

@@ -19,8 +19,20 @@ namespace Sub_Missions
 
         internal const int AdvisedCorpSkinIDStartRef = 128;
 
-        private static Dictionary<int, SMCCorpLicense> corpsStored = new Dictionary<int, SMCCorpLicense>();
+        private static Dictionary<int, SMCCorpLicense> corpsStoredUnofficial = new Dictionary<int, SMCCorpLicense>();
         private static Dictionary<int, SMCCorpLicense> corpsStoredOfficial = new Dictionary<int, SMCCorpLicense>();
+        private static Dictionary<int, SMCCorpLicense> corpsStored
+        {
+            get
+            {
+                Dictionary<int, SMCCorpLicense> corpsS = new Dictionary<int, SMCCorpLicense>(corpsStoredUnofficial);
+                foreach (var item in corpsStoredOfficial)
+                {
+                    corpsS.Add(item.Key, item.Value);
+                }
+                return corpsS;
+            }
+        }
         internal static RewardSpawner crateThing = new RewardSpawner();
 
         internal static bool hasScanned = false;
@@ -45,16 +57,16 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Tried to fetch value but corpsStored is null!?  ");
+                Debug.Log("SubMissions: GetSMCCorpsCount - Tried to fetch value but corpsStored is null!?  ");
             }
             return 0;
         }
-        public static bool GetSMCID(string Faction, out FactionSubTypes FST)
+        public static bool GetSMCIDUnofficial(string Faction, out FactionSubTypes FST)
         {   //
             FST = FactionSubTypes.NULL;
             try
             {
-                FST = (FactionSubTypes)GetSMCCorp(Faction).ID;
+                FST = (FactionSubTypes)GetSMCCorpUnofficial(Faction).ID;
                 return true;
             }
             catch
@@ -63,16 +75,16 @@ namespace Sub_Missions
             }
             return false;
         }
-        public static SMCCorpLicense GetSMCCorp(string corpName)
+        public static SMCCorpLicense GetSMCCorpUnofficial(string corpName)
         {   //
             try
             {
                 int hash = corpName.GetHashCode();
-                return corpsStored.Values.ToList().Find(delegate (SMCCorpLicense cand) { return cand.Faction.GetHashCode() == hash; });
+                return corpsStoredUnofficial.Values.ToList().Find(delegate (SMCCorpLicense cand) { return cand.Faction.GetHashCode() == hash; });
             }
             catch
             {
-                Debug.Log("SubMissions: Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Assert("SubMissions: GetSMCCorp - Tried to fetch value but corpsStored is null!?  ");
             }
             return null;
         }
@@ -85,24 +97,24 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug.Log("SubMissions: Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Assert("SubMissions: GetSMCCorpBlocks - Tried to fetch value but corpsStored is null!?  ");
             }
             return null;
         }
-        public static bool GetSMCCorp(string corpName, out SMCCorpLicense CL)
+        public static bool GetSMCCorpUnofficial(string corpName, out SMCCorpLicense CL)
         {   //
-            CL = GetSMCCorp(corpName);
+            CL = GetSMCCorpUnofficial(corpName);
             if (CL != null)
                 return true;
             return false;
         }
 
 
-        public static bool IsSMCCorpLicense(int corp)
+        public static bool IsUnofficialSMCCorpLicense(int corp)
         {
             return corp >= UCorpRange;
         }
-        public static bool IsSMCCorpLicense(FactionSubTypes corp) 
+        public static bool IsUnofficialSMCCorpLicense(FactionSubTypes corp) 
         {
             return (int)corp >= UCorpRange;
         }
@@ -110,7 +122,7 @@ namespace Sub_Missions
         {   //
             try
             {
-                if (corpsStored.TryGetValue(corpID, out CL))
+                if (corpsStoredUnofficial.TryGetValue(corpID, out CL))
                     return true;
                 if (corpsStoredOfficial.TryGetValue(corpID, out CL))
                     return true;
@@ -126,7 +138,7 @@ namespace Sub_Missions
         {   //
             try
             {
-                foreach (SMCCorpLicense CL in corpsStored.Values)
+                foreach (SMCCorpLicense CL in corpsStoredUnofficial.Values)
                 {
                     CL.BuildFactionLicenseUnofficial();
                 }
@@ -146,18 +158,24 @@ namespace Sub_Missions
                     List<int> corps = ManMods.inst.GetCustomCorpIDs().ToList();
                     foreach (int corpID in corps)
                     {
-                        corpsStoredOfficial.Add(corpID, new SMCCorpLicense((FactionSubTypes)corpID));
+                        FactionSubTypes FST = (FactionSubTypes)corpID;
+                        corpsStoredOfficial.Add(corpID, new SMCCorpLicense(FST, ManMods.inst.GetCorpDefinition(FST)));
                     }
+                }
+                else
+                {
+                    Debug_SMissions.FatalError("ManMods has failed to load somehow, Sub_Missions may encounter some serious problems later on.  YOU HAVE BEEN WARNED");
                 }
             }
             catch (Exception e)
             {
                 Debug.Log("SubMissions: COULD NOT ReloadAllOfficialIfApplcable!!! " + e);
+                Debug_SMissions.FatalError("ReloadAllOfficialIfApplcable (Important trigger) failed somewhere, Sub_Missions may encounter some serious problems later on.  YOU HAVE BEEN WARNED");
             }
         }
         internal static void ReloadAllUnofficialIfApplcable()
         {   //
-            foreach (KeyValuePair<int, SMCCorpLicense> pair in corpsStored)
+            foreach (KeyValuePair<int, SMCCorpLicense> pair in corpsStoredUnofficial)
             {
                 pair.Value.RefreshCorpUISP();
             }
@@ -165,7 +183,7 @@ namespace Sub_Missions
         }
         internal static void InitALLFactionLicenseUnofficialUI()
         {   //
-            foreach (KeyValuePair<int, SMCCorpLicense> pair in corpsStored)
+            foreach (KeyValuePair<int, SMCCorpLicense> pair in corpsStoredUnofficial)
             {
                 UICCorpLicenses.MakeFactionLicenseUnofficialUI(pair.Value);
             }
@@ -177,9 +195,9 @@ namespace Sub_Missions
             {
                 if (CL != null)
                 {
-                    if (!corpsStored.TryGetValue(CL.ID, out _))
+                    if (!corpsStoredUnofficial.TryGetValue(CL.ID, out _))
                     {
-                        corpsStored.Add(CL.ID, CL);
+                        corpsStoredUnofficial.Add(CL.ID, CL);
                         CL.TryInitFactionEXPSys();
                     }
                     return true;
@@ -195,13 +213,13 @@ namespace Sub_Missions
         {   //
             try
             {
-                SMCCorpLicense CL = GetSMCCorp(corpName);
+                SMCCorpLicense CL = GetSMCCorpUnofficial(corpName);
                 if (CL != null)
                     return (FactionSubTypes)CL.ID;
 
                 RCC++;
                 SMCCorpLicense CLn = new SMCCorpLicense(corpName, RCC, new int[5] { 100,200,300,400,500});
-                corpsStored.Add(RCC, CLn);
+                corpsStoredUnofficial.Add(RCC, CLn);
             }
             catch (Exception e)
             {
@@ -245,7 +263,7 @@ namespace Sub_Missions
                 }
                 bool criticalerror = false;
                 Debug.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - BUILDING!!!");
-                foreach (KeyValuePair<int, SMCCorpLicense> corpEntry in corpsStored)
+                foreach (KeyValuePair<int, SMCCorpLicense> corpEntry in corpsStoredUnofficial)
                 {
                     int skinCount = corpEntry.Value.importedSkins.Count + corpEntry.Value.registeredSkins.Count;
                     Debug.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - count " + skinCount);
@@ -333,7 +351,7 @@ namespace Sub_Missions
                 }
                 builtCustomCorps = true;
                 ManTechMaterialSwap.inst.RebuildCorpArrayTextures();
-                foreach (KeyValuePair<int, SMCCorpLicense> corpEntry in corpsStored)
+                foreach (KeyValuePair<int, SMCCorpLicense> corpEntry in corpsStoredUnofficial)
                 {
                     corpEntry.Value.PushBlockTypesToAssignedCorp();
                 }
@@ -344,7 +362,7 @@ namespace Sub_Missions
         // CRATES
         internal static void BuildUnofficialCustomCorpCrates()
         {
-            foreach (KeyValuePair<int, SMCCorpLicense> corpEntry in corpsStored)
+            foreach (KeyValuePair<int, SMCCorpLicense> corpEntry in corpsStoredUnofficial)
             {
                 corpEntry.Value.TryBuildCrate();
             }
@@ -389,19 +407,20 @@ namespace Sub_Missions
                     hashSetAlready.Add(hash);
                 if (CorpLoader(name, out SMCCorpLicense CL))
                 {
-                    if (corpsStored.ContainsKey(CL.ID))
+                    if (corpsStoredUnofficial.ContainsKey(CL.ID))
                     {
-                        corpsStored.Remove(CL.ID);
+                        corpsStoredUnofficial.Remove(CL.ID);
                         Debug.Log("SubMissions: Reloaded Corp " + name);
                     }
                     else
                         Debug.Log("SubMissions: Added Corp " + name);
-                    corpsStored.Add(CL.ID, CL);
+                    corpsStoredUnofficial.Add(CL.ID, CL);
                 }
                 else
                     SMUtil.Assert(false, "Could not load Corp " + name);
 
             }
+            BuildUnofficialCustomCorpCrates();
             if (isReloading)
             {
                 SMUtil.Assert(false, "Note: You will have to reload your save to get all of the changes to apply");
@@ -440,7 +459,7 @@ namespace Sub_Missions
                 License = JsonConvert.DeserializeObject<SMCCorpLicenseJSON>(output).ConvertToActive();
                 License.Faction.ToString();
 
-                if (!IsSMCCorpLicense(License.ID))
+                if (!IsUnofficialSMCCorpLicense(License.ID))
                 {
                     SMUtil.Assert(false, "Custom Corp " + License.FullName + "'s ID is not within the valid Unofficial Custom Corps range (" + UCorpRange + " - " + int.MaxValue+ ").");
                     return false;
@@ -486,6 +505,9 @@ namespace Sub_Missions
                 return null;
             }
         }
+
+
+
 
         // For Custom Corp Skins
         internal static bool SkinLoader(SMCCorpLicense CL)
@@ -684,7 +706,7 @@ namespace Sub_Missions
 
         internal static void ReloadSkins()
         {
-            foreach (var SMCCL in corpsStored)
+            foreach (var SMCCL in corpsStoredUnofficial)
             {
                 if (ManLicenses.inst.GetAllCorpIDs().Contains(SMCCL.Key))
                     SMCCL.Value.BuildSkins();

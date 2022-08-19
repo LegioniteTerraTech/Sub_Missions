@@ -117,11 +117,12 @@ namespace Sub_Missions
         // Setup
         internal static void Initiate()
         {
+            if (!inst)
+            {
+                inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
+                Debug.Log("SubMissions: ManSubMissions initated");
+            }
             Active = true;
-            if (inst)
-                return;
-            inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
-            Debug.Log("SubMissions: ManSubMissions initated");
         }
         internal static void Subscribe()
         {
@@ -180,7 +181,8 @@ namespace Sub_Missions
             Active = false;
         }
 
-
+        private static int CustCorpStartID = 16;
+       
         internal void HarvestAllTrees()
         {
             if (!Active)

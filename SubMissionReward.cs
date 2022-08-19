@@ -83,13 +83,15 @@ namespace Sub_Missions
             }
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)
             {
+                SMCCorpLicense CL;
                 List<BlockTypes> items = new List<BlockTypes>(BlocksToSpawn);
-                if (ManSMCCorps.IsSMCCorpLicense(FST))
+                //if (ManSMCCorps.IsUnofficialSMCCorpLicense(FST))
+                //{
+                if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))
                 {
-                    if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out SMCCorpLicense CL))
-                    {
-                        items.AddRange(CL.GetRandomBlocks(Singleton.Manager<ManLicenses>.inst.GetCurrentLevel((FactionSubTypes)CL.ID), RandomBlocksToSpawn));
-                    }
+                    items.AddRange(CL.GetRandomBlocks(Singleton.Manager<ManLicenses>.inst.GetCurrentLevel((FactionSubTypes)CL.ID), RandomBlocksToSpawn));
+                }
+                    /*
                 }
                 else
                 {
@@ -101,7 +103,7 @@ namespace Sub_Missions
                     {
                         SMUtil.Assert(false, "SubMissions: Tried to fetch blocks from a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + mission.Name);
                     }
-                }
+                }*/
 
                 Vector3 landingPos;
                 try
@@ -123,18 +125,22 @@ namespace Sub_Missions
                         step--;
                     }
                 }
-                if (ManSMCCorps.IsSMCCorpLicense(FST))
+                if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))
                 {
-                    if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out SMCCorpLicense CL))
+                    if (CL.HasCratePrefab)
                     {
-                        if (CL.HasCratePrefab)
-                            Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FST);
-                        else
-                            Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FactionSubTypes.GSO);
-                        return;
+                        Debug.Log("Spawning Set Crate");
+                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FST);
                     }
+                    else
+                    {
+                        Debug.Log("Spawning Default Crate");
+                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FactionSubTypes.GSO);
+                    }
+                    return;
                 }
-                Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FST);
+                Debug.Log("Spawning Default Crate");
+                Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FactionSubTypes.GSO);
             }
         }
     }

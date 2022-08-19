@@ -210,14 +210,14 @@ namespace Sub_Missions
         /// <para><b>MUST BE RELOADED AFTER EACH NEW SAVE-GAME SESSION INIT</b></para>
         /// </summary>
         /// <param name="FactionName"></param>
-        public SMCCorpLicense(FactionSubTypes ID)
+        public SMCCorpLicense(FactionSubTypes ID, ModdedCorpDefinition MCD)
         {
             FullName = ManMods.inst.FindCorpName(ID);
             Faction = ManMods.inst.FindCorpShortName(ID);
             this.ID = (int)ID;
             GradesXP = new int[3] { 100, 250, 1000 }; 
             OfficialCorp = true;
-            UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - Init");
+            UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - Init for " + MCD.m_DisplayName);
             TryInitFactionEXPSys();
         }
         /// <summary>
@@ -374,7 +374,7 @@ namespace Sub_Missions
             {
                 FactionSubTypes corpID = (FactionSubTypes)ID;
                 errorLevel++;
-                if (ManSMCCorps.IsSMCCorpLicense(corpID)) // Unoffical mods
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corpID)) // Unoffical mods
                 {   // We enable support for EVERYTHING in the tree for the corp!
                     errorLevel++;
                     BuildFactionLicenseUnofficial();
@@ -401,7 +401,7 @@ namespace Sub_Missions
             try
             {
                 FactionSubTypes corpID = (FactionSubTypes)ID;
-                if (ManSMCCorps.IsSMCCorpLicense(corpID)) // Unofficial mods
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corpID)) // Unofficial mods
                 {   // We enable support for EVERYTHING in the tree for the corp!
                     RefreshCorpUISPUnofficial(corpID);
                 }
@@ -411,7 +411,7 @@ namespace Sub_Missions
                     {
                         if (GradeUnlockBlocks.Count == 0)
                         {
-                            OfficialTryBuildBlockTypes();
+                            OfficialTryBuildBlockTypes(corpID);
                             //SaveToDisk();
                         }
                         if (SkinRefTech == null)
@@ -886,26 +886,34 @@ namespace Sub_Missions
             }
 #endif
         }
-        private void OfficialTryBuildBlockTypes()
+        private void OfficialTryBuildBlockTypes(FactionSubTypes FST)
         {   //
             ModdedCorpDefinition MCD = ManMods.inst.FindCorp(ID);
             if (MCD)
             {
-                ModSessionInfo MSI = (ModSessionInfo)sess.GetValue(ManMods.inst);
-                if (MSI == new ModSessionInfo())
+                
+                if (Patches.OfficialBlocksPool.TryGetValue(FST, out List<SMCCorpBlockRange> range))
                 {
-                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense - THE MOD SESSION DOES NOT EXIST!");
-                    return;
+                    GradeUnlockBlocks = range;
+                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - GradeUnlockBlocks for " + MCD.m_DisplayName + " has " + range.Count + " grades");
                 }
-                if (MSI.BlockIDs.Count == 0)
+                else
+                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - GradeUnlockBlocks not present for Corp " + MCD.m_DisplayName);
+
+                ModSessionInfo MSI = (ModSessionInfo)sess.GetValue(ManMods.inst);
+                if (GradeUnlockBlocks.Count == 0)
                 {
                     UnityEngine.Debug.Log("SubMissions: SMCCorpLicense - Corp exists but it's respective mod HAS NO BLOCKS!");
                     return;
                 }
                 int smallestCabVolume = 262145;
-                foreach (int BTI in MSI.BlockIDs.Keys)
+                List<BlockTypes> BTs = new List<BlockTypes>();
+                foreach (var item in GradeUnlockBlocks)
                 {
-                    BlockTypes BT = (BlockTypes)BTI;
+                    BTs.AddRange(item.BlocksAvail);
+                }
+                foreach (BlockTypes BT in BTs)
+                {
                     TankBlock TB = ManSpawn.inst.GetBlockPrefab(BT);
                     if (TB)
                     {
@@ -919,25 +927,11 @@ namespace Sub_Missions
                                 smallestCabVolume = cabVolume;
                             }
                         }
-                        if (TB.name.StartsWith(Faction))
-                        {
-                            int CBGrade = TB.m_Tier;
-                            for (int step = 0; step < CBGrade; step++)
-                            {
-                                if (GradeUnlockBlocks.Count < step)
-                                {
-                                    GradeUnlockBlocks.Add(new SMCCorpBlockRange());
-                                }
-                            }
-                            BT = (BlockTypes)BTI;
-                            if (!GradeUnlockBlocks[CBGrade].BlocksOutOfRange.Contains(BT))
-                                GradeUnlockBlocks[CBGrade].BlocksOutOfRange.Add(BT);
-                        }
                     }
                 }
                 if (FirstCabUnlocked == "GSOCockpit_111")
                 {
-                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense - Corp has no vaild cab block.  Defaulting to the first block declared...");
+                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense - Corp has no valid cab block.  Defaulting to the first block declared...");
                     FirstCabUnlocked = MSI.BlockIDs.First().Value;
                 }
 
@@ -986,7 +980,7 @@ namespace Sub_Missions
         }
 
 
-        public BlockUnlockTable.CorpBlockData UnofficialGetCorpBlockData(out int numberEntries)
+        public BlockUnlockTable.CorpBlockData GetCorpBlockData(out int numberEntries)
         {   //
             numberEntries = 0;
             if (corpBlockData == null)
@@ -1019,7 +1013,7 @@ namespace Sub_Missions
 
                 BlockUnlockTable.CorpBlockData CBD = new BlockUnlockTable.CorpBlockData { m_GradeList = GDl.ToArray(), };
                 corpBlockData = CBD;
-                UnityEngine.Debug.Log("SubMissions: UnofficialGetCorpBlockData(SMCCorpLicense) - corpBlockData was built for " + Faction + ".");
+                UnityEngine.Debug.Log("SubMissions: GetCorpBlockData(SMCCorpLicense) - corpBlockData was built for " + Faction + ".");
             }
             return corpBlockData;
         }
@@ -1042,7 +1036,36 @@ namespace Sub_Missions
                 SMUtil.Assert(false, "SubMissions: Check your Skins file names!  Some may be invalid!");
             }
         }
+        private static FieldInfo FIFetch(Type type, string name)
+        {
+            return type.GetField(name, BindingFlags.NonPublic | BindingFlags.Instance);
+        }
+        private static MethodInfo MIFetch(Type type, string name)
+        {
+            return type.GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance);
+        }
 
+        private static readonly FieldInfo
+            cratePool = FIFetch(typeof(ManSpawn), "m_CorpCrateRuntimePrefabsDict"),
+            crateStuff = FIFetch(typeof(ManSpawn), "m_StrippedCrateTypes");
+        private static readonly MethodInfo
+            prefabss = MIFetch(typeof(ManSpawn), "SetupNetworkedPrefab");
+
+        internal void ForceCrateIn(FactionSubTypes FST, Crate great)
+        {
+            Type pair = typeof(ManSpawn).GetNestedType("PrefabPair", BindingFlags.NonPublic | BindingFlags.Instance);
+            Type dictT = typeof(Dictionary<,>).MakeGenericType(new Type[2] { typeof(FactionSubTypes), pair });
+            MethodInfo adder = dictT.GetMethod("Add");
+            MethodInfo check = dictT.GetMethod("TryGetValue");
+            object dict = cratePool.GetValue(ManSpawn.inst);
+            object stuff = crateStuff.GetValue(ManSpawn.inst);
+            if ((bool)check.Invoke(dict, new object[2] { FST, null }))
+            {
+                object newCrateInst = prefabss.Invoke(ManSpawn.inst, new object[2] { great, stuff });
+                adder.Invoke(dict, new object[2] { FST, newCrateInst });
+            }
+            //object newCrateInst = Activator.CreateInstance(pair)
+        }
         // Crates
         /// <summary>
         /// Must be executed before the crates in ManSpawn are built
@@ -1076,7 +1099,9 @@ namespace Sub_Missions
                         BuildCratePart(crateName, GO, "Crate_A");
                         BuildCratePart(crateName, GO, "Crate_B");
 
+                        FactionSubTypes FST = SubMissionTree.GetTreeCorp(Faction);
                         GO.SetActive(false);
+                        ForceCrateIn(FST, newCrate);
                         HasCratePrefab = true;
                     }
 
@@ -1096,6 +1121,7 @@ namespace Sub_Missions
             UnityEngine.Debug.Log("Failiure on crate addition for corp " + Faction + " | The crate has missing models: Make sure you have a: ");
             UnityEngine.Debug.Log("\"Crate_Base.obj\", \"Crate_A.obj\", \"Crate_B.obj\", \"Crate_A_Lock.obj\", \"Crate_B_Lock.obj\", \"Crate_B_LightRed.obj\", \"Crate_B_LightGreen.obj\"");
         }
+
         internal void BuildCratePart(string crateName, GameObject GO, string partName)
         {   //
             try

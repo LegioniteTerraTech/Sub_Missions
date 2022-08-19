@@ -884,6 +884,7 @@ namespace Sub_Missions
         Basic,
         Repeating,
         Immedeate,
+        Critical,
     }
     public enum SubMissionLoadState
     {

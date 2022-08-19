@@ -98,13 +98,13 @@ namespace Sub_Missions
                     {
                         if (!encounters.Exists(delegate (EncounterToSpawn cand) { return cand.m_EncounterDef.m_Name == item.Name; }))
                         {
-                            encounters.Add(EncounterShoehorn.GetEncounterSpawnDisplayInfo(item));
+                            encounters.Add(EncounterShoehorn.GetEncounterSpawnDisplayInfo(item, true, item.Type == SubMissionType.Critical));
                             Debug.Log("MISSION BOARD - new mission " + item.Name);
                         }
                     }
                     else
                     {
-                        randomEncounters.Add(FST, new List<EncounterToSpawn> { EncounterShoehorn.GetEncounterSpawnDisplayInfo(item) });
+                        randomEncounters.Add(FST, new List<EncounterToSpawn> { EncounterShoehorn.GetEncounterSpawnDisplayInfo(item, true, item.Type == SubMissionType.Critical) });
                         Debug.Log("MISSION BOARD [New corp added - " + FST + "] - new mission " + item.Name);
                     }
                 }
@@ -152,7 +152,58 @@ namespace Sub_Missions
             }
         }
 
+        internal static Dictionary<FactionSubTypes, List<SMCCorpBlockRange>> OfficialBlocksPool = new Dictionary<FactionSubTypes, List<SMCCorpBlockRange>>();
 
+        [HarmonyPatch(typeof(JSONBlockLoader))]
+        [HarmonyPatch("Inject")]// Get Block Import info
+        internal static class TrackImportedBlocks
+        {
+            private static void Prefix(ref int blockID, ref ModdedBlockDefinition def)
+            {
+                if (def != null)
+                {
+                    int grade = Mathf.Clamp(def.m_Grade, 1, 5);
+                    int gradeRaw = grade - 1;
+                    FactionSubTypes FST = ManMods.inst.GetCorpIndex(def.m_Corporation);
+                    if (OfficialBlocksPool.TryGetValue(FST, out List<SMCCorpBlockRange> RANGE))
+                    {
+                        if (grade > RANGE.Count)
+                        {
+                            for (; RANGE.Count < grade;)
+                            {
+                                RANGE.Add(new SMCCorpBlockRange());
+                            }
+                        }
+                        SMCCorpBlockRange CBR = RANGE[gradeRaw];
+                        CBR.BlocksOutOfRange.Add((BlockTypes)blockID);
+                    }
+                    else
+                    {
+                        RANGE = new List<SMCCorpBlockRange>();
+                        OfficialBlocksPool.Add(FST, RANGE);
+                        if (grade > RANGE.Count)
+                        {
+                            for (; RANGE.Count < grade; )
+                            {
+                                RANGE.Add(new SMCCorpBlockRange());
+                            }
+                        }
+                        SMCCorpBlockRange CBR = RANGE[gradeRaw];
+                        CBR.BlocksOutOfRange.Add((BlockTypes)blockID);
+                    }
+                }
+            }
+        }
+
+        [HarmonyPatch(typeof(ManMods))]
+        [HarmonyPatch("PurgeModdedContentFromGame")]// Get Block Import info
+        internal static class PurgeImportedBlocks
+        {
+            private static void Prefix()
+            {
+                OfficialBlocksPool.Clear();
+            }
+        }
 
         [HarmonyPatch(typeof(TileManager))]
         [HarmonyPatch("CreateTile")]// Setup main menu techs
@@ -183,6 +234,8 @@ namespace Sub_Missions
                 SaveManSubMissions.SaveData(saveName);
             }
         }
+
+#if !STEAM
         [HarmonyPatch(typeof(TechAudio))]
         [HarmonyPatch("GetCorpParams")]//
         private static class RevRight
@@ -275,7 +328,6 @@ namespace Sub_Missions
             }
         }
 
-#if !STEAM
         [HarmonyPriority(-998)]
         [HarmonyPatch(typeof(BlockLoader))]
         [HarmonyPatch("FixBlockUnlockTable")]// SAAAAAVVE
@@ -410,6 +462,7 @@ namespace Sub_Missions
             }
         }
 
+
         //skins
 
         [HarmonyPatch(typeof(ManTechMaterialSwap))]
@@ -419,7 +472,7 @@ namespace Sub_Missions
             private static bool Prefix(ManTechMaterialSwap __instance, ref FactionSubTypes corp, ref float __result)
             {
                 int corpIndex = (int)corp;
-                if (ManSMCCorps.IsSMCCorpLicense(corpIndex))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corpIndex))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                     {
@@ -443,7 +496,7 @@ namespace Sub_Missions
             private static bool Prefix(UISkinsPaletteHUD __instance, ref CorporationSkinUIInfo info, ref FactionSubTypes corp)
             {
                 List<Transform> transs = (List<Transform>)trans.GetValue(__instance);
-                if (ManSMCCorps.IsSMCCorpLicense(corp))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corp))
                 {
                     if (transs != null && transs.Count > 0)
                         transs.Last().gameObject.SetActive(false);
@@ -482,19 +535,16 @@ namespace Sub_Missions
         }
         [HarmonyPatch(typeof(BlockUnlockTable))]
         [HarmonyPatch("GetCorpBlockData")]// shoehorn in unofficial corps
-        private static class AddUnOfficialCorpsToInventory
+        private static class ShoveCorpsIntoInventoryCorrectly
         {
             private static bool Prefix(BlockUnlockTable __instance, ref int corpIndex, ref BlockUnlockTable.CorpBlockData __result)
             {
-                if (ManSMCCorps.IsSMCCorpLicense(corpIndex))
+                if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                 {
-                    if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
-                    {
-                        __result = CL.UnofficialGetCorpBlockData(out int numEntries);
-                        Debug.Log("AddUnOfficialCorpsToInventory - Called with " + numEntries + " blocks assigned");
+                    __result = CL.GetCorpBlockData(out int numEntries);
+                    Debug.Log("ShoveCorpsIntoInventoryCorrectly - Called with " + numEntries + " blocks assigned");
 
-                        return false;
-                    }
+                    return false;
                 }
                 return true;
             }
@@ -506,17 +556,14 @@ namespace Sub_Missions
             private static bool Prefix(BlockUnlockTable __instance, ref BlockTypes blockType, ref int __result)
             {
                 int corpIndex = (int)Singleton.Manager<ManSpawn>.inst.GetCorporation(blockType);
-                if (ManSMCCorps.IsSMCCorpLicense(corpIndex))
+                if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                 {
-                    if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
+                    foreach (SMCCorpBlockRange CBR in CL.GradeUnlockBlocks)
                     {
-                        foreach (SMCCorpBlockRange CBR in CL.GradeUnlockBlocks)
+                        if (CBR.BlocksAvail.Contains(blockType))
                         {
-                            if (CBR.BlocksAvail.Contains(blockType))
-                            {
-                                __result = CL.GradeUnlockBlocks.IndexOf(CBR);
-                                return false;
-                            }
+                            __result = CL.GradeUnlockBlocks.IndexOf(CBR);
+                            return false;
                         }
                     }
                 }
@@ -535,23 +582,33 @@ namespace Sub_Missions
         }
         [HarmonyPatch(typeof(ManMods))]
         [HarmonyPatch("InjectModdedCorps")]//
+        private static class PoolForUnofficial
+        {
+            private static void Postfix(ManMods __instance)
+            {
+                Debug.Log("SubMissions: SetupLicenses - Injecting Unofficial corps...");
+                ManSMCCorps.ReloadAllUnofficialIfApplcable();
+                ManTechMaterialSwap.inst.RebuildCorpArrayTextures();
+                Debug_SMissions.Info("SubMissions: ManTechMaterialSwap - Fetching MainTex");
+                foreach (KeyValuePair<int, Material> CBR in ManTechMaterialSwap.inst.m_FinalCorpMaterials)
+                {
+                    Debug_SMissions.Info("SubMissions: ManTechMaterialSwap - " + CBR.Key + " | " + CBR.Value);
+                }
+                ManSMCCorps.BuildUnofficialCustomCorpArrayTextures();
+            }
+        }
+
+        [HarmonyPatch(typeof(ManMods))]
+        [HarmonyPatch("InjectModdedBlocks")]//
         private static class RepoolOfficial
         {
             private static void Postfix(ManMods __instance)
             {
                 Debug.Log("SubMissions: SetupLicenses - Injecting Official corps...");
                 ManSMCCorps.ReloadAllOfficialIfApplcable();
-                ManSMCCorps.ReloadAllUnofficialIfApplcable();
-                ManTechMaterialSwap.inst.RebuildCorpArrayTextures();
-                Debug.Log("SubMissions: ManTechMaterialSwap - Fetching MainTex");
-                foreach (KeyValuePair<int, Material> CBR in ManTechMaterialSwap.inst.m_FinalCorpMaterials)
-                {
-                    Debug.Log("SubMissions: ManTechMaterialSwap - " + CBR.Key + " | " + CBR.Value);
-                }
-                ManSMCCorps.BuildUnofficialCustomCorpArrayTextures();
             }
         }
-       [HarmonyPatch(typeof(UILicenses))]
+        [HarmonyPatch(typeof(UILicenses))]
         [HarmonyPatch("Init")]//
         private static class InitCorrect
         {
@@ -600,7 +657,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(UILicenses __instance, ref FactionSubTypes corp)
             {
-                if (ManSMCCorps.IsSMCCorpLicense(corp))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corp))
                 {
                     UICCorpLicenses.ShowFactionLicenseUnofficialUI((int)corp);
                     return false;
@@ -614,7 +671,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(ref FactionSubTypes corporation, ref string __result)
             {
-                if (ManSMCCorps.IsSMCCorpLicense(corporation))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corporation))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense((int)corporation, out SMCCorpLicense CL))
                     {
@@ -631,7 +688,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(ref FactionSubTypes corporation, ref int grade)
             {
-                if (ManSMCCorps.IsSMCCorpLicense(corporation))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corporation))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense((int)corporation, out SMCCorpLicense CL))
                     {
@@ -652,7 +709,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(SpriteFetcher __instance, ref FactionSubTypes corp, ref Sprite __result)
             {
-                if (ManSMCCorps.IsSMCCorpLicense(corp))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corp))
                 {
                     
                     if (ManSMCCorps.TryGetSMCCorpLicense((int)corp, out SMCCorpLicense CL))
@@ -680,7 +737,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(SpriteFetcher __instance, ref FactionSubTypes corp, ref Sprite __result)
             {
-                if (ManSMCCorps.IsSMCCorpLicense(corp))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corp))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense((int)corp, out SMCCorpLicense CL))
                     {
@@ -706,7 +763,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(SpriteFetcher __instance, ref FactionSubTypes corp, ref Sprite __result)
             {
-                if (ManSMCCorps.IsSMCCorpLicense(corp))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corp))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense((int)corp, out SMCCorpLicense CL))
                     {

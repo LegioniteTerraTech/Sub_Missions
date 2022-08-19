@@ -44,6 +44,7 @@ namespace Sub_Missions
         }
 
         public static Harmony harmonyInstance;
+        private static bool patched = false;
 
         public static void Main()
         {
@@ -59,36 +60,40 @@ namespace Sub_Missions
             harmonyInstance = new Harmony("legioniteterratech.sub_missions");
             try
             {
-                try
+                if (!patched)
                 {
-                    harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
-                }
-                catch (Exception e)
-                {
-                    Debug.Log("SubMissions: Error on mass patch");
-                    Debug.Log(e);
-                }
-                List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
-                foreach (MethodBase MB in MP)
-                {
-                    if (MB.Name == "PatchCCModding")
+                    try
                     {
-                        if (isBlockInjectorPresent)
+                        harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.Log("SubMissions: Error on mass patch");
+                        Debug.Log(e);
+                    }
+                    List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
+                    foreach (MethodBase MB in MP)
+                    {
+                        if (MB.Name == "PatchCCModding")
                         {
-                            Debug.Log("SubMissions: Patching " + MB.Name);
-                            //harmonyInstance.Patch(Patches.);
+                            if (isBlockInjectorPresent)
+                            {
+                                Debug.Log("SubMissions: Patching " + MB.Name);
+                                //harmonyInstance.Patch(Patches.);
+                            }
+                            else
+                            {
+                                Debug.Log("SubMissions: UnPatching " + MB.Name);
+                                harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                            }
                         }
                         else
                         {
-                            Debug.Log("SubMissions: UnPatching " + MB.Name);
-                            harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                            Debug.Log("SubMissions: Patching " + MB.Name);
+                            //harmonyInstance.Patch(MB);
                         }
                     }
-                    else
-                    {
-                        Debug.Log("SubMissions: Patching " + MB.Name);
-                        //harmonyInstance.Patch(MB);
-                    }
+                    patched = true;
                 }
             }
             catch (Exception e)
@@ -122,36 +127,40 @@ namespace Sub_Missions
             harmonyInstance = new Harmony("legioniteterratech.sub_missions");
             try
             {
-                try
+                if (!patched)
                 {
-                    harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
-                }
-                catch (Exception e)
-                {
-                    Debug.Log("SubMissions: Error on mass patch");
-                    Debug.Log(e);
-                }
-                List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
-                foreach (MethodBase MB in MP)
-                {
-                    if (MB.Name == "PatchCCModding")
+                    try
                     {
-                        if (isBlockInjectorPresent)
+                        harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.Log("SubMissions: Error on mass patch");
+                        Debug.Log(e);
+                    }
+                    List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
+                    foreach (MethodBase MB in MP)
+                    {
+                        if (MB.Name == "PatchCCModding")
                         {
-                            Debug.Log("SubMissions: Patching " + MB.Name);
-                            //harmonyInstance.Patch(Patches.);
+                            if (isBlockInjectorPresent)
+                            {
+                                Debug.Log("SubMissions: Patching " + MB.Name);
+                                //harmonyInstance.Patch(Patches.);
+                            }
+                            else
+                            {
+                                Debug.Log("SubMissions: UnPatching " + MB.Name);
+                                harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                            }
                         }
                         else
                         {
-                            Debug.Log("SubMissions: UnPatching " + MB.Name);
-                            harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                            Debug.Log("SubMissions: Patching " + MB.Name);
+                            //harmonyInstance.Patch(MB);
                         }
                     }
-                    else
-                    {
-                        Debug.Log("SubMissions: Patching " + MB.Name);
-                        //harmonyInstance.Patch(MB);
-                    }
+                    patched = true;
                 }
             }
             catch (Exception e)
@@ -188,14 +197,18 @@ namespace Sub_Missions
             WindowManager.DeInit();
             BlockIndexer.ResetBlockLookupList();
 
-            try
+            if (patched)
             {
-                harmonyInstance.UnpatchAll("legioniteterratech.sub_missions");
-            }
-            catch (Exception e)
-            {
-                Debug.Log("SubMissions: Error on mass un-patch");
-                Debug.Log(e);
+                try
+                {
+                    harmonyInstance.UnpatchAll("legioniteterratech.sub_missions");
+                }
+                catch (Exception e)
+                {
+                    Debug.Log("SubMissions: Error on mass un-patch");
+                    Debug.Log(e);
+                }
+                patched = false;
             }
         }
 

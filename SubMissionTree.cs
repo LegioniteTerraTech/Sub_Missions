@@ -151,7 +151,7 @@ namespace Sub_Missions
             FactionSubTypes FST = ManMods.inst.GetCorpIndex(Faction);
             if (FST == (FactionSubTypes)(-1))
             {
-                if (ManSMCCorps.GetSMCID(Faction, out FactionSubTypes FST1))
+                if (ManSMCCorps.GetSMCIDUnofficial(Faction, out FactionSubTypes FST1))
                 {
                     Debug.Log("SubMissions: linked MissionTree with unofficial Custom Corp " + Faction + " of ID " + FST1);
                 }
@@ -188,7 +188,7 @@ namespace Sub_Missions
 
             if (FST == (FactionSubTypes)(-1))
             {
-                if (ManSMCCorps.GetSMCID(factionName, out FactionSubTypes FST1))
+                if (ManSMCCorps.GetSMCIDUnofficial(factionName, out FactionSubTypes FST1))
                 {
                     FST = FST1;
                     return true;
@@ -223,7 +223,7 @@ namespace Sub_Missions
 
             if (FST == (FactionSubTypes)(-1))
             {
-                if (ManSMCCorps.GetSMCID(Faction, out FactionSubTypes FST1))
+                if (ManSMCCorps.GetSMCIDUnofficial(Faction, out FactionSubTypes FST1))
                 {
                     return FST1;
                 }
@@ -261,7 +261,7 @@ namespace Sub_Missions
 
             if (FST == (FactionSubTypes)(-1))
             {
-                if (ManSMCCorps.GetSMCID(factionName, out FactionSubTypes FST1))
+                if (ManSMCCorps.GetSMCIDUnofficial(factionName, out FactionSubTypes FST1))
                 {
                     return FST1;
                 }

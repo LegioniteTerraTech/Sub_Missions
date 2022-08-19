@@ -146,8 +146,8 @@ namespace Sub_Missions
             }
             else
             {
-                // Risky to add new corps in OfficialModding
-
+                // Too Risky to add new corps in OfficialModding
+#if !STEAM
                 Debug.Log("SubMissions: ForceAddModdedCorpsSection - No action required!  It has been implemented!");
                 List<SMCCorpLicense> CLs = ManSMCCorps.GetAllSMCCorps();
                 Dictionary<FactionSubTypes, Transform> dict = (Dictionary<FactionSubTypes, Transform>)CKAll.GetValue(inst);
@@ -179,6 +179,7 @@ namespace Sub_Missions
                 }
                 CKAll.SetValue(inst, dict);
                 Debug.Log("SubMissions: ForceAddModdedCorpsSection - Injected " + dict.Count + " corps");
+#endif
             }
         }
         // must fire AFTER OnSpawn() of UISkinsPaletteHUD!
