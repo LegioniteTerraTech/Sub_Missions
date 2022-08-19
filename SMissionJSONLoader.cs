@@ -1383,12 +1383,16 @@ namespace Sub_Missions
         }
         internal static Mesh LoadMesh(string TreeDirectory)
         {
+#if !STEAM
             Mesh mesh = ObjImporter.ImportFileFromPath(TreeDirectory);
             if (!mesh)
             {
                 throw new NullReferenceException("The object could not be imported at all: ");
             }
             return mesh;
+#else
+            throw new NotImplementedException("SMissionJSONLoader.LoadMesh is not currently supported in Official.");
+#endif
         }
     }
 }

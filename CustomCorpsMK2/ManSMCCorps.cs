@@ -4,8 +4,11 @@ using System.Linq;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using Nuterra.BlockInjector;
 using Newtonsoft.Json;
+
+#if !STEAM
+using Nuterra.BlockInjector;
+#endif
 
 namespace Sub_Missions
 {
@@ -206,6 +209,7 @@ namespace Sub_Missions
             }
             return (FactionSubTypes)RCC;
         }
+#if !STEAM
         public static FactionSubTypes TryMakeNewCorpBI(CustomCorporation CC)
         {   //
             try
@@ -223,6 +227,7 @@ namespace Sub_Missions
             }
             return (FactionSubTypes)CC.CorpID;
         }
+#endif
 
         // SKINS
         private static FieldInfo
@@ -432,7 +437,7 @@ namespace Sub_Missions
             try
             {
                 string output = LoadMissionCorpFromFile(CorpName);
-                License = JsonConvert.DeserializeObject<SMCCorpLicense>(output);
+                License = JsonConvert.DeserializeObject<SMCCorpLicenseJSON>(output).ConvertToActive();
                 License.Faction.ToString();
 
                 if (!IsSMCCorpLicense(License.ID))
@@ -714,8 +719,18 @@ namespace Sub_Missions
         }
         public static void Subscribe()
         {
-            Initiate();
+            if (!inst)
+            {
+                Initiate();
+            }
             Singleton.Manager<ManPauseGame>.inst.PauseEvent.Subscribe(inst.OnPause);
+        }
+        public static void DeInit()
+        {
+            if (!inst)
+                return;
+            Singleton.Manager<ManPauseGame>.inst.PauseEvent.Unsubscribe(inst.OnPause);
+            Debug.Log("SubMissions: ManSMCCorps De-Init");
         }
         public void OnPause(bool paused)
         {

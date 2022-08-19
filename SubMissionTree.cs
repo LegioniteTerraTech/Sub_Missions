@@ -7,7 +7,9 @@ using UnityEngine;
 using TAC_AI.Templates;
 using Sub_Missions.Steps;
 using Newtonsoft.Json;
+#if !STEAM
 using Nuterra.BlockInjector;
+#endif
 
 namespace Sub_Missions
 {
@@ -157,6 +159,7 @@ namespace Sub_Missions
                 {
                     ManSMCCorps.TryMakeNewCorp(CustomCorpInfo);
                 }
+#if !STEAM
                 else if (KickStart.isBlockInjectorPresent)
                 {
                     int hash = Faction.GetHashCode();
@@ -168,6 +171,7 @@ namespace Sub_Missions
                         FST = (FactionSubTypes)CCS.CorpID;
                     }
                 }
+#endif
             }
             else
             { 
@@ -191,6 +195,7 @@ namespace Sub_Missions
                 }
                 else if (KickStart.isBlockInjectorPresent)
                 {
+#if !STEAM
                     int hash = factionName.GetHashCode();
                     List<CustomCorporation> CC = BlockLoader.CustomCorps.Values.ToList();
                     CustomCorporation CCS = CC.Find(delegate (CustomCorporation cand) { return cand.Name.GetHashCode() == hash; });
@@ -200,6 +205,7 @@ namespace Sub_Missions
                         FST = (FactionSubTypes)CCS.CorpID;
                         return true;
                     }
+#endif
                 }
             }
             else
@@ -223,6 +229,7 @@ namespace Sub_Missions
                 }
                 else if (KickStart.isBlockInjectorPresent)
                 {
+#if !STEAM
                     int hash = Faction.GetHashCode();
                     List<CustomCorporation> CC = BlockLoader.CustomCorps.Values.ToList();
                     CustomCorporation CCS = CC.Find(delegate (CustomCorporation cand) { return cand.Name.GetHashCode() == hash; });
@@ -236,6 +243,7 @@ namespace Sub_Missions
                         ManSMCCorps.TryMakeNewCorp(Faction);
                         return (FactionSubTypes)ManSMCCorps.GetSMCCorp(Faction).ID;
                      }
+#endif
                 }
             }
             else 
@@ -259,6 +267,7 @@ namespace Sub_Missions
                 }
                 else if (KickStart.isBlockInjectorPresent)
                 {
+#if !STEAM
                     int hash = factionName.GetHashCode();
                     List<CustomCorporation> CC = BlockLoader.CustomCorps.Values.ToList();
                     CustomCorporation CCS = CC.Find(delegate (CustomCorporation cand) { return cand.Name.GetHashCode() == hash; });
@@ -270,6 +279,7 @@ namespace Sub_Missions
                     {
                         return ManSMCCorps.TryMakeNewCorp(factionName);
                     }
+#endif
                 }
             }
             else

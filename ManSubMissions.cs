@@ -6,9 +6,11 @@ using System.Threading.Tasks;
 using UnityEngine;
 using TAC_AI.Templates;
 using Sub_Missions.ManWindows;
-using Nuterra.BlockInjector;
 using Sub_Missions.Steps;
 using Newtonsoft.Json;
+#if !STEAM
+using Nuterra.BlockInjector;
+#endif
 
 namespace Sub_Missions
 {
@@ -67,6 +69,8 @@ namespace Sub_Missions
     {   // Handle non-Payload missions here
         internal static ManSubMissions inst;
 
+        internal static bool Active = false;
+
         internal static bool Subscribed = false;
         internal static bool SelectedIsAnon = false;
         internal static bool IgnoreSaveThisSession = false;
@@ -113,6 +117,9 @@ namespace Sub_Missions
         // Setup
         internal static void Initiate()
         {
+            Active = true;
+            if (inst)
+                return;
             inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
             Debug.Log("SubMissions: ManSubMissions initated");
         }
@@ -151,8 +158,33 @@ namespace Sub_Missions
                 Subscribed = true;
             }
         }
+        internal static void DeInit()
+        {
+            if (Subscribed)
+            {
+                PurgeAllTrees();
+                ManSMCCorps.DeInit();
+                WindowManager.DeInit();
+                Singleton.Manager<ManWorldTreadmill>.inst.RemoveListener(inst);
+                Singleton.Manager<ManGameMode>.inst.ModeStartEvent.Unsubscribe(ModeLoad);
+                Singleton.Manager<ManGameMode>.inst.ModeFinishedEvent.Unsubscribe(ModeFinished);
+                Singleton.Manager<ManTechs>.inst.TankDestroyedEvent.Unsubscribe(BroadcastTechDeath);
+                Singleton.Manager<ManWorld>.inst.TileManager.TilePopulatedEvent.Unsubscribe(OnTileLoaded);
+                Singleton.Manager<ManWorld>.inst.TileManager.TileDepopulatedEvent.Unsubscribe(OnTileUnloaded);
+                KickStart.FullyLoadedGame = false;
+                Debug.Log("SubMissions: Core module hooks removed");
+
+                Debug.Log("SubMissions: ManSubMissions De-Init");
+                Subscribed = false;
+            }
+            Active = false;
+        }
+
+
         internal void HarvestAllTrees()
         {
+            if (!Active)
+                return;
             Debug.Log("SubMissions: HARVESTING ALL TREES!!!");
             SubMissionTrees.Clear();
             List<SubMissionTree> trees = SMissionJSONLoader.LoadAllTrees();
@@ -362,13 +394,16 @@ namespace Sub_Missions
 
         private static void PurgeAllTrees()
         {
-            inst.GetAllPossibleMissions();
-            foreach (SubMissionTree tree in SubMissionTrees)
+            if (inst)
             {
-                tree.ResetALLTreeMissions();
+                inst.GetAllPossibleMissions();
+                foreach (SubMissionTree tree in SubMissionTrees)
+                {
+                    tree.ResetALLTreeMissions();
+                }
+                EncounterShoehorn.DestroyAllFakeEncounters();
+                inst.GetAllPossibleMissions();
             }
-            EncounterShoehorn.DestroyAllFakeEncounters();
-            inst.GetAllPossibleMissions();
         }
         internal static void BroadcastTechDeath(Tank techIn, ManDamage.DamageInfo oof)
         {
@@ -413,10 +448,13 @@ namespace Sub_Missions
             {
                 IgnoreSaveThisSession = false;
                 Debug.Log("SubMissions: ManSubMissions Loading from save!");
+                Debug_SMissions.Assert(inst == null, "ManSubMissions IS NULL");
                 PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomatic();
                 inst.GetAllPossibleMissions();
+                Debug_SMissions.Assert(Button == null, "UI Mission menu Button is null");
                 WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                Debug_SMissions.Assert(SideUI == null, "UI Mission side panel is null");
                 WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
             }
             else

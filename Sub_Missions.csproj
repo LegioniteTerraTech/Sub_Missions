@@ -30,6 +30,22 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'SteamDev|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Steam\</OutputPath>
+    <DefineConstants>DEBUG;STEAM</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Steam|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Steam\</OutputPath>
+    <DefineConstants>TRACE;STEAM</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
   <ItemGroup>
     <!--> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz </!-->
     <!--> THE MATTERS BELOW ARE FOR BOTH </!-->
@@ -138,6 +154,10 @@
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UI.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="UnityEngine.UIModule">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UIModule.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="UnityEngine.UnityWebRequestAudioModule">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
       <Private>False</Private>
@@ -157,6 +177,10 @@
     <!--> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz </!-->
     <Reference Include="0Harmony">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\workshop\content\285920\2571814511\0Harmony.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="TAC_AI">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\workshop\content\285920\2765217410\TAC_AI.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="RandomAdditions">
@@ -226,7 +250,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AltUI.cs" />
+    <Compile Include="BlockIndexer.cs" />
     <Compile Include="ButtonAct.cs" />
+    <Compile Include="Debug_SMissions.cs" />
     <Compile Include="EncounterShoehorn.cs" />
     <Compile Include="ModuleSubMissionsBoard.cs" />
     <Compile Include="SimpleSMissions.cs" />
@@ -326,9 +353,45 @@
 set modpath="C:\Program Files (x86)\Steam\steamapps\common\TerraTech\QMods\Sub_Missions"
 
 if exist !modpath! (
+if $(ConfigurationName) == Debug (
 echo Copying to game
 set e=$(TargetDir)&gt;nul
 xcopy /S /Y /R "!e:~0,-1!" !modpath!
+)
+if $(ConfigurationName) == Release (
+echo Copying to game
+set e=$(TargetDir)&gt;nul
+xcopy /S /Y /R "!e:~0,-1!" !modpath!
+)
+)
+
+set modpath2="C:\Users\Legionite\Desktop\Advanced AI\Assets\Mods\Mission Injector"
+
+if exist !modpath2! (
+if $(ConfigurationName) == Steam (
+echo Copying to SteamMod
+set e=$(TargetDir)&gt;nul
+xcopy /S /Y /R "!e:~0,-1!" !modpath2!
+)
+)
+
+set modpath3="C:\Program Files (x86)\Steam\steamapps\common\TerraTech\LocalMods\Mission Injector"
+
+if exist !modpath3! (
+if $(ConfigurationName) == Steam (
+echo Copying to SteamModLocalDirect
+set e=$(TargetDir)&gt;nul
+xcopy /S /Y /R "!e:~0,-1!" !modpath3!
+)
+)
+set modpath4="C:\Program Files (x86)\Steam\steamapps\workshop\content\285920\2850915625"
+
+if exist !modpath4! (
+if $(ConfigurationName) == Steam (
+echo Copying to SteamModWorkshopDirect
+set e=$(TargetDir)&gt;nul
+xcopy /S /Y /R "!e:~0,-1!" !modpath4!
+)
 )</PostBuildEvent>
   </PropertyGroup>
 </Project>

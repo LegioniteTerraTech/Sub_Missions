@@ -11,7 +11,7 @@ namespace Sub_Missions
         internal const float RescaleFactor = 4;
         internal static void AmplifyTerrain(Terrain Terra)
         {
-            Debug.Log("SubMissions: Amplifying Terrain....");
+            Debug_SMissions.Info("SubMissions: Amplifying Terrain....");
             TerrainData TD = Terra.terrainData;
             TD.size = new Vector3(TD.size.x, TD.size.y * RescaleFactor, TD.size.z);
             float[,] floats = TD.GetHeights(0, 0, 129, 129);
@@ -21,7 +21,7 @@ namespace Sub_Missions
             TD.SetHeights(0, 0, floats);
             Terra.terrainData = TD;
             Terra.Flush();
-            Debug.Log("SubMissions: Amplifying Terrain complete!");
+            Debug_SMissions.Info("SubMissions: Amplifying Terrain complete!");
         }
 
         internal static void LevelTerrain(WorldTile WT)

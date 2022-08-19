@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using Sub_Missions.Steps;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
@@ -51,13 +52,25 @@ namespace Sub_Missions.ManWindows
 
         public static void Initiate()
         {
-            inst = Instantiate(new GameObject()).AddComponent<WindowManager>();
+            if (!inst)
+            {
+                inst = Instantiate(new GameObject()).AddComponent<WindowManager>();
+            }
             Debug.Log("SubMissions: WindowManager initated");
         }
         public static void LateInitiate()
         {
-            ManPauseGame.inst.PauseEvent.Subscribe(inst.SetVisibilityOfAllPopups);
+            ManPauseGame.inst.PauseEvent.Subscribe(SetVisibilityOfAllPopups);
         }
+        public static void DeInit()
+        {
+            if (!inst)
+                return;
+            RemoveALLPopups();
+            ManPauseGame.inst.PauseEvent.Unsubscribe(SetVisibilityOfAllPopups);
+            Debug.Log("SubMissions: WindowManager De-Init");
+        }
+
         public static void SetCurrentPopup(GUIPopupDisplay disp)
         {
             if (AllPopups.Contains(disp))
@@ -338,7 +351,7 @@ namespace Sub_Missions.ManWindows
 
         private static bool allPopupsOpen = true;
         private static List<GUIPopupDisplay> PopupsClosed = new List<GUIPopupDisplay>();
-        public void SetVisibilityOfAllPopups(bool Closed)
+        public static void SetVisibilityOfAllPopups(bool Closed)
         {
             bool isOpen = !Closed;
             if (allPopupsOpen != isOpen)
@@ -422,6 +435,7 @@ namespace Sub_Missions.ManWindows
         public GameObject obj;
         public string context = "error";
         public bool isOpen = false;
+        public bool isOpaque = false;
         public Rect Window = new Rect(WindowManager.DefaultWindow);   // the "window"
         public GUISetTypes type = GUISetTypes.Default;
         public IGUIFormat GUIFormat;
@@ -430,7 +444,12 @@ namespace Sub_Missions.ManWindows
         {
             if (isOpen)
             {
+                if (isOpaque)
+                    AltUI.StartUIOpaque();
+                else
+                    AltUI.StartUI();
                 Window = GUI.Window(ID, Window, GUIFormat.RunGUI, context);
+                AltUI.EndUI();
             }
         }
 
@@ -463,6 +482,7 @@ namespace Sub_Missions.ManWindows
                     break;
                 case GUISetTypes.MessageScroll:
                     GUIScrollMessage guiSet5 = new GUIScrollMessage();
+                    isOpaque = true;
                     guiSet5.Setup(this, (string)val1, (float)val2, (SMissionStep)val3);
                     Window = WindowManager.WideWindow;
                     if (windowOverride != null)

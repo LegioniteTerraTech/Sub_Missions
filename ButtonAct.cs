@@ -13,7 +13,14 @@ namespace Sub_Missions
         public static ButtonAct inst;
         internal static void Initiate()
         {
+            if (inst)
+                return;
             inst = Instantiate(new GameObject("ButtonMan")).AddComponent<ButtonAct>();
+        }
+        internal static void DeInit()
+        {
+            if (!inst)
+                return;
         }
 
         public void Nothing()

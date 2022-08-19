@@ -5,10 +5,14 @@ using System.Text;
 using System.IO;
 using System.Reflection;
 using UnityEngine;
-using Nuterra.BlockInjector;
 using Newtonsoft.Json;
 using FMOD;
 using FMODUnity;
+using TerraTechETCUtil;
+
+#if !STEAM
+using Nuterra.BlockInjector;
+#endif
 
 namespace Sub_Missions
 {
@@ -16,7 +20,6 @@ namespace Sub_Missions
     /// <summary>
     /// Only handles Unofficial for now...
     /// </summary>
-    [Serializable]
     public class SMCCorpLicense
     {
         [JsonIgnore]
@@ -39,7 +42,7 @@ namespace Sub_Missions
 
         public int[] GradesXP;
 
-        public BlockTypes FirstCabUnlocked = BlockTypes.GSOCockpit_111;
+        public string FirstCabUnlocked = "GSOCockpit_111";
         public List<SMCCorpBlockRange> GradeUnlockBlocks = new List<SMCCorpBlockRange>();
         [JsonIgnore]
         public List<Texture> TexturesCache = new List<Texture>();
@@ -183,6 +186,7 @@ namespace Sub_Missions
                         UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Rendered all");
                         needsToRenderSkins = false;
                         CSIBacklogRender.Clear();
+                        countWorked = 0;
                     }
                 }
             }
@@ -191,6 +195,7 @@ namespace Sub_Missions
                 UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - CRITICAL ERROR " + e);
                 needsToRenderSkins = false;
                 CSIBacklogRender.Clear();
+                countWorked = 0;
             }
         }
 
@@ -230,6 +235,7 @@ namespace Sub_Missions
                 TryInitFactionEXPSys();
         }
 
+#if !STEAM
         /// <summary>
         /// For initing with BlockInjector, use ManSMCCorps to create new
         /// </summary>
@@ -246,6 +252,7 @@ namespace Sub_Missions
             UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(CustomCorp) - Init");
             TryInitFactionEXPSys();
         }
+#endif
 
         public string GetCorpNameForBlocks()
         {   //
@@ -263,7 +270,7 @@ namespace Sub_Missions
             try
             {
                 if (GradeUnlockBlocks.Count == 0)
-                    return new BlockTypes[1] { FirstCabUnlocked };
+                    return new BlockTypes[1] { BlockIndexer.StringToBlockType(FirstCabUnlocked) };
                 int maxGradeVal = grade > GradeUnlockBlocks.Count - 1 ? GradeUnlockBlocks.Count - 1 : grade;
                 List<BlockTypes> boundle = new List<BlockTypes>();
                 for (int step = 0; maxGradeVal > step; step++)
@@ -284,7 +291,7 @@ namespace Sub_Missions
             try
             {
                 if (GradeUnlockBlocks.Count == 0)
-                    return FirstCabUnlocked;
+                    return BlockIndexer.StringToBlockType(FirstCabUnlocked);
                 if (grade > GradeUnlockBlocks.Count - 1)
                 {
                     return GradeUnlockBlocks.Last().GetRandomBlock();
@@ -314,7 +321,8 @@ namespace Sub_Missions
             {
                 UnityEngine.Debug.Log("SubMissions: GetGradeUnlockBlocks(SMCCorpLicense) - BLOCK could not be obtained - " + e);
             }
-            return new BlockTypes[3] { FirstCabUnlocked, FirstCabUnlocked, FirstCabUnlocked };
+            var fCab = BlockIndexer.StringToBlockType(FirstCabUnlocked);
+            return new BlockTypes[3] { fCab, fCab, fCab };
         }
 
         [JsonIgnore]
@@ -395,53 +403,7 @@ namespace Sub_Missions
                 FactionSubTypes corpID = (FactionSubTypes)ID;
                 if (ManSMCCorps.IsSMCCorpLicense(corpID)) // Unofficial mods
                 {   // We enable support for EVERYTHING in the tree for the corp!
-
-                    if (GradeUnlockBlocks.Count == 0)
-                    {
-                        if (BlockLoader.CustomBlocks.Count > 0)
-                        {
-                            UnityEngine.Debug.Log("SubMissions: REBUILDING GradeUnlockBlocks for " + Faction);
-                            UnofficialTryBuildBlockTypes();
-                            SaveToDisk();
-                        }
-                        else
-                            UnityEngine.Debug.Log("SubMissions: Waiting for Nuterra.BlockInjector to load...");
-                    }
-                    if (SkinRefTech == null)
-                    {
-                        if (!ManSpawn.inst)
-                        {
-                            UnityEngine.Debug.Log("SubMissions: ManSpawn is still loading");
-                            return;
-                        }
-                        else
-                        {
-                            MakeFallbackTechIfNeeded();
-                        }
-                    }
-                    if (!ManPurchases.inst)
-                    {
-                        UnityEngine.Debug.Log("SubMissions: ManPurchases is still loading");
-                        return;
-                    }
-                    else
-                    {
-                        if (!ManPurchases.inst.AvailableCorporations.Contains(corpID))
-                        {
-                            if (SkinReferenceFaction == FactionSubTypes.NULL && BlockLoader.CustomBlocks.Count() == 0)
-                            {
-                                UnityEngine.Debug.Log("SubMissions: Waiting for blocks to compile...");
-                                return;
-                            }
-                            UnityEngine.Debug.Log("SubMissions: Making Corp Identifier for " + Faction + ", ID " + (int)corpID);
-                            //UICCorpLicenses.MakeFactionLicenseUnofficialUI(this);
-                            ManPurchases.inst.AddCustomCorp((int)corpID);
-
-                            ManCustomSkins.inst.AddCorp((int)corpID);
-
-                            BuildSkins();
-                        }
-                    }
+                    RefreshCorpUISPUnofficial(corpID);
                 }
                 else
                 {   // Official Mods
@@ -466,6 +428,58 @@ namespace Sub_Missions
                 }
             }
             catch (Exception e) { UnityEngine.Debug.Log("SubMissions: GAME is still loading " + e); }
+        }
+
+        internal void RefreshCorpUISPUnofficial(FactionSubTypes corpID)
+        {
+#if !STEAM
+            if (GradeUnlockBlocks.Count == 0)
+            {
+                if (BlockLoader.CustomBlocks.Count > 0)
+                {
+                    UnityEngine.Debug.Log("SubMissions: REBUILDING GradeUnlockBlocks for " + Faction);
+                    UnofficialTryBuildBlockTypes();
+                    SaveToDisk();
+                }
+                else
+                    UnityEngine.Debug.Log("SubMissions: Waiting for Nuterra.BlockInjector to load...");
+            }
+            if (SkinRefTech == null)
+            {
+                if (!ManSpawn.inst)
+                {
+                    UnityEngine.Debug.Log("SubMissions: ManSpawn is still loading");
+                    return;
+                }
+                else
+                {
+                    MakeFallbackTechIfNeeded();
+                }
+            }
+            if (!ManPurchases.inst)
+            {
+                UnityEngine.Debug.Log("SubMissions: ManPurchases is still loading");
+                return;
+            }
+            else
+            {
+                if (!ManPurchases.inst.AvailableCorporations.Contains(corpID))
+                {
+                    if (SkinReferenceFaction == FactionSubTypes.NULL && BlockLoader.CustomBlocks.Count() == 0)
+                    {
+                        UnityEngine.Debug.Log("SubMissions: Waiting for blocks to compile...");
+                        return;
+                    }
+                    UnityEngine.Debug.Log("SubMissions: Making Corp Identifier for " + Faction + ", ID " + (int)corpID);
+                    //UICCorpLicenses.MakeFactionLicenseUnofficialUI(this);
+                    ManPurchases.inst.AddCustomCorp((int)corpID);
+
+                    ManCustomSkins.inst.AddCorp((int)corpID);
+
+                    BuildSkins();
+                }
+            }
+#endif
         }
 
         internal void BuildSkins()
@@ -629,9 +643,10 @@ namespace Sub_Missions
                 Texture2D Albedo = null;
                 Texture2D Metal = null;
                 Texture2D Emissive = null;
-                if (BlockLoader.CustomBlocks.TryGetValue((int)FirstCabUnlocked, out CustomBlock CB))
+                var CB = BlockIndexer.StringToBlockPrefab(FirstCabUnlocked);
+                if (CB)
                 {
-                    MeshRenderer MR = CB.Prefab.GetComponentInChildren<MeshRenderer>();
+                    MeshRenderer MR = CB.GetComponentInChildren<MeshRenderer>();
                     if (MR)
                     {
                         Albedo = (Texture2D)MR.sharedMaterial.GetTexture("_MainTex");
@@ -730,6 +745,7 @@ namespace Sub_Missions
 
         internal void BuildFactionLicenseUnofficial()
         {   //
+#if !STEAM
             FactionSubTypes Lookup = (FactionSubTypes)ID;
             if (!ManLicenses.inst || ManLicenses.inst.m_ThresholdData == null)
             {
@@ -747,6 +763,7 @@ namespace Sub_Missions
             }
             else
                 UnityEngine.Debug.Log("SubMissions: Corporation Licence for " + Faction + ", ID: " + ID + " is already built");
+#endif
         }
         private FactionLicense.Thresholds BuildThresholds()
         {   //
@@ -767,9 +784,10 @@ namespace Sub_Missions
             Texture texToLookFor = null;
             if (SkinReferenceFaction == FactionSubTypes.NULL)
             {
-                if (BlockLoader.CustomBlocks.TryGetValue((int)FirstCabUnlocked, out CustomBlock CB))
+                var CB = BlockIndexer.StringToBlockPrefab(FirstCabUnlocked);
+                if (CB)
                 {
-                    MeshRenderer MR = CB.Prefab.GetComponentInChildren<MeshRenderer>();
+                    MeshRenderer MR = CB.GetComponentInChildren<MeshRenderer>();
                     if (MR)
                     {
                         texToLookFor = MR.sharedMaterial.GetTexture("_MainTex");
@@ -816,6 +834,7 @@ namespace Sub_Missions
         }
         private void UnofficialTryBuildBlockTypes()
         {   //
+#if !STEAM
             if (KickStart.isBlockInjectorPresent)
             {
                 BlockTypes BT;
@@ -865,6 +884,7 @@ namespace Sub_Missions
                     GradeUnlockBlocks[step].BlocksOutOfRange = GradeUnlockBlocks[step].BlocksOutOfRange.OrderBy(x => x).ToList();
                 }
             }
+#endif
         }
         private void OfficialTryBuildBlockTypes()
         {   //
@@ -895,7 +915,7 @@ namespace Sub_Missions
                         {
                             if (techControl.HandlesPlayerInput)
                             {
-                                FirstCabUnlocked = BT;
+                                FirstCabUnlocked = ManSpawn.inst.GetBlockPrefab(BT).name;
                                 smallestCabVolume = cabVolume;
                             }
                         }
@@ -915,10 +935,10 @@ namespace Sub_Missions
                         }
                     }
                 }
-                if (FirstCabUnlocked == BlockTypes.GSOCockpit_111)
+                if (FirstCabUnlocked == "GSOCockpit_111")
                 {
                     UnityEngine.Debug.Log("SubMissions: SMCCorpLicense - Corp has no vaild cab block.  Defaulting to the first block declared...");
-                    FirstCabUnlocked = (BlockTypes)MSI.BlockIDs.First().Key;
+                    FirstCabUnlocked = MSI.BlockIDs.First().Value;
                 }
 
                 Sprite shared = Sprite.Create(MCD.m_Icon, new Rect(0, 0, 64, 64), Vector2.zero);
@@ -951,9 +971,11 @@ namespace Sub_Missions
                         if (ManSpawn.inst.GetCategory(BT) == BC)
                         {
                             TankBlock TB = ManSpawn.inst.GetBlockPrefab(BT);
+#if !STEAM
                             if (BlockLoader.CustomBlocks.TryGetValue((int)BT, out CustomBlock CB))
                                 SB.Append("    " + (int)BT + ", BlockName: " + TB.name + " | Ingame name: " + CB.Name + "\n");
                             else
+#endif
                                 SB.Append("    " + (int)BT + ", BlockName: " + TB.name + " | Ingame name: same as BlockName?!\n");
                         }
                     }
@@ -964,8 +986,9 @@ namespace Sub_Missions
         }
 
 
-        public BlockUnlockTable.CorpBlockData UnofficialGetCorpBlockData()
+        public BlockUnlockTable.CorpBlockData UnofficialGetCorpBlockData(out int numberEntries)
         {   //
+            numberEntries = 0;
             if (corpBlockData == null)
             {
                 List<BlockUnlockTable.GradeData> GDl = new List<BlockUnlockTable.GradeData>();
@@ -984,6 +1007,7 @@ namespace Sub_Missions
                             m_DontRewardOnLevelUp = false,
                             m_HideOnLevelUpScreen = shouldNotShow,
                         };
+                        numberEntries++;
                         UDl.Add(UD);
                     }
                     BlockUnlockTable.GradeData GD = new BlockUnlockTable.GradeData {
@@ -1095,18 +1119,21 @@ namespace Sub_Missions
         {   //
             if (!KickStart.FullyLoadedGame)
                 return;
-            if (ManSpawn.inst.GetBlockPrefab(FirstCabUnlocked) == null)
+            BlockTypes BTcab = BlockTypes.GSOCockpit_111;
+            if (FirstCabUnlocked.NullOrEmpty())
             {
                 UnityEngine.Debug.Log("SubMissions: THERE IS NO ASSIGNED CAB WITHIN THIS CORP!!!");
-                FirstCabUnlocked = BlockTypes.GSOCockpit_111;
+                FirstCabUnlocked = ManSpawn.inst.GetBlockPrefab(BlockTypes.GSOCockpit_111).name;
             }
-            if (FirstCabUnlocked == BlockTypes.GSOCockpit_111)
+            else
+                BlockIndexer.GetBlockIDLogFree(FirstCabUnlocked, out BTcab);
+            if (BTcab == BlockTypes.GSOCockpit_111)
             {
                 UnityEngine.Debug.Log("SubMissions: Cannot make fallback tech.  No block specified for cab.");
                 return;
             }
             UnityEngine.Debug.Log("SubMissions: Making fallback Tech...");
-            string blockName = ManSpawn.inst.GetBlockPrefab(FirstCabUnlocked).name;
+            string blockName = ManSpawn.inst.GetBlockPrefab(BTcab).name;
             TechData TD = new TechData();
             TD.Name = "FALLBACK";
             TD.m_BlockSpecs = new List<TankPreset.BlockSpec>();
@@ -1114,7 +1141,7 @@ namespace Sub_Missions
             TD.m_CreationData = new TechData.CreationData();
             TD.m_SkinMapping = new Dictionary<uint, string>();
 
-            BlockTypes BT = FirstCabUnlocked;
+            BlockTypes BT = BTcab;
             TD.m_BlockSpecs.Add(
                     new TankPreset.BlockSpec
                     {
@@ -1176,6 +1203,10 @@ namespace Sub_Missions
         }
 
 
+        private SMCCorpLicenseJSON ConvertToJSON()
+        {
+            return new SMCCorpLicenseJSON(this);
+        }
         private void SaveToDiskAutoBlockList(string toSave)
         {
             try
@@ -1196,7 +1227,7 @@ namespace Sub_Missions
             {
                 SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionCorpsDirectory);
                 SMissionJSONLoader.ValidateDirectory(GetDirectory());
-                string toSave = JsonConvert.SerializeObject(this, Formatting.Indented);
+                string toSave = JsonConvert.SerializeObject(ConvertToJSON(), Formatting.Indented);
                 SMissionJSONLoader.TryWriteToJSONFile(GetDirectory() + SMissionJSONLoader.up + "MissionCorp", toSave);
             }
             catch (Exception e)
@@ -1217,6 +1248,88 @@ namespace Sub_Missions
                 SMUtil.Assert(false, "SubMissions: Could not edit MissionCorp.json.  \n   This could be due to a bug with this mod or file permissions. - " + e);
                 return;
             }
+        }
+
+
+    }
+    
+    [Serializable]
+    public class SMCCorpLicenseJSON
+    {
+        //
+        public string FullName = "NuLl";    // The FULL Name
+        public string Faction = null;     // The SHORTENED name
+        public bool BlocksUseFullName = false;  // Should we check for the fullname instead?
+        public FactionSubTypes EngineReferenceFaction = FactionSubTypes.GSO;    // The Faction to reference for the engine. Due to FMOD this cannot be customized.
+        public FactionSubTypes CombatMusicFaction = FactionSubTypes.GSO;    // The Faction to reference for the combat music. Due to FMOD this cannot be customized.
+        public FactionSubTypes SkinReferenceFaction = FactionSubTypes.NULL; // The Faction to reference for skins. Leave "NULL" to use only your own.
+        public FactionSubTypes CrateReferenceFaction = FactionSubTypes.NULL;// The Faction to reference for Delivery crates. You can override the models with your own.
+        public int ID = -3;                 // MUST be set to a unique value above 50000
+        public float minEmissive = 0.25f;
+
+        public int[] GradesXP;
+
+        public string FirstCabUnlocked = "GSOCockpit_111";
+        public List<SMCCorpBlockRange> GradeUnlockBlocks = new List<SMCCorpBlockRange>();
+
+        // Used for combat
+        public List<string> BattleMusic = new List<string>();
+
+        // Used for Inventory
+        public string StandardCorpIcon = null;
+        public string SelectedCorpIcon = null;
+        public string HighResolutionCorpIcon = null;
+
+        public string ExampleSkinTech = null;
+
+        public SMCCorpLicenseJSON()
+        {
+        }
+
+        public SMCCorpLicenseJSON(SMCCorpLicense toAddTo)
+        {
+            EngineReferenceFaction = toAddTo.EngineReferenceFaction;
+            ExampleSkinTech = toAddTo.ExampleSkinTech;
+            minEmissive = toAddTo.minEmissive;
+            SelectedCorpIcon = toAddTo.SelectedCorpIcon;
+            SkinReferenceFaction = toAddTo.SkinReferenceFaction;
+            StandardCorpIcon = toAddTo.StandardCorpIcon;
+            HighResolutionCorpIcon = toAddTo.HighResolutionCorpIcon;
+            BattleMusic = toAddTo.BattleMusic;
+            BlocksUseFullName = toAddTo.BlocksUseFullName;
+            GradeUnlockBlocks = toAddTo.GradeUnlockBlocks;
+            CombatMusicFaction = toAddTo.CombatMusicFaction;
+            CrateReferenceFaction = toAddTo.CrateReferenceFaction;
+            FirstCabUnlocked = toAddTo.FirstCabUnlocked;
+            Faction = toAddTo.Faction;
+            FullName = toAddTo.FullName;
+            GradesXP = toAddTo.GradesXP;
+            ID = toAddTo.ID;
+        }
+        public SMCCorpLicense Apply(SMCCorpLicense toAddTo)
+        {
+            toAddTo.EngineReferenceFaction = EngineReferenceFaction;
+            toAddTo.ExampleSkinTech = ExampleSkinTech;
+            toAddTo.minEmissive = minEmissive;
+            toAddTo.SelectedCorpIcon = SelectedCorpIcon;
+            toAddTo.SkinReferenceFaction = SkinReferenceFaction;
+            toAddTo.StandardCorpIcon = StandardCorpIcon;
+            toAddTo.HighResolutionCorpIcon = HighResolutionCorpIcon;
+            toAddTo.BattleMusic = BattleMusic;
+            toAddTo.BlocksUseFullName = BlocksUseFullName;
+            toAddTo.GradeUnlockBlocks = GradeUnlockBlocks;
+            toAddTo.CombatMusicFaction = CombatMusicFaction;
+            toAddTo.CrateReferenceFaction = CrateReferenceFaction;
+            toAddTo.FirstCabUnlocked = FirstCabUnlocked;
+            toAddTo.Faction = Faction;
+            toAddTo.FullName = FullName;
+            toAddTo.GradesXP = GradesXP;
+            toAddTo.ID = ID;
+            return toAddTo;
+        }
+        public SMCCorpLicense ConvertToActive()
+        {
+            return Apply(new SMCCorpLicense());
         }
     }
 }

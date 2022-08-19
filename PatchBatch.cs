@@ -7,8 +7,11 @@ using UnityEngine;
 using UnityEngine.UI;
 using HarmonyLib;
 using TMPro;
-using Nuterra.BlockInjector;
 using System.Reflection.Emit;
+#if !STEAM
+using Nuterra.BlockInjector;
+#endif
+
 
 namespace Sub_Missions
 {
@@ -22,7 +25,7 @@ namespace Sub_Missions
         {
             private static void Postfix()
             {
-                ManSubMissions.Subscribe();
+                KickStart.DelayedInit();
             }
         }
 
@@ -272,6 +275,7 @@ namespace Sub_Missions
             }
         }
 
+#if !STEAM
         [HarmonyPriority(-998)]
         [HarmonyPatch(typeof(BlockLoader))]
         [HarmonyPatch("FixBlockUnlockTable")]// SAAAAAVVE
@@ -389,6 +393,7 @@ namespace Sub_Missions
                 }
             }
         }
+#endif
 
 
 
@@ -485,8 +490,9 @@ namespace Sub_Missions
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                     {
-                        Debug.Log("AddUnOfficialCorpsToInventory - Called");
-                        __result = CL.UnofficialGetCorpBlockData();
+                        __result = CL.UnofficialGetCorpBlockData(out int numEntries);
+                        Debug.Log("AddUnOfficialCorpsToInventory - Called with " + numEntries + " blocks assigned");
+
                         return false;
                     }
                 }

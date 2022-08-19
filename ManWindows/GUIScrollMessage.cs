@@ -14,8 +14,8 @@ namespace Sub_Missions.ManWindows
         public GUIPopupDisplay Display { get; set; }
         public Texture2D Image;
         public StringBuilder MessageBuilder = new StringBuilder();
-        public string Message;
-        public string MessageOut;
+        public string Message = "ERROR 404 NOT FOUND (Init Failiure)";
+        public string MessageOut = "";
 
         public bool DenySkip = false;
         private float scrollDelay = 0.075f;

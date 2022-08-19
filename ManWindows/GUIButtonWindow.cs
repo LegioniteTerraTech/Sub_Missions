@@ -32,7 +32,7 @@ namespace Sub_Missions.ManWindows
                 WindowManager.styleDescLargeFont.alignment = TextAnchor.MiddleLeft;
                 WindowManager.styleDescLargeFont.wordWrap = true;
                 WindowManager.styleDescFont = new GUIStyle(GUI.skin.textField);
-                WindowManager.styleDescFont.fontSize = GUI.skin.label.fontSize + 2;
+                WindowManager.styleDescFont.fontSize = 12;
                 WindowManager.styleDescFont.alignment = TextAnchor.UpperLeft;
                 WindowManager.styleDescFont.wordWrap = true;
                 WindowManager.styleLargeFont = new GUIStyle(GUI.skin.label);
@@ -42,6 +42,7 @@ namespace Sub_Missions.ManWindows
                 WindowManager.styleGinormusFont = new GUIStyle(GUI.skin.button);
                 WindowManager.styleGinormusFont.fontSize = 38;
                 WindowManager.SetupAltWins = true;
+                Debug_SMissions.Log("SubMissions: WindowManager performed first setup");
             }
 
             if (GUI.Button(new Rect(0, 10, Display.Window.width, Display.Window.height - 10), buttonMessage, WindowManager.styleHugeFont))

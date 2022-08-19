@@ -24,12 +24,22 @@ namespace Sub_Missions.ManWindows
         {
             if (!WindowManager.SetupAltWins)
             {
+                WindowManager.styleDescLargeFont = new GUIStyle(GUI.skin.textField);
+                WindowManager.styleDescLargeFont.fontSize = 16;
+                WindowManager.styleDescLargeFont.alignment = TextAnchor.MiddleLeft;
+                WindowManager.styleDescLargeFont.wordWrap = true;
+                WindowManager.styleDescFont = new GUIStyle(GUI.skin.textField);
+                WindowManager.styleDescFont.fontSize = GUI.skin.label.fontSize + 2;
+                WindowManager.styleDescFont.alignment = TextAnchor.UpperLeft;
+                WindowManager.styleDescFont.wordWrap = true;
                 WindowManager.styleLargeFont = new GUIStyle(GUI.skin.label);
                 WindowManager.styleLargeFont.fontSize = 16;
-                WindowManager.styleLargeFont.wordWrap = true;
                 WindowManager.styleHugeFont = new GUIStyle(GUI.skin.button);
                 WindowManager.styleHugeFont.fontSize = 20;
+                WindowManager.styleGinormusFont = new GUIStyle(GUI.skin.button);
+                WindowManager.styleGinormusFont.fontSize = 38;
                 WindowManager.SetupAltWins = true;
+                Debug_SMissions.Log("SubMissions: WindowManager performed first setup");
             }
 
             GUI.Label(new Rect(20, 40, Display.Window.width - 40, Display.Window.height - 80), Message, WindowManager.styleLargeFont);

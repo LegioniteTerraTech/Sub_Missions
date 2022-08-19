@@ -4,9 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Reflection;
 using UnityEngine;
-using Nuterra.BlockInjector;
 using Sub_Missions.ManWindows;
 using UnityEngine.UI;
+#if !STEAM
+using Nuterra.BlockInjector;
+#endif
 
 namespace Sub_Missions
 {
@@ -144,6 +146,8 @@ namespace Sub_Missions
             }
             else
             {
+                // Risky to add new corps in OfficialModding
+
                 Debug.Log("SubMissions: ForceAddModdedCorpsSection - No action required!  It has been implemented!");
                 List<SMCCorpLicense> CLs = ManSMCCorps.GetAllSMCCorps();
                 Dictionary<FactionSubTypes, Transform> dict = (Dictionary<FactionSubTypes, Transform>)CKAll.GetValue(inst);
@@ -156,6 +160,10 @@ namespace Sub_Missions
                 foreach (SMCCorpLicense CL in CLs)
                 {
                     FactionSubTypes FST = (FactionSubTypes)CL.ID;
+                    if (dict.TryGetValue(FST, out _))
+                    {
+                        continue;
+                    }
                     UICustomSkinCorpButton pFab = (UICustomSkinCorpButton)CKPrefab.GetValue(inst);
                     Transform trans = pFab.transform.Spawn(GO.transform);
                     trans.localPosition = trans.localPosition.SetZ(0f);
