@@ -29,7 +29,7 @@ namespace Sub_Missions.ManWindows
                 WindowManager.styleDescLargeFont.alignment = TextAnchor.MiddleLeft;
                 WindowManager.styleDescLargeFont.wordWrap = true;
                 WindowManager.styleDescFont = new GUIStyle(GUI.skin.textField);
-                WindowManager.styleDescFont.fontSize = GUI.skin.label.fontSize + 2;
+                WindowManager.styleDescFont.fontSize = 12;
                 WindowManager.styleDescFont.alignment = TextAnchor.UpperLeft;
                 WindowManager.styleDescFont.wordWrap = true;
                 WindowManager.styleLargeFont = new GUIStyle(GUI.skin.label);

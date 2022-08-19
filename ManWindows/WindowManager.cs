@@ -107,10 +107,9 @@ namespace Sub_Missions.ManWindows
         }
         public static bool DoesPopupExist(string title, GUISetTypes type, out GUIPopupDisplay exists)
         {
-            int hash = title.GetHashCode();
             exists = AllPopups.Find(delegate (GUIPopupDisplay cand) 
             { 
-                return cand.context.GetHashCode() == hash && cand.type == type; 
+                return cand.context.CompareTo(title) == 0 && cand.type == type; 
             }
             );
             return exists;
@@ -119,7 +118,7 @@ namespace Sub_Missions.ManWindows
         {
             return AllPopups.Find(delegate (GUIPopupDisplay cand)
             {
-                return cand.context == title && cand.type == type;
+                return cand.context.CompareTo(title) == 0 && cand.type == type;
             }
             );
         }
