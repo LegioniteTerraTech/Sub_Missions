@@ -54,7 +54,7 @@ namespace Sub_Missions.Steps
                             catch //(Exception e)
                             {   // the tech isn't ready yet
                                 //SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not upkeep waypoint!");
-                                //Debug.Log("SubMissions: Error - " + e);
+                                //Debug_SMissions.Log("SubMissions: Error - " + e);
                             }
                         }
                     }
@@ -146,26 +146,26 @@ namespace Sub_Missions.Steps
                         //UIBouncingArrow.BouncingArrowContext arrow = default;
                         //arrow.targetTransform = SMUtil.GetTrackedTech(ref Mission, SMission.InputString).CentralBlock.trans;
                         CreateNewWaypoint();
-                        Debug.Log("SubMissions: StepSetupWaypoint (Tech) - Attached Waypoint to Tech " + SMission.InputString);
+                        Debug_SMissions.Log("SubMissions: StepSetupWaypoint (Tech) - Attached Waypoint to Tech " + SMission.InputString);
                         return true;
                     }
                     catch (Exception e)
                     {
                         SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not setup waypoint!");
-                        Debug.Log("SubMissions: Error - " + e);
+                        Debug_SMissions.Log("SubMissions: Error - " + e);
                     }
                 }
                 else
                 {
                     CreateNewWaypoint();
-                    Debug.Log("SubMissions: StepSetupWaypoint - Placed Waypoint at " + SMission.Position);
+                    Debug_SMissions.Log("SubMissions: StepSetupWaypoint - Placed Waypoint at " + SMission.Position);
                     return true;
                 }
             }
             catch (Exception e)
             {
                 SMUtil.Assert(false, "SubMissions: StepSetupWaypoint - Failed: Could not setup waypoint!");
-                Debug.Log("SubMissions: Error - " + e);
+                Debug_SMissions.Log("SubMissions: Error - " + e);
             }
             return false;
         }
@@ -189,7 +189,7 @@ namespace Sub_Missions.Steps
             catch (Exception e)
             {
                 SMUtil.Assert(false, "SubMissions: StepSetupWaypoint - Failed: Could not despawn waypoint!");
-                Debug.Log("SubMissions: Error - " + e);
+                Debug_SMissions.Log("SubMissions: Error - " + e);
             }
             return false;
         }

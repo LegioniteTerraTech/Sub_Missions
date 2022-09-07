@@ -28,8 +28,8 @@ namespace Sub_Missions.Steps
                   "\n  }," +
                   "\n  \"TerrainHandling\": 2,  // " + TerrainHandlingDesc +
                   "\n  // Conditions TO CHECK before executing" +
-                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
-                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
+                  "\n  \"VariableType\": \"True\",       // See the top of this file." +
+                  "\n  \"VariableCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
                   "\n  \"SetMissionVarIndex1\": -1,       // The varible index that determines if it should spawn more techs." +
                   "\n  // Input Parameters" +
                   "\n  \"InputNum\": 0,             // The Team to set the new Tech(s) to" +
@@ -65,7 +65,7 @@ namespace Sub_Missions.Steps
                         {
                             SMUtil.Assert(false, "SubMissions: StepSetupTech - Failed: COULD NOT FETCH INFORMATION!!!");
                         }
-                        Debug.Log("SubMissions: Error - " + e);
+                        Debug_SMissions.Log("SubMissions: Error - " + e);
                     }
                 }
             }
@@ -97,8 +97,8 @@ namespace Sub_Missions.Steps
                                 {
                                     SMUtil.Assert(true, "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: COULD NOT FETCH INFORMATION!!!");
                                 }
-                                //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                                Debug.Log("SubMissions: Error - " + e);
+                                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                                Debug_SMissions.Log("SubMissions: Error - " + e);
                             }
                             SMission.SavedInt = 1;
                         }
@@ -121,8 +121,8 @@ namespace Sub_Missions.Steps
                             {
                                 SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
                             }
-                            //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                            Debug.Log("SubMissions: Error - " + e);
+                            //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                            Debug_SMissions.Log("SubMissions: Error - " + e);
                         }
                     }
                 }

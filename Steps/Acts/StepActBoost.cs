@@ -47,7 +47,7 @@ namespace Sub_Missions.Steps
                     }
                     catch
                     {
-                        Debug.Log("SubMissions: Could not fly away Tech as this action requires TACtical AIs to execute correctly!");
+                        Debug_SMissions.Log("SubMissions: Could not fly away Tech as this action requires TACtical AIs to execute correctly!");
                     }
                 }
             }

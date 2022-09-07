@@ -24,6 +24,10 @@ namespace Sub_Missions.ManWindows
             Display = display;
             ManSubMissions.Board = this;
         }
+        public void OnOpen()
+        {
+        }
+
         public void RunGUI(int ID)
         {
             scrolll = GUI.BeginScrollView(new Rect(20, 60, (Display.Window.width / 2.1f), Display.Window.height - 120), scrolll, new Rect(0, 0, (Display.Window.width / 3), scrolllSize ));
@@ -90,7 +94,7 @@ namespace Sub_Missions.ManWindows
                     }
                     //GUI.Label(new Rect(40, posLerp * 25, 300, 25), charI.GetCharacterFullName());
                     //GUI.DrawTexture(new Rect(70, (posLerp * 55) + 20, 50, 50), charI.Look);
-                    if ((active.MissionDist >= ManSubMissions.MaxLoadedSpawnDist && active.Type != SubMissionType.Immedeate) || KickStart.OverrideRestrictions)
+                    if (active.CanCancel)
                     {
                         if (GUI.Button(new Rect(buttonSideSpacing + buttonWidth, (posLerp * 55) + 20, 50, 50), "<b>D</b>", WindowManager.styleHugeFont))
                         {   // Remove this mission
@@ -162,7 +166,7 @@ namespace Sub_Missions.ManWindows
                             GUI.Label(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.SelectedAnon.Tree.ProgressYName + ": " + Rewards.AddProgressY, WindowManager.styleDescFont);
                     }
                 }
-                else if (!ManSubMissions.SelectedIsAnon)
+                else
                 {
                     //GUI.DrawTexture(new Rect((Display.Window.width / 2) + 100, 40, 240, 240),);
                     GUI.Label(new Rect((Display.Window.width / 2) + 60, 200, 360, 40), "<b>" + ManSubMissions.Selected.SelectedAltName + "</b>", WindowManager.styleDescLargeFont);
@@ -198,10 +202,6 @@ namespace Sub_Missions.ManWindows
                         if (Rewards.AddProgressY > 0)
                             GUI.Label(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.Selected.Tree.ProgressYName + ": " + Rewards.AddProgressY, WindowManager.styleDescFont);
                     }
-                }
-                else
-                {
-                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>No mission selected</b>", WindowManager.styleLargeFont);
                 }
             }
             catch

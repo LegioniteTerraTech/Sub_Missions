@@ -74,7 +74,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(EncounterDetails __instance, ref int stringBankIdx, ref string stringID, ref string __result)
             {
-                if (stringBankIdx < -100000)
+                if (stringBankIdx == EncounterShoehorn.CustomDisplayID)
                 {
                     __result = stringID;
                     return false;
@@ -83,6 +83,7 @@ namespace Sub_Missions
             }
         }
 
+
         [HarmonyPatch(typeof(ManProgression))]
         [HarmonyPatch("PopulateListOfRandomEncountersAvailable")]// Get Mission info
         internal static class ShoehornInExternalMissions
@@ -90,7 +91,7 @@ namespace Sub_Missions
             private static void Postfix(ManProgression __instance, ref Dictionary<FactionSubTypes, List<EncounterToSpawn>> randomEncounters)
             {
                 ManSubMissions.inst.GetAllPossibleMissions();
-                Debug.Log("MISSIONS FOR MISSION BOARD INLINING");
+                Debug_SMissions.Log("MISSIONS FOR MISSION BOARD INLINING");
                 foreach (var item in ManSubMissions.AnonSubMissions)
                 {
                     FactionSubTypes FST = SubMissionTree.GetTreeCorp(item.Faction);
@@ -98,18 +99,44 @@ namespace Sub_Missions
                     {
                         if (!encounters.Exists(delegate (EncounterToSpawn cand) { return cand.m_EncounterDef.m_Name == item.Name; }))
                         {
-                            encounters.Add(EncounterShoehorn.GetEncounterSpawnDisplayInfo(item, true, item.Type == SubMissionType.Critical));
-                            Debug.Log("MISSION BOARD - new mission " + item.Name);
+                            EncounterShoehorn.GetFakeEncounter(item, out EncounterDetails EDl, out EncounterIdentifier EI);
+                            encounters.Add(EncounterShoehorn.GetEncounterSpawnDisplayInfo(item));
+                            Debug_SMissions.Log("MISSION BOARD - new mission " + item.Name);
                         }
                     }
                     else
                     {
-                        randomEncounters.Add(FST, new List<EncounterToSpawn> { EncounterShoehorn.GetEncounterSpawnDisplayInfo(item, true, item.Type == SubMissionType.Critical) });
-                        Debug.Log("MISSION BOARD [New corp added - " + FST + "] - new mission " + item.Name);
+                        EncounterShoehorn.GetFakeEncounter(item, out EncounterDetails EDl, out EncounterIdentifier EI);
+                        randomEncounters.Add(FST, new List<EncounterToSpawn> { EncounterShoehorn.GetEncounterSpawnDisplayInfo(item) });
+                        Debug_SMissions.Log("MISSION BOARD [New corp added - " + FST + "] - new mission " + item.Name);
                     }
                 }
             }
         }
+
+        /*
+        [HarmonyPatch(typeof(ManQuestLog))]
+        [HarmonyPatch("AddLog", new Type[] { typeof(Encounter), typeof(NetPlayer), typeof(bool), })]// Get Mission info
+        internal static class ShoehornInChecker
+        {
+            private static void Prefix(ManQuestLog __instance, ref Encounter encounter)
+            {
+                Debug_SMissions.Log("CHECKING LOG CONSISTANCY");
+                Debug_SMissions.Log("CANIDATE " + encounter.EncounterName);
+                foreach (var item in ManSubMissions.GetAllFakeEncounters())
+                {
+                    Debug_SMissions.Log("ACTIVE " + item.EncounterName);
+                }
+                foreach (var item in ManSubMissions.GetAllFakeEncounters())
+                {
+                    if (item == encounter)
+                    {
+                        Debug_SMissions.Log("\nMATCH WITH " + item.EncounterName);
+                        return;
+                    }
+                }
+            }
+        }*/
 
 
         [HarmonyPatch(typeof(ManEncounter))]
@@ -118,16 +145,18 @@ namespace Sub_Missions
         {
             private static void Prefix(ManEncounter __instance, ref EncounterToSpawn spawnParams)
             {
-                if (spawnParams?.m_EncounterData?.m_Name != null)
+                if (!EncounterShoehorn.IsSetting && spawnParams?.m_EncounterData?.m_Name != null)
                 {
+                    EncounterShoehorn.OfficialCall = true;
                     int hashName = spawnParams.m_EncounterData.m_Name.GetHashCode();
                     SubMissionStandby SMS = ManSubMissions.AnonSubMissions.Find(delegate (SubMissionStandby cand) { return cand.Name.GetHashCode() == hashName; });
                     if (SMS != null)
                     {
                         ManSubMissions.SelectedAnon = SMS;
                         ManSubMissions.SelectedIsAnon = true;
-                        ManSubMissions.inst.AcceptMission();
+                        ManSubMissions.inst.AcceptMission(spawnParams.m_EncounterData.m_EncounterPrefab);
                     }
+                    EncounterShoehorn.OfficialCall = false;
                 }
             }
         }
@@ -136,7 +165,7 @@ namespace Sub_Missions
         [HarmonyPatch("CancelEncounter")]// Get Mission info
         internal static class StopMissionVanillaInterface
         {
-            private static void Prefix(ManEncounter __instance, ref Encounter encounter)
+            private static bool Prefix(ManEncounter __instance, ref Encounter encounter, ref NetPlayer fromPlayer)
             {
                 if (encounter != null)
                 {
@@ -147,10 +176,54 @@ namespace Sub_Missions
                         ManSubMissions.Selected = SM;
                         ManSubMissions.SelectedIsAnon = false;
                         ManSubMissions.inst.CancelMission();
+                        //ManEncounter.inst.FinishEncounter(encounter, ManEncounter.FinishState.Cancelled, fromPlayer);
+                        return false;
                     }
                 }
+                return true;
             }
         }
+
+        [HarmonyPatch(typeof(ManProgression))]
+        [HarmonyPatch("EncounterCancelled")]// Get Mission info
+        internal static class DoNotRecycleModdedEncounter
+        {
+            private static bool Prefix(ref Encounter encounter)
+            {
+                try
+                {
+                    if (encounter?.EncounterDef == null || encounter.EncounterDef.m_Name == null)
+                    {
+                        Debug_SMissions.Log("ENCOUNTER CANCELLED - NULL!!!!");
+                        return false;
+                    }
+                    else
+                    {
+                        Debug_SMissions.Log("ENCOUNTER CANCELLED " + encounter.EncounterDef.m_Name);
+                        //return EncounterShoehorn.cache.TryGetValue(encounter.EncounterDef.m_Name, out _);
+                        return true;
+                    }
+                }
+                catch { }
+                return false;
+            }
+        }
+
+
+        [HarmonyPatch(typeof(ManEncounter))]
+        [HarmonyPatch("Save")]
+        internal static class StopSavingOfInvalidMissionShoehorns
+        {
+            private static void Prefix(ManEncounter __instance, ref ManSaveGame.State saveState)
+            {
+                EncounterShoehorn.SuspendAllFakeEncounters();
+            }
+            private static void Postfix(ManEncounter __instance, ref ManSaveGame.State saveState)
+            {
+                EncounterShoehorn.ResumeAllFakeEncounters();
+            }
+        }
+
 
         internal static Dictionary<FactionSubTypes, List<SMCCorpBlockRange>> OfficialBlocksPool = new Dictionary<FactionSubTypes, List<SMCCorpBlockRange>>();
 
@@ -230,7 +303,7 @@ namespace Sub_Missions
         {
             private static void Prefix(ref ManGameMode.GameType gameType, ref string saveName)
             {
-                Debug.Log("SubMissions: ManSubMissions Saving!");
+                Debug_SMissions.Log("SubMissions: ManSubMissions Saving!");
                 SaveManSubMissions.SaveData(saveName);
             }
         }
@@ -244,7 +317,7 @@ namespace Sub_Missions
             {
                 FactionSubTypes FST = __instance.Tech.GetMainCorp();
                 int corpIndex = (int)FST;
-                if (ManSMCCorps.IsSMCCorpLicense(corpIndex))
+                if (ManSMCCorps.IsOfficialSMCCorpLicense(corpIndex))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                     {
@@ -321,7 +394,7 @@ namespace Sub_Missions
                 /*
                 if (!__result)
                 {
-                    //Debug.Log("SubMissions: ManSMCCorps not dangerous");
+                    //Debug_SMissions.Log("SubMissions: ManSMCCorps not dangerous");
                     ManSMCCorps.HaltDanger();
                 }*/
                 ManSMCCorps.musicOpening = !__result;
@@ -335,7 +408,7 @@ namespace Sub_Missions
         {
             private static bool Prefix(ref CustomBlock block)
             {
-                //Debug.Log("SubMissions: PatchCCModdingAfter - CALLED FOR " + block.Name);
+                //Debug_SMissions.Log("SubMissions: PatchCCModdingAfter - CALLED FOR " + block.Name);
                 int error = 0;
                 try
                 {
@@ -352,7 +425,7 @@ namespace Sub_Missions
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("SubMissions: PatchCCModding - Error on block " + block.Name + " " + e);
+                    Debug_SMissions.Log("SubMissions: PatchCCModding - Error on block " + block.Name + " " + e);
                 }
                 return true;
             }
@@ -367,14 +440,14 @@ namespace Sub_Missions
 
             public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructions)
             {
-                //Debug.Log("SubMissions: PatchCCModding - TRANSPILING");
+                //Debug_SMissions.Log("SubMissions: PatchCCModding - TRANSPILING");
                 var codes = new List<CodeInstruction>(instructions);
                 var codesOut = new List<CodeInstruction>();
                 /*
                 int line = 0;
                 foreach (CodeInstruction CI in codes)
                 {
-                    Debug.Log("SubMissions: PatchCCModding - TRANSPILER: code " + CI.opcode + " | line - " + line);
+                    Debug_SMissions.Log("SubMissions: PatchCCModding - TRANSPILER: code " + CI.opcode + " | line - " + line);
                     line++;
                 }*/
                 codesOut.AddRange(codes.Take(skipUntil).ToList());
@@ -383,18 +456,18 @@ namespace Sub_Missions
                     spacer.Add(new CodeInstruction(opcode: OpCodes.Nop));
                 codesOut.AddRange(spacer);
                 codesOut.AddRange(codes.Skip(skipUntil + skipBit).ToList());
-                Debug.Log("SubMissions: PatchCCModding - ------------ TRANSPILED ------------");
+                Debug_SMissions.Log("SubMissions: PatchCCModding - ------------ TRANSPILED ------------");
                 //codesOut.AddRange(codes);
                 /*
-                Debug.Log("\n");
-                Debug.Log("\n");
-                Debug.Log("SubMissions: PatchCCModding - Checked lines of code, " + codes.Count + " confirmed in, final is " + codesOut.Count);
+                Debug_SMissions.Log("\n");
+                Debug_SMissions.Log("\n");
+                Debug_SMissions.Log("SubMissions: PatchCCModding - Checked lines of code, " + codes.Count + " confirmed in, final is " + codesOut.Count);
                 line = 0;
                 foreach (CodeInstruction CI in codesOut)
                 {
-                    Debug.Log("SubMissions: PatchCCModding - TRANSPILER: code " + CI.opcode + " | line - " + line);
+                    Debug_SMissions.Log("SubMissions: PatchCCModding - TRANSPILER: code " + CI.opcode + " | line - " + line);
                     if (line == skipUntil)
-                        Debug.Log("SubMissions: PatchCCModding - ------------ SNIPPED HERE!!!! ------------");
+                        Debug_SMissions.Log("SubMissions: PatchCCModding - ------------ SNIPPED HERE!!!! ------------");
                     line++;
                 }*/
                 return codesOut;
@@ -402,7 +475,7 @@ namespace Sub_Missions
             
             private static void Prefix(ref CustomBlock block)
             {
-                //Debug.Log("SubMissions: PatchCCModding - CALLED FOR " + block.Name);
+                //Debug_SMissions.Log("SubMissions: PatchCCModding - CALLED FOR " + block.Name);
                 int error = 0;
                 try
                 {
@@ -414,7 +487,7 @@ namespace Sub_Missions
                         if (block.Name.StartsWith(CL.GetCorpNameForBlocks()))
                         {
                             FST = (FactionSubTypes)CL.ID;
-                            Debug.Log("SubMissions: PatchCCModding - Reassigned Corp of " + block.Name + " to " + CL.ID);
+                            Debug_SMissions.Log("SubMissions: PatchCCModding - Reassigned Corp of " + block.Name + " to " + CL.ID);
                             break;
                         }
                     }
@@ -425,12 +498,12 @@ namespace Sub_Missions
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("SubMissions: PatchCCModding - Error on block " + block.Name + " " + e);
+                    Debug_SMissions.Log("SubMissions: PatchCCModding - Error on block " + block.Name + " " + e);
                 }
             }
             private static void Postfix(ref CustomBlock block)
             {
-                //Debug.Log("SubMissions: PatchCCModding - CALLED FOR " + block.Name);
+                //Debug_SMissions.Log("SubMissions: PatchCCModding - CALLED FOR " + block.Name);
                 int error = 0;
                 try
                 {
@@ -441,7 +514,7 @@ namespace Sub_Missions
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("SubMissions: PatchCCModding(Postfix) - Error on block " + block.Name + " " + e);
+                    Debug_SMissions.Log("SubMissions: PatchCCModding(Postfix) - Error on block " + block.Name + " " + e);
                 }
             }
         }
@@ -457,7 +530,7 @@ namespace Sub_Missions
         {
             private static void Prefix(ManSpawn __instance)
             {
-                Debug.Log("SubMissions: AddCrates - INIT...");
+                Debug_SMissions.Log("SubMissions: AddCrates - INIT...");
                 ManSMCCorps.BuildUnofficialCustomCorpCrates();
             }
         }
@@ -539,12 +612,15 @@ namespace Sub_Missions
         {
             private static bool Prefix(BlockUnlockTable __instance, ref int corpIndex, ref BlockUnlockTable.CorpBlockData __result)
             {
-                if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
+                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corpIndex))
                 {
-                    __result = CL.GetCorpBlockData(out int numEntries);
-                    Debug.Log("ShoveCorpsIntoInventoryCorrectly - Called with " + numEntries + " blocks assigned");
+                    if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
+                    {
+                        __result = CL.GetCorpBlockData(out int numEntries);
+                        Debug_SMissions.Log("ShoveCorpsIntoInventoryCorrectly - Called with " + numEntries + " blocks assigned");
 
-                    return false;
+                        return false;
+                    }
                 }
                 return true;
             }
@@ -570,23 +646,106 @@ namespace Sub_Missions
                 return true;
             }
         }
+        [HarmonyPatch(typeof(BlockUnlockTable))]
+        [HarmonyPatch("AddModdedBlocks")]// shoehorn in unofficial corps
+        private static class MakeSureWeRegisterGradeCorrectly
+        {   // Default just stacks them all in Grade 1
+            private const int MaxGrade = 4;
+            private static bool Prefix(BlockUnlockTable __instance, ref int corpIndex, ref int gradeIndex, ref Dictionary<BlockTypes, ModdedBlockDefinition> blocks)
+            {
+                if (KickStart.isCustomCorpsFixPresent)
+                {
+                    Debug_SMissions.Log("SubMissions: CustomCorpsFix is present, holding off operations for patching.");
+                }
+                else if (blocks.Count > 0)
+                {
+                    BlockUnlockTable.CorpBlockData CBD = __instance.GetCorpBlockData(corpIndex);
+                    if (CBD != null)
+                    {
+                        int gradesAvail = CBD.m_GradeList.Length;
+                        gradeIndex = Mathf.Clamp(gradeIndex, 0, MaxGrade);
+                        Debug_SMissions.Log("Current supported Grades " + gradesAvail + " Suggested grade count " + (gradeIndex + 1));
+                        int futureSize = gradeIndex + 1;
+                        if (gradesAvail < futureSize)
+                        {
+                            Debug_SMissions.Log("There are now " + futureSize + " grade(s) in corp " + corpIndex);
+                            Array.Resize(ref CBD.m_GradeList, futureSize);
+                            for (int step = 0; step < futureSize; step++)
+                            {
+                                if (CBD.m_GradeList[step] == null)
+                                    CBD.m_GradeList[step] = new BlockUnlockTable.GradeData();
+                            }
+                        }
+                        int prevBlockCount = CBD.m_GradeList[gradeIndex].m_BlockList.Count();
+                        int combinedBlockCount = prevBlockCount + blocks.Count;
+                        Debug_SMissions.Log("Prev size of blocks in array " + prevBlockCount + " now " + combinedBlockCount);
+                        Array.Resize(ref CBD.m_GradeList[gradeIndex].m_BlockList, combinedBlockCount);
+                        int position = 0;
+                        int displayedCount = 0;
+                        foreach (KeyValuePair<BlockTypes, ModdedBlockDefinition> pair in blocks)
+                        {
+                            BlockCategories BC = pair.Value.m_Category;
+                            bool hide = BC == BlockCategories.Standard || BC == BlockCategories.Null;
+                            if (!hide)
+                            {
+                                if (displayedCount == 12)
+                                {
+                                    hide = true;
+                                }
+                                else
+                                    displayedCount++;
+                            }
+                            CBD.m_GradeList[gradeIndex].m_BlockList[prevBlockCount + position] = new BlockUnlockTable.UnlockData
+                            {
+                                m_BlockType = pair.Key,
+                                m_BasicBlock = true,
+                                m_DontRewardOnLevelUp = !pair.Value.m_UnlockWithLicense,
+                                m_HideOnLevelUpScreen = hide
+                            };
+                            position++;
+                        }
+                    }
+                }
+                return false;
+            }
+        }
+
+
+        internal static FieldInfo licencesAll = typeof(ManLicenses).GetField("m_FactionLicenses", BindingFlags.NonPublic | BindingFlags.Instance),
+            progg = typeof(FactionLicense).GetField("m_Progress", BindingFlags.NonPublic | BindingFlags.Instance);
+
         [HarmonyPatch(typeof(ManLicenses))]
         [HarmonyPatch("SetupLicenses")]//
         private static class GetTheLayout
         {
             private static void Prefix(ManLicenses __instance)
             {
-                Debug.Log("SubMissions: SetupLicenses - Injecting Unofficial corps beforehand");
+                Debug_SMissions.Log("SubMissions: SetupLicenses - Injecting Unofficial corps beforehand");
                 ManSMCCorps.PushUnofficialCorpsToPool();
             }
         }
+        [HarmonyPatch(typeof(ManLicenses))]
+        [HarmonyPatch("Save")]//
+        private static class DontSaveModdedLicenses
+        {
+            private static void Prefix(ManLicenses __instance, ref ManSaveGame.State saveState)
+            {
+                Debug_SMissions.Log("SubMissions: DontSaveModdedLicenses - Removing modded corp save states...");
+                Dictionary<FactionSubTypes, FactionLicense> licences = (Dictionary<FactionSubTypes, FactionLicense>)licencesAll.GetValue(__instance);
+                foreach (var item in ManSMCCorps.GetAllSMCCorpFactionTypes())
+                {
+                    licences.Remove(item);
+                }
+            }
+        }
+
         [HarmonyPatch(typeof(ManMods))]
         [HarmonyPatch("InjectModdedCorps")]//
         private static class PoolForUnofficial
         {
             private static void Postfix(ManMods __instance)
             {
-                Debug.Log("SubMissions: SetupLicenses - Injecting Unofficial corps...");
+                Debug_SMissions.Log("SubMissions: SetupLicenses - Injecting Unofficial corps...");
                 ManSMCCorps.ReloadAllUnofficialIfApplcable();
                 ManTechMaterialSwap.inst.RebuildCorpArrayTextures();
                 Debug_SMissions.Info("SubMissions: ManTechMaterialSwap - Fetching MainTex");
@@ -598,16 +757,6 @@ namespace Sub_Missions
             }
         }
 
-        [HarmonyPatch(typeof(ManMods))]
-        [HarmonyPatch("InjectModdedBlocks")]//
-        private static class RepoolOfficial
-        {
-            private static void Postfix(ManMods __instance)
-            {
-                Debug.Log("SubMissions: SetupLicenses - Injecting Official corps...");
-                ManSMCCorps.ReloadAllOfficialIfApplcable();
-            }
-        }
         [HarmonyPatch(typeof(UILicenses))]
         [HarmonyPatch("Init")]//
         private static class InitCorrect
@@ -662,6 +811,11 @@ namespace Sub_Missions
                     UICCorpLicenses.ShowFactionLicenseUnofficialUI((int)corp);
                     return false;
                 }
+                else if (ManSMCCorps.IsOfficialSMCCorpLicense((int)corp))
+                {
+                    UICCorpLicenses.ShowFactionLicenseOfficialUI((int)corp);
+                    return false;
+                }
                 return true;
             }
         }
@@ -688,16 +842,13 @@ namespace Sub_Missions
         {
             private static bool Prefix(ref FactionSubTypes corporation, ref int grade)
             {
-                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corporation))
+                if (ManSMCCorps.TryGetSMCCorpLicense((int)corporation, out SMCCorpLicense CL))
                 {
-                    if (ManSMCCorps.TryGetSMCCorpLicense((int)corporation, out SMCCorpLicense CL))
-                    {
-                        if (CL.HasCratePrefab)
-                            ManSMCCorps.crateThing.RewardBlocksByCrate(CL.GetGradeUnlockBlocks(grade), Singleton.playerPos, corporation);
-                        else
-                            ManSMCCorps.crateThing.RewardBlocksByCrate(CL.GetGradeUnlockBlocks(grade), Singleton.playerPos, FactionSubTypes.GSO);
-                        return false;
-                    }
+                    if (CL.HasCratePrefab)
+                        ManSMCCorps.crateThing.RewardBlocksByCrate(CL.GetGradeUnlockBlocks(grade), Singleton.playerPos, corporation);
+                    else
+                        ManSMCCorps.crateThing.RewardBlocksByCrate(CL.GetGradeUnlockBlocks(grade), Singleton.playerPos, CL.CrateReferenceFaction);
+                    return false;
                 }
                 return true;
             }

@@ -44,7 +44,7 @@ namespace Sub_Missions.Steps
                 {
                     if (SMUtil.IsPlayerInRangeOfPos(SMission.Position, SMission.InputNum))
                     {
-                        Debug.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Position - Within) has triggered");
+                        Debug_SMissions.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Position - Within) has triggered");
                         SMUtil.ConcludeGlobal1(ref SMission);
                     }
                 }
@@ -52,7 +52,7 @@ namespace Sub_Missions.Steps
                 {   //invert detection trigger
                     if (!SMUtil.IsPlayerInRangeOfPos(SMission.Position, -SMission.InputNum))
                     {
-                        Debug.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Position - Outside) has triggered");
+                        Debug_SMissions.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Position - Outside) has triggered");
                         SMUtil.ConcludeGlobal1(ref SMission);
                     }
                 }
@@ -64,7 +64,7 @@ namespace Sub_Missions.Steps
                     if (SMUtil.GetTrackedTech(ref SMission, SMission.InputString, out Tank target))
                         if (SMUtil.IsPlayerInRangeOfPos(target.boundsCentreWorld, SMission.InputNum))
                         {
-                            Debug.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Enemy - Within) has triggered");
+                            Debug_SMissions.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Enemy - Within) has triggered");
                             SMUtil.ConcludeGlobal1(ref SMission);
                         }
                 }
@@ -73,7 +73,7 @@ namespace Sub_Missions.Steps
                     if (SMUtil.GetTrackedTech(ref SMission, SMission.InputString, out Tank target))
                         if (!SMUtil.IsPlayerInRangeOfPos(target.boundsCentreWorld, -SMission.InputNum))
                         {
-                            Debug.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Enemy - Outside) has triggered");
+                            Debug_SMissions.Log("SubMissions: ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Enemy - Outside) has triggered");
                             SMUtil.ConcludeGlobal1(ref SMission);
                         }
                 }

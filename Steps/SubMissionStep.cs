@@ -54,7 +54,17 @@ namespace Sub_Missions.Steps
 
         [DefaultValue(EVaribleType.None)]
         public EVaribleType VaribleType = EVaribleType.None;           // Selects what the output should be
+        public EVaribleType VariableType
+        {
+            get { return VaribleType; }
+            set { VaribleType = value; }
+        }
         public float VaribleCheckNum = 0;
+        public float VariableCheckNum
+        {
+            get { return VaribleCheckNum; }
+            set { VaribleCheckNum = value; }
+        }
         public float InputNum = 0;
         public string InputString = null;
         public string InputStringAux = null;
@@ -93,7 +103,7 @@ namespace Sub_Missions.Steps
             catch (Exception e)
             {
                 SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a TrySetup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
-                Debug.Log(e);
+                Debug_SMissions.Log(e);
             }
         }
         internal void LoadStep()
@@ -111,7 +121,7 @@ namespace Sub_Missions.Steps
             catch (Exception e)
             {
                 SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a LoadStep error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
-                Debug.Log(e);
+                Debug_SMissions.Log(e);
             }
         }
         internal void UnloadStep()
@@ -123,7 +133,7 @@ namespace Sub_Missions.Steps
             catch (Exception e)
             {
                 SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
-                Debug.Log(e);
+                Debug_SMissions.Log(e);
             }
         }
         internal void ClearStep()
@@ -159,7 +169,7 @@ namespace Sub_Missions.Steps
             catch (Exception e)
             {
                 SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
-                Debug.Log(e);
+                Debug_SMissions.Log(e);
             }
         }
         internal void Trigger() 
@@ -171,7 +181,7 @@ namespace Sub_Missions.Steps
             catch (Exception e)
             {
                 SMUtil.Assert(true, "SubMissions: Mission " + Mission.Name + " Has invalid syntax at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute."); 
-                Debug.Log(e);
+                Debug_SMissions.Log(e);
             }
         }
         internal void TrySetupOnType()

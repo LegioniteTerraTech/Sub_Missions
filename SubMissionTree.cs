@@ -101,7 +101,7 @@ namespace Sub_Missions
                 }
                 else if (doNow)
                 {
-                    Debug.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a Immedeate mission that will be auto-assigned as soon as it's criteria is met.");
+                    Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a Immedeate mission that will be auto-assigned as soon as it's criteria is met.");
                     sort.Type = SubMissionType.Immedeate;
                     tree.RepeatMissions.Add(sort);
                     continue;
@@ -117,13 +117,13 @@ namespace Sub_Missions
                 }
                 else if (repeat)
                 {
-                    Debug.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a repeatable mission.");
+                    Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a repeatable mission.");
                     sort.Type = SubMissionType.Repeating;
                     tree.RepeatMissions.Add(sort);
                 }
                 else if (main)
                 {
-                    Debug.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a main mission.");
+                    Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a main mission.");
                     sort.Type = SubMissionType.Basic;
                     tree.Missions.Add(sort);
                 }
@@ -137,7 +137,7 @@ namespace Sub_Missions
                 }
 
             }
-            Debug.Log("SubMissions: Compiled tree for " + TreeName + ".");
+            Debug_SMissions.Log("SubMissions: Compiled tree for " + TreeName + ".");
             newTree = tree;
 
 
@@ -153,7 +153,7 @@ namespace Sub_Missions
             {
                 if (ManSMCCorps.GetSMCIDUnofficial(Faction, out FactionSubTypes FST1))
                 {
-                    Debug.Log("SubMissions: linked MissionTree with unofficial Custom Corp " + Faction + " of ID " + FST1);
+                    Debug_SMissions.Log("SubMissions: linked MissionTree with unofficial Custom Corp " + Faction + " of ID " + FST1);
                 }
                 else if (CustomCorpInfo != null)
                 {
@@ -284,24 +284,27 @@ namespace Sub_Missions
             }
             else
                 return FST;
-            return FactionSubTypes.NULL;
+            return FactionSubTypes.GSO;
         }
 
 
         // Actions
-        internal void AcceptTreeMission(SubMissionStandby Anon)
+        internal bool AcceptTreeMission(SubMissionStandby Anon, Encounter Enc = null)
         {   //
-            if (DeployMission(TreeName, Anon, out SubMission Deployed))
+            if (DeployMission(TreeName, Anon, out SubMission Deployed, Enc))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.AcceptMission);
                 SubMission newMission = Deployed;
                 newMission.Startup();
                 ActiveMissions.Add(newMission);
+                EncounterShoehorn.SetFakeEncounter(newMission, false);
                 ManSubMissions.inst.GetAllPossibleMissions();
                 ManSubMissions.Selected = newMission;
+                return true;
             }
             else
                 SMUtil.Assert(false, "<b> Could not deploy mission! </b>");
+            return false;
         }
         internal void CancelTreeMission(SubMission Active)
         {   //
@@ -314,15 +317,15 @@ namespace Sub_Missions
                     else
                         ManSubMissions.Selected = null;
                 }
-                EncounterShoehorn.FinishSubMission(Active, ManEncounter.FinishState.Cancelled);
+                EncounterShoehorn.OnFinishSubMission(Active, ManEncounter.FinishState.Cancelled);
                 Active.Cleanup();
                 if (!ActiveMissions.Remove(Active))
-                    Debug.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on CancelTreeMission!");
+                    Debug_SMissions.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on CancelTreeMission!");
                 ManSubMissions.inst.GetAllPossibleMissions();
             }
             catch
             {
-                Debug.Log("SubMissions: CancelTreeMission - Could not cancel mission!  Mission " + Active.Name + " of Tree" + TreeName);
+                Debug_SMissions.Log("SubMissions: CancelTreeMission - Could not cancel mission!  Mission " + Active.Name + " of Tree" + TreeName);
             }
         }
 
@@ -331,44 +334,44 @@ namespace Sub_Missions
         /// </summary>
         public void ExternalCancelTreeMission(SubMission toCancel)
         {   //
-            Debug.Log("SubMissions: SubMissionTree.ExternalCancelTreeMission - Externally invoked: " + StackTraceUtility.ExtractStackTrace());
+            Debug_SMissions.Log("SubMissions: SubMissionTree.ExternalCancelTreeMission - Externally invoked: " + StackTraceUtility.ExtractStackTrace());
             CancelTreeMission(toCancel);
         }
         public void ExternalResetALLTreeMissions()
         {   //
-            Debug.Log("SubMissions: SubMissionTree.ExternalResetALLTreeMissions - Externally invoked: " + StackTraceUtility.ExtractStackTrace());
+            Debug_SMissions.Log("SubMissions: SubMissionTree.ExternalResetALLTreeMissions - Externally invoked: " + StackTraceUtility.ExtractStackTrace());
             ResetALLTreeMissions();
         }
 
         public List<SubMissionStandby> GetImmediateMissions()
         {   //
-            //Debug.Log("SubMissions: " + TreeName + " is fetching missions");
+            //Debug_SMissions.Log("SubMissions: " + TreeName + " is fetching missions");
             List<SubMissionStandby> initMissions = new List<SubMissionStandby>();
-            Debug.Log("SubMissions: Immediate Missions count " + ImmedeateMissions.Count);
+            Debug_SMissions.Info("SubMissions: Immediate Missions count " + ImmedeateMissions.Count);
             if (!KickStart.OverrideRestrictions)
             {
                 foreach (SubMissionStandby mission in ImmedeateMissions)
                 {
-                    //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
+                    //Debug_SMissions.Log("SubMissions: Trying to validate mission " + mission.Name);
                     int hashName = mission.Name.GetHashCode();
                     if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name.GetHashCode() == hashName; }))
                     {   // It's already in the list
-                        Debug.Log("SubMissions: " + mission.Name + " is already active");
+                        Debug_SMissions.Info("SubMissions: " + mission.Name + " is already active");
                         continue;
                     }
                     if (CompletedMissions.Exists(delegate (SubMissionStandby cand) { return cand.Name.GetHashCode() == hashName; }))
                     {   // It's been finished already, do not get
-                        Debug.Log("SubMissions: " + mission.Name + " is already finished");
+                        Debug_SMissions.Info("SubMissions: " + mission.Name + " is already finished");
                         continue;
                     }
                     if (mission.MinProgressX > ProgressX)
                     {
-                        Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
+                        Debug_SMissions.Info("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
                         continue;
                     }
                     if (mission.MinProgressY > ProgressY)
                     {
-                        Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
+                        Debug_SMissions.Info("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
                         continue;
                     }
                     try
@@ -377,13 +380,13 @@ namespace Sub_Missions
                         if (licence.IsDiscovered && licence.CurrentLevel >= mission.GradeRequired)
                         {
                             mission.GetAndSetDisplayName();
-                            Debug.Log("SubMissions: Pushing mission " + mission.Name + " now - the player has no option to deny this");
+                            Debug_SMissions.Log("SubMissions: Pushing mission " + mission.Name + " now - the player has no option to deny this");
                             initMissions.Add(mission);
                         }
                     }
                     catch
                     {
-                        Debug.Log("SubMissions: " + mission.Name + " is not available right now");
+                        Debug_SMissions.Info("SubMissions: " + mission.Name + " is not available right now");
                         continue;
                     }
                 }
@@ -393,40 +396,40 @@ namespace Sub_Missions
 
         public List<SubMissionStandby> GetReachableMissions()
         {   //
-            //Debug.Log("SubMissions: " + TreeName + " is fetching missions");
+            //Debug_SMissions.Log("SubMissions: " + TreeName + " is fetching missions");
             //if (ManSMCCorps.GetSMCCorp(Faction, out SMCCorpLicense CL))
             //   CL.RefreshCorpUISP();
             List<SubMissionStandby> initMissions = new List<SubMissionStandby>();
-            //Debug.Log("SubMissions: Tree " + TreeName + " Missions count " + Missions.Count + " | " + RepeatMissions.Count);
+            //Debug_SMissions.Log("SubMissions: Tree " + TreeName + " Missions count " + Missions.Count + " | " + RepeatMissions.Count);
             foreach (SubMissionStandby mission in Missions)
             {
-                //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
+                //Debug_SMissions.Log("SubMissions: Trying to validate mission " + mission.Name);
                 int hashName = mission.Name.GetHashCode();
                 if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name.GetHashCode() == hashName; }))
                 {   // It's already in the list
-                    //Debug.Log("SubMissions: " + mission.Name + " is already active");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " is already active");
                     continue;
                 }
                 if (KickStart.OverrideRestrictions)
                 {
-                    //Debug.Log("SubMissions: Presenting mission " + mission.Name);
+                    //Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
                     mission.GetAndSetDisplayName();
                     initMissions.Add(mission);
                     continue;
                 }
                 if (CompletedMissions.Exists(delegate (SubMissionStandby cand) { return cand.Name.GetHashCode() == hashName; }))
                 {   // It's been finished already, do not get
-                    //Debug.Log("SubMissions: " + mission.Name + " is already finished");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " is already finished");
                     continue;
                 }
                 if (mission.MinProgressX > ProgressX)
                 {
-                    //Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
                     continue;
                 }
                 if (mission.MinProgressY > ProgressY)
                 {
-                    //Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
                     continue;
                 }
                 if (mission.SPOnly && ManNetwork.IsNetworked)
@@ -441,13 +444,13 @@ namespace Sub_Missions
                         case SubMissionPosition.FixedCoordinate:
                             if (ManSubMissions.IsTooCloseToOtherMission(WorldPosition.FromScenePosition(Singleton.playerPos).TileCoord))
                             {
-                                Debug.Log("SubMissions: " + mission.Name + " - another mission is too close!");
+                                Debug_SMissions.Log("SubMissions: " + mission.Name + " - another mission is too close!");
                                 continue;
                             }
                             break;
                     }
                 }
-                catch { Debug.Log("Player does not exist yet"); }
+                catch { Debug_SMissions.Log("Player does not exist yet"); }
                 try
                 {
                     FactionLicense licence = Singleton.Manager<ManLicenses>.inst.GetLicense(GetTreeCorp(mission.Faction));
@@ -455,40 +458,40 @@ namespace Sub_Missions
                     if (licence.IsDiscovered && licence.CurrentLevel >= mission.GradeRequired)
                     {
                         mission.GetAndSetDisplayName();
-                       // Debug.Log("SubMissions: Presenting mission " + mission.Name);
+                       // Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
                         initMissions.Add(mission);
                     }
                 }
                 catch
                 {
-                    //Debug.Log("SubMissions: " + mission.Name + " is not available right now");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " is not available right now");
                     continue;
                 }
             }
             foreach (SubMissionStandby mission in RepeatMissions)
             {
-                //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
+                //Debug_SMissions.Log("SubMissions: Trying to validate mission " + mission.Name);
                 int hashName = mission.Name.GetHashCode();
                 if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name.GetHashCode() == hashName; }))
                 {   // It's already in the list
-                    Debug.Log("SubMissions: " + mission.Name + " is already active");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " is already active");
                     continue;
                 }
                 if (KickStart.OverrideRestrictions)
                 {
-                    Debug.Log("SubMissions: Presenting mission " + mission.Name);
+                    //Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
                     mission.GetAndSetDisplayName();
                     initMissions.Add(mission);
                     continue;
                 }
                 if (mission.MinProgressX > ProgressX)
                 {
-                    Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressXName + ".");
                     continue;
                 }
                 if (mission.MinProgressY > ProgressY)
                 {
-                    Debug.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " - not enough " + mission.Tree.ProgressYName + ".");
                     continue;
                 }
                 try
@@ -497,13 +500,13 @@ namespace Sub_Missions
                     if (licence.IsDiscovered && licence.CurrentLevel >= mission.GradeRequired)
                     {
                         mission.GetAndSetDisplayName();
-                        Debug.Log("SubMissions: Presenting mission " + mission.AltName);
+                        Debug_SMissions.Log("SubMissions: Presenting mission " + mission.AltName);
                         initMissions.Add(mission);
                     }
                 }
                 catch
                 {
-                    Debug.Log("SubMissions: " + mission.Name + " is not available right now");
+                    //Debug_SMissions.Log("SubMissions: " + mission.Name + " is not available right now");
                     continue;
                 }
             }
@@ -511,14 +514,14 @@ namespace Sub_Missions
             {
                 foreach (SubMissionStandby mission in ImmedeateMissions)
                 {
-                    //Debug.Log("SubMissions: Trying to validate mission " + mission.Name);
+                    //Debug_SMissions.Log("SubMissions: Trying to validate mission " + mission.Name);
                     int hashName = mission.Name.GetHashCode();
                     if (ActiveMissions.Exists(delegate (SubMission cand) { return cand.Name.GetHashCode() == hashName; }))
                     {   // It's already in the list
-                        Debug.Log("SubMissions: " + mission.Name + " is already active");
+                        //Debug_SMissions.Log("SubMissions: " + mission.Name + " is already active");
                         continue;
                     }
-                    Debug.Log("SubMissions: Presenting mission " + mission.Name);
+                    Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
                     mission.GetAndSetDisplayName();
                     initMissions.Add(mission);
                 }
@@ -539,7 +542,7 @@ namespace Sub_Missions
             }
             return missionsLoaded;
         }
-        private bool DeployMission(string treeName, SubMissionStandby toDeploy, out SubMission Deployed)
+        private bool DeployMission(string treeName, SubMissionStandby toDeploy, out SubMission Deployed, Encounter Enc = null)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
             Deployed = SMissionJSONLoader.MissionLoader(this, toDeploy.Name);
@@ -551,6 +554,7 @@ namespace Sub_Missions
             Deployed.SelectedAltName = toDeploy.AltName;
             Deployed.Description = toDeploy.Desc;
             Deployed.Type = toDeploy.Type;
+            Deployed.FakeEncounter = Enc;
             return true;
         }
         private static List<SubMissionStandby> CompileToStandby(List<SubMission> MissionsLoaded)
@@ -611,7 +615,7 @@ namespace Sub_Missions
         // Events
         internal void FinishedMission(SubMission finished)
         {
-            Debug.Log("SubMissions: Finished mission " + finished.Name + " of Tree " + TreeName + ".");
+            Debug_SMissions.Log("SubMissions: Finished mission " + finished.Name + " of Tree " + TreeName + ".");
             int hashName = finished.Name.GetHashCode();
             if (RepeatMissions.Exists(delegate (SubMissionStandby cand) { return cand.Name.GetHashCode() == hashName; }))
             {   // Do nothing special - repeat missions are to be repeated
@@ -621,9 +625,9 @@ namespace Sub_Missions
                 CompletedMissions.Add(CompileToStandby(finished));
             }
             else
-                Debug.Log("SubMissions: Tried to finish mission " + finished.Name + " that's not listed in this tree!  Tree " + TreeName);
+                Debug_SMissions.Log("SubMissions: Tried to finish mission " + finished.Name + " that's not listed in this tree!  Tree " + TreeName);
             if (!ActiveMissions.Remove(finished))
-                Debug.Log("SubMissions: Tried to finish mission " + finished.Name + " but it doesn't exist in the ActiveMissions list!  Tree " + TreeName);
+                Debug_SMissions.Log("SubMissions: Tried to finish mission " + finished.Name + " but it doesn't exist in the ActiveMissions list!  Tree " + TreeName);
             try
             {
                 ManSubMissions.Selected = ActiveMissions.First();
@@ -632,6 +636,7 @@ namespace Sub_Missions
             {
                 ManSubMissions.Selected = null;
             }
+            ManSubMissions.UpdateSaveStateForCustomCorps();
             ManSubMissions.inst.GetAllPossibleMissions();
         }
         internal void ResetALLTreeMissions()
@@ -658,11 +663,11 @@ namespace Sub_Missions
             {
                 Active.Cleanup(true);
                 if (!ActiveMissions.Remove(Active))
-                    Debug.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on UnloadTreeMission!");
+                    Debug_SMissions.Log("SubMissions: Called wrong tree [" + TreeName + "] for mission " + Active.Name + " on UnloadTreeMission!");
             }
             catch
             {
-                Debug.Log("SubMissions: UnloadTreeMission - Could not unload mission!  Mission " + Active.Name + " of Tree" + TreeName);
+                Debug_SMissions.Log("SubMissions: UnloadTreeMission - Could not unload mission!  Mission " + Active.Name + " of Tree" + TreeName);
             }
         }
 

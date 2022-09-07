@@ -111,34 +111,37 @@ namespace Sub_Missions
                     {
                         if (!CL.ExampleSkinTech.NullOrEmpty())
                         {
-                            string directed = CL.GetDirectory() + SMissionJSONLoader.up + CL.ExampleSkinTech;
-                            if (File.Exists(directed))
+                            if (CL.GetDirectory(out string directory))
                             {
-                                Texture2D T2D = FileUtils.LoadTexture(directed);
-                                if (T2D && ManScreenshot.TryDecodeSnapshotRender(T2D, out TechData.SerializedSnapshotData TSS))
+                                string directed = directory + SMissionJSONLoader.up + CL.ExampleSkinTech;
+                                if (File.Exists(directed))
                                 {
-                                    TankPreset TP = TankPreset.CreateInstance();
-                                    TPTechData.SetValue(TP, TSS.CreateTechData()); // Creates the base instance
-                                    CL.SkinRefTech = TP;
+                                    Texture2D T2D = FileUtils.LoadTexture(directed);
+                                    if (T2D && ManScreenshot.TryDecodeSnapshotRender(T2D, out TechData.SerializedSnapshotData TSS))
+                                    {
+                                        TankPreset TP = TankPreset.CreateInstance();
+                                        TPTechData.SetValue(TP, TSS.CreateTechData()); // Creates the base instance
+                                        CL.SkinRefTech = TP;
+                                    }
+                                    else
+                                        SMUtil.Assert(false, "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Could not load ExampleSkinTech for " + CL.Faction + ". \n Tech is corrupted or needed blocks are missing");
                                 }
                                 else
-                                    SMUtil.Assert(false, "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Could not load ExampleSkinTech for " + CL.Faction + ". \n Tech is corrupted or needed blocks are missing");
+                                    SMUtil.Assert(false, "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Could not load ExampleSkinTech for " + CL.Faction + ". \n Check your naming and files");
                             }
-                            else
-                                SMUtil.Assert(false, "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Could not load ExampleSkinTech for " + CL.Faction + ". \n Check your naming and files");
                         }
                         if (CL.SkinRefTech == null)
                             CL.MakeFallbackTechIfNeeded();
                         if (CL.SkinRefTech == null)
                         {
-                            UnityEngine.Debug.Log("SubMissions: SkinRefTech IS NULL");
+                            Debug_SMissions.Log("SubMissions: SkinRefTech IS NULL");
                             countWorked++;
                             return;
                         }
                         TechData TD = CL.SkinRefTech.GetTechDataFormatted();
                         if (TD == null)
                         {
-                            UnityEngine.Debug.Log("SubMissions: SkinRefTech's TechData IS NULL");
+                            Debug_SMissions.Log("SubMissions: SkinRefTech's TechData IS NULL");
                             countWorked++;
                             return;
                         }
@@ -154,7 +157,7 @@ namespace Sub_Missions
                                         /*
                                         if ((int)Singleton.Manager<ManSpawn>.inst.GetCorporation(value.GetBlockType()) != CL.ID)
                                         {
-                                            UnityEngine.Debug.Log("SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Example Tech must use only the same blocks from the respective corp!");
+                                            Debug_SMissions.Log("SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Example Tech must use only the same blocks from the respective corp!");
                                             continue;
                                         }*/
                                         value.m_SkinID = (byte)CSI.m_SkinUniqueID;
@@ -162,13 +165,13 @@ namespace Sub_Missions
                                     }
                                     catch
                                     {
-                                        UnityEngine.Debug.Log("SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - BlockSpec IS NULL");
+                                        Debug_SMissions.Log("SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - BlockSpec IS NULL");
                                     }
                                 }
                             }
                             else
                             {
-                                UnityEngine.Debug.Log("SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - BlockSpec IS NULL BY DEFAULT");
+                                Debug_SMissions.Log("SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - BlockSpec IS NULL BY DEFAULT");
                             }
                             Singleton.Manager<ManScreenshot>.inst.RenderTechImage(TD, new IntVector2(128, 128), false, delegate (TechData techData, Texture2D tex)
                             {
@@ -183,7 +186,7 @@ namespace Sub_Missions
                     countWorked++;
                     if (CSIBacklogRender.Count - 1 < countWorked)
                     {
-                        UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Rendered all");
+                        Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Rendered all");
                         needsToRenderSkins = false;
                         CSIBacklogRender.Clear();
                         countWorked = 0;
@@ -192,7 +195,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - CRITICAL ERROR " + e);
+                Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - CRITICAL ERROR " + e);
                 needsToRenderSkins = false;
                 CSIBacklogRender.Clear();
                 countWorked = 0;
@@ -215,9 +218,9 @@ namespace Sub_Missions
             FullName = ManMods.inst.FindCorpName(ID);
             Faction = ManMods.inst.FindCorpShortName(ID);
             this.ID = (int)ID;
-            GradesXP = new int[3] { 100, 250, 1000 }; 
             OfficialCorp = true;
-            UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - Init for " + MCD.m_DisplayName);
+            GradesXP = new int[5] { 100, 250, 1000, 2000, 4000 };
+            Debug_SMissions.Log("SubMissions: SMCCorpLicense(OfficialMods) - Init for " + MCD.m_DisplayName);
             TryInitFactionEXPSys();
         }
         /// <summary>
@@ -230,7 +233,7 @@ namespace Sub_Missions
             Faction = FactionName;
             this.ID = ID;
             GradesXP = Grades;
-            UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(Scratch) - Init");
+            Debug_SMissions.Log("SubMissions: SMCCorpLicense(Scratch) - Init");
             if (!overrideStartup)
                 TryInitFactionEXPSys();
         }
@@ -249,7 +252,7 @@ namespace Sub_Missions
             SmallCorpIcon = CC.CorpIcon;
             SmallSelectedCorpIcon = CC.SelectedCorpIcon;
             HighResCorpIcon = CC.ModernCorpIcon;
-            UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(CustomCorp) - Init");
+            Debug_SMissions.Log("SubMissions: SMCCorpLicense(CustomCorp) - Init");
             TryInitFactionEXPSys();
         }
 #endif
@@ -282,7 +285,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: GetRandomBlocks(SMCCorpLicense) - BLOCK could not be obtained - " + e);
+                Debug_SMissions.Log("SubMissions: GetRandomBlocks(SMCCorpLicense) - BLOCK could not be obtained - " + e);
             }
             return new BlockTypes[1] { BlockTypes.GSOCockpit_111 };
         }
@@ -300,7 +303,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: GetRandomBlock(SMCCorpLicense) - BLOCK could not be obtained - " + e);
+                Debug_SMissions.Log("SubMissions: GetRandomBlock(SMCCorpLicense) - BLOCK could not be obtained - " + e);
             }
             return BlockTypes.GSOAIController_111;
         }
@@ -319,7 +322,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: GetGradeUnlockBlocks(SMCCorpLicense) - BLOCK could not be obtained - " + e);
+                Debug_SMissions.Log("SubMissions: GetGradeUnlockBlocks(SMCCorpLicense) - BLOCK could not be obtained - " + e);
             }
             var fCab = BlockIndexer.StringToBlockType(FirstCabUnlocked);
             return new BlockTypes[3] { fCab, fCab, fCab };
@@ -340,7 +343,7 @@ namespace Sub_Missions
         {   //
             if (BattleMusic == null)
             {
-                UnityEngine.Debug.Log("SubMissions: RegisterCorpMusics - No custom corp music for " + Faction + ".");
+                Debug_SMissions.Log("SubMissions: RegisterCorpMusics - No custom corp music for " + Faction + ".");
                 return;
             }
             ManSMCCorps.sys = RuntimeManager.LowlevelSystem;
@@ -349,20 +352,23 @@ namespace Sub_Missions
                 try
                 {
                     string GO;
-                    GO = System.IO.Path.GetFullPath(GetDirectory()) + SMissionJSONLoader.up + fileName;
-                    UnityEngine.Debug.Log("SubMissions: RegisterCorpMusics - " + GO);
-                    ManSMCCorps.sys.createSound(GO, FMOD.MODE.CREATESAMPLE | FMOD.MODE.ACCURATETIME, out Sound newSound);
-                    combatMusicLoaded.Add(newSound);
-                    UnityEngine.Debug.Log("SubMissions: RegisterCorpMusics - The corp music for " + Faction + " named " + fileName + " loaded correctly");
+                    if (GetDirectory(out string directory))
+                    {
+                        GO = System.IO.Path.GetFullPath(directory) + SMissionJSONLoader.up + fileName;
+                        Debug_SMissions.Log("SubMissions: RegisterCorpMusics - " + GO);
+                        ManSMCCorps.sys.createSound(GO, FMOD.MODE.CREATESAMPLE | FMOD.MODE.ACCURATETIME, out Sound newSound);
+                        combatMusicLoaded.Add(newSound);
+                        Debug_SMissions.Log("SubMissions: RegisterCorpMusics - The corp music for " + Faction + " named " + fileName + " loaded correctly");
+                    }
                 }
                 catch (Exception e)
                 {
-                    UnityEngine.Debug.Log("SubMissions: RegisterCorpMusics - Error " + e);
+                    Debug_SMissions.Log("SubMissions: RegisterCorpMusics - Error " + e);
                 }
             }
             if (combatMusicLoaded.Count == 0)
             {
-                UnityEngine.Debug.Log("SubMissions: RegisterCorpMusics - No custom corp music built for " + Faction + ".");
+                Debug_SMissions.Log("SubMissions: RegisterCorpMusics - No custom corp music built for " + Faction + ".");
             }
         }
         internal void TryInitFactionEXPSys()
@@ -382,7 +388,7 @@ namespace Sub_Missions
                 }
                 else if (ManMods.inst.IsModdedCorp(corpID)) // Official mods
                 {   // Official Support is mostly a dev matter
-
+                    BuildFactionLicenseOfficial();
                 }
                 errorLevel++;
                 // It's vanilla or null - take no action.
@@ -390,7 +396,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: TryInitFactionEXPSys - Error level " + errorLevel + " - " + e);
+                Debug_SMissions.Log("SubMissions: TryInitFactionEXPSys - Error level " + errorLevel + " - " + e);
             }
         }
         /// <summary>
@@ -418,7 +424,7 @@ namespace Sub_Missions
                         {
                             if (!ManSpawn.inst)
                             {
-                                UnityEngine.Debug.Log("SubMissions: ManSpawn is still loading");
+                                Debug_SMissions.Log("SubMissions: ManSpawn is still loading");
                                 return;
                             }
                             else
@@ -427,7 +433,7 @@ namespace Sub_Missions
                     }
                 }
             }
-            catch (Exception e) { UnityEngine.Debug.Log("SubMissions: GAME is still loading " + e); }
+            catch (Exception e) { Debug_SMissions.Log("SubMissions: GAME is still loading " + e); }
         }
 
         internal void RefreshCorpUISPUnofficial(FactionSubTypes corpID)
@@ -437,18 +443,18 @@ namespace Sub_Missions
             {
                 if (BlockLoader.CustomBlocks.Count > 0)
                 {
-                    UnityEngine.Debug.Log("SubMissions: REBUILDING GradeUnlockBlocks for " + Faction);
+                    Debug_SMissions.Log("SubMissions: REBUILDING GradeUnlockBlocks for " + Faction);
                     UnofficialTryBuildBlockTypes();
                     SaveToDisk();
                 }
                 else
-                    UnityEngine.Debug.Log("SubMissions: Waiting for Nuterra.BlockInjector to load...");
+                    Debug_SMissions.Log("SubMissions: Waiting for Nuterra.BlockInjector to load...");
             }
             if (SkinRefTech == null)
             {
                 if (!ManSpawn.inst)
                 {
-                    UnityEngine.Debug.Log("SubMissions: ManSpawn is still loading");
+                    Debug_SMissions.Log("SubMissions: ManSpawn is still loading");
                     return;
                 }
                 else
@@ -458,7 +464,7 @@ namespace Sub_Missions
             }
             if (!ManPurchases.inst)
             {
-                UnityEngine.Debug.Log("SubMissions: ManPurchases is still loading");
+                Debug_SMissions.Log("SubMissions: ManPurchases is still loading");
                 return;
             }
             else
@@ -467,10 +473,10 @@ namespace Sub_Missions
                 {
                     if (SkinReferenceFaction == FactionSubTypes.NULL && BlockLoader.CustomBlocks.Count() == 0)
                     {
-                        UnityEngine.Debug.Log("SubMissions: Waiting for blocks to compile...");
+                        Debug_SMissions.Log("SubMissions: Waiting for blocks to compile...");
                         return;
                     }
-                    UnityEngine.Debug.Log("SubMissions: Making Corp Identifier for " + Faction + ", ID " + (int)corpID);
+                    Debug_SMissions.Log("SubMissions: Making Corp Identifier for " + Faction + ", ID " + (int)corpID);
                     //UICCorpLicenses.MakeFactionLicenseUnofficialUI(this);
                     ManPurchases.inst.AddCustomCorp((int)corpID);
 
@@ -486,6 +492,8 @@ namespace Sub_Missions
         {   //
             try
             {
+                if (OfficialCorp)
+                    return; // Already done.
                 FactionSubTypes corpID = (FactionSubTypes)ID;
                 if ((int)SkinReferenceFaction >= Enum.GetValues(typeof(FactionSubTypes)).Length)
                     SkinReferenceFaction = FactionSubTypes.GSO;
@@ -497,10 +505,10 @@ namespace Sub_Missions
                     {
                         if ((int)SkinReferenceFaction >= Enum.GetValues(typeof(FactionSubTypes)).Length || !ManCustomSkins.inst.CanUseSkin(SkinReferenceFaction, step))
                         {
-                            UnityEngine.Debug.Log("SubMissions: Could not make a Corp Skin for ID " + (int)corpID + " skinIndex " + step);
+                            Debug_SMissions.Log("SubMissions: Could not make a Corp Skin for ID " + (int)corpID + " skinIndex " + step);
                             continue;
                         }
-                        UnityEngine.Debug.Log("SubMissions: Making a Corp Skin for ID " + (int)corpID + " skinIndex " + step);
+                        Debug_SMissions.Log("SubMissions: Making a Corp Skin for ID " + (int)corpID + " skinIndex " + step);
                         CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
                         if (MirrorSkin(ref CSI, SkinReferenceFaction, step, out int ID))
                         {
@@ -534,7 +542,7 @@ namespace Sub_Missions
                     }
                 }
             }
-            catch (Exception e) { UnityEngine.Debug.Log("SubMissions: BuildTextures - Error on compiling - " + e); }
+            catch (Exception e) { Debug_SMissions.Log("SubMissions: BuildTextures - Error on compiling - " + e); }
         }
         internal bool MirrorSkin(ref CorporationSkinInfo toChange, FactionSubTypes corpID, int skinIndex, out int skinID)
         {   //
@@ -569,7 +577,7 @@ namespace Sub_Missions
                     }
                     else
                     {
-                        UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense[SkinLocked]) - RenderTechImage needs time to boot");
+                        Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense[SkinLocked]) - RenderTechImage needs time to boot");
                         CSIBacklogRender.Add(toChange);
                         UII.m_PreviewImage = UIIref.m_PreviewImage;
                         needsToRenderSkins = true;
@@ -581,7 +589,7 @@ namespace Sub_Missions
                     UII.m_IsModded = true;
                     UII.m_LocalisedString = null;
                     toChange.m_SkinUIInfo = UII;
-                    UnityEngine.Debug.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
+                    Debug_SMissions.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
                     return true;
                 }
                 else
@@ -592,7 +600,7 @@ namespace Sub_Missions
                     toChange.m_SkinMeshes = new SkinMeshes();
                     error++;
                     toChange.m_SkinTextureInfo = ManCustomSkins.inst.GetSkinTexture(corpID, skinIndex);
-                    UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Skin Name: " + ManCustomSkins.inst.GetSkinNameForSnapshot(corpID, (uint)skinIndex));
+                    Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Skin Name: " + ManCustomSkins.inst.GetSkinNameForSnapshot(corpID, (uint)skinIndex));
                     error++;
 
                     UIIref = ManCustomSkins.inst.GetSkinUIInfo(corpID, skinIndex);
@@ -603,7 +611,7 @@ namespace Sub_Missions
                     }
                     else
                     {
-                        UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - RenderTechImage needs time to boot");
+                        Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - RenderTechImage needs time to boot");
                         CSIBacklogRender.Add(toChange);
                         UII.m_PreviewImage = UIIref.m_PreviewImage;
                         needsToRenderSkins = true;
@@ -614,13 +622,13 @@ namespace Sub_Missions
                     UII.m_SkinLocked = false;
                     UII.m_IsModded = false;
                     UII.m_LocalisedString = null;
-                    UnityEngine.Debug.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
+                    Debug_SMissions.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
                     toChange.m_SkinUIInfo = UII;
                 }
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - error on execution!  error no " + error + " | " + e);
+                Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - error on execution!  error no " + error + " | " + e);
                 return false;
             }
             return true;
@@ -643,16 +651,21 @@ namespace Sub_Missions
                 Texture2D Albedo = null;
                 Texture2D Metal = null;
                 Texture2D Emissive = null;
-                var CB = BlockIndexer.StringToBlockPrefab(FirstCabUnlocked);
-                if (CB)
+                if (BlockIndexer.StringToBlockType(FirstCabUnlocked, out BlockTypes BT))
                 {
-                    MeshRenderer MR = CB.GetComponentInChildren<MeshRenderer>();
-                    if (MR)
+                    var CB = ManSpawn.inst.GetBlockPrefab(BT);
+                    if (CB)
                     {
-                        Albedo = (Texture2D)MR.sharedMaterial.GetTexture("_MainTex");
-                        Metal = (Texture2D)MR.sharedMaterial.GetTexture("_MetallicGlossMap");
-                        Emissive = (Texture2D)MR.sharedMaterial.GetTexture("_EmissionMap");
+                        MeshRenderer MR = CB.GetComponentInChildren<MeshRenderer>();
+                        if (MR)
+                        {
+                            Albedo = (Texture2D)MR.sharedMaterial.GetTexture("_MainTex");
+                            Metal = (Texture2D)MR.sharedMaterial.GetTexture("_MetallicGlossMap");
+                            Emissive = (Texture2D)MR.sharedMaterial.GetTexture("_EmissionMap");
+                        }
                     }
+                    else
+                        SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
                 }
                 else
                     SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
@@ -671,7 +684,7 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    UnityEngine.Debug.Log("SubMissions: SkinFromExisting(SMCCorpLicense) - RenderTechImage needs time to boot");
+                    Debug_SMissions.Log("SubMissions: SkinFromExisting(SMCCorpLicense) - RenderTechImage needs time to boot");
                     CSIBacklogRender.Add(toChange);
                     UII.m_PreviewImage = placeholder;
                     needsToRenderSkins = true;
@@ -682,12 +695,12 @@ namespace Sub_Missions
                 UII.m_SkinLocked = false;
                 UII.m_IsModded = false;
                 UII.m_LocalisedString = null;
-                UnityEngine.Debug.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
+                Debug_SMissions.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
                 toChange.m_SkinUIInfo = UII;
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: SkinFromExisting(SMCCorpLicense) - error on execution!  error no " + error + " | " + e);
+                Debug_SMissions.Log("SubMissions: SkinFromExisting(SMCCorpLicense) - error on execution!  error no " + error + " | " + e);
                 return false;
             }
             return true;
@@ -712,7 +725,7 @@ namespace Sub_Missions
                                 /*
                                 if ((int)Singleton.Manager<ManSpawn>.inst.GetCorporation(value.GetBlockType()) != CL.ID)
                                 {
-                                    UnityEngine.Debug.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Example Tech must use only the same blocks from the respective corp!");
+                                    Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Example Tech must use only the same blocks from the respective corp!");
                                     continue;
                                 }*/
                                 value.m_SkinID = Singleton.Manager<ManCustomSkins>.inst.SkinIndexToID((byte)skinIndex, (FactionSubTypes)ID);
@@ -720,13 +733,13 @@ namespace Sub_Missions
                             }
                             catch
                             {
-                                UnityEngine.Debug.Log("SubMissions: GetPreviewImage(SMCCorpLicense) - BlockSpec IS NULL");
+                                Debug_SMissions.Log("SubMissions: GetPreviewImage(SMCCorpLicense) - BlockSpec IS NULL");
                             }
                         }
                     }
                     else
                     {
-                        UnityEngine.Debug.Log("SubMissions: GetPreviewImage(SMCCorpLicense) - BlockSpec IS NULL BY DEFAULT");
+                        Debug_SMissions.Log("SubMissions: GetPreviewImage(SMCCorpLicense) - BlockSpec IS NULL BY DEFAULT");
                     }
                     Singleton.Manager<ManScreenshot>.inst.RenderTechImage(TD, new IntVector2(128, 128), false, delegate (TechData techData, Texture2D tex)
                     {
@@ -738,18 +751,40 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("SubMissions: GetPreviewImage(SMCCorpLicense) - error " + e);
+                Debug_SMissions.Log("SubMissions: GetPreviewImage(SMCCorpLicense) - error " + e);
                 return null;
             }
         }
 
+        internal void BuildFactionLicenseOfficial()
+        {
+            FactionSubTypes Lookup = (FactionSubTypes)ID;
+            if (!ManLicenses.inst || ManLicenses.inst.m_ThresholdData == null)
+            {
+                Debug_SMissions.Log("SubMissions: Corporation Licence for " + Faction + ", ID: " + ID + " cannot be built as ManLicenses is " + (!ManLicenses.inst ? "still loading" : "still building"));
+            }
+            else if (!ManLicenses.inst.m_ThresholdData.Exists(delegate (ManLicenses.ThresholdsTableEntry cand) { return cand.faction == Lookup; }))
+            {
+                ManLicenses.ThresholdsTableEntry TTE = new ManLicenses.ThresholdsTableEntry
+                {
+                    faction = Lookup,
+                    thresholds = BuildThresholds(),
+                };
+                ManLicenses.inst.m_ThresholdData.Add(TTE);
+                BuildInfoList();
+
+                Debug_SMissions.Log("SubMissions: Init Corporation Licence for " + Faction + ", ID: " + ID + ".\n     This cannot be changed after first load as it has a massive gameplay impact.");
+            }
+            else
+                Debug_SMissions.Log("SubMissions: Corporation Licence for " + Faction + ", ID: " + ID + " is already built");
+        }
         internal void BuildFactionLicenseUnofficial()
         {   //
 #if !STEAM
             FactionSubTypes Lookup = (FactionSubTypes)ID;
             if (!ManLicenses.inst || ManLicenses.inst.m_ThresholdData == null)
             {
-                UnityEngine.Debug.Log("SubMissions: Corporation Licence for " + Faction + ", ID: " + ID + " cannot be built as ManLicenses is " + (!ManLicenses.inst ? "still loading" : "still building"));
+                Debug_SMissions.Log("SubMissions: Corporation Licence for " + Faction + ", ID: " + ID + " cannot be built as ManLicenses is " + (!ManLicenses.inst ? "still loading" : "still building"));
             }
             else if (!ManLicenses.inst.m_ThresholdData.Exists(delegate (ManLicenses.ThresholdsTableEntry cand) { return cand.faction == Lookup; }))
             {
@@ -759,18 +794,30 @@ namespace Sub_Missions
                 ManLicenses.inst.m_ThresholdData.Insert(0, TTE);
                 BuildInfoList();
 
-                UnityEngine.Debug.Log("SubMissions: Init Corporation Licence for " + Faction + ", ID: " + ID + ".\n     This cannot be changed after first load as it has a massive gameplay impact.");
+                Debug_SMissions.Log("SubMissions: Init Corporation Licence for " + Faction + ", ID: " + ID + ".\n     This cannot be changed after first load as it has a massive gameplay impact.");
             }
             else
-                UnityEngine.Debug.Log("SubMissions: Corporation Licence for " + Faction + ", ID: " + ID + " is already built");
+                Debug_SMissions.Log("SubMissions: Corporation Licence for " + Faction + ", ID: " + ID + " is already built");
 #endif
         }
-        private FactionLicense.Thresholds BuildThresholds()
+        internal FactionLicense.Thresholds BuildThresholds()
         {   //
-            FactionLicense.Thresholds TH = new FactionLicense.Thresholds();
-            TH.m_MaxSupportedLevel = GradesXP.Length;
-            TH.m_XPLevels = GradesXP;
+            FactionLicense.Thresholds TH = new FactionLicense.Thresholds
+            {
+                m_MaxSupportedLevel = GradesXP.Length,
+                m_XPLevels = GradesXP
+            };
             return TH;
+        }
+        internal FactionLicense.Progress BuildProgress()
+        {   //
+            FactionLicense.Progress prog = new FactionLicense.Progress
+            {
+                m_CurrentLevel = 0,
+                m_CurrentXP = 0,
+                m_Discovered = false,
+            };
+            return prog;
         }
 
         // Blocks
@@ -779,19 +826,23 @@ namespace Sub_Missions
         /// </summary>
         internal void PushBlockTypesToAssignedCorp()
         {   // Pushes the textures
-
             FactionSubTypes FST = (FactionSubTypes)ID;
             Texture texToLookFor = null;
             if (SkinReferenceFaction == FactionSubTypes.NULL)
             {
-                var CB = BlockIndexer.StringToBlockPrefab(FirstCabUnlocked);
-                if (CB)
+                if (BlockIndexer.StringToBlockType(FirstCabUnlocked, out BlockTypes BT))
                 {
-                    MeshRenderer MR = CB.GetComponentInChildren<MeshRenderer>();
-                    if (MR)
+                    var CB = ManSpawn.inst.GetBlockPrefab(BT);
+                    if (CB)
                     {
-                        texToLookFor = MR.sharedMaterial.GetTexture("_MainTex");
+                        MeshRenderer MR = CB.GetComponentInChildren<MeshRenderer>();
+                        if (MR)
+                        {
+                            texToLookFor = MR.sharedMaterial.GetTexture("_MainTex");
+                        }
                     }
+                    else
+                        SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
                 }
                 else
                     SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
@@ -823,13 +874,13 @@ namespace Sub_Missions
                         //TB.GetComponent<MaterialSwapper>().SetupMaterial(null, FST);
                     }
                 }
-                UnityEngine.Debug.Log("SubMissions: Pushed all blocks textures to corp " + ID);
+                Debug_SMissions.Log("SubMissions: Pushed all blocks textures to corp " + ID);
             }
             else
-                UnityEngine.Debug.Log("SubMissions: ManTechMaterialSwap - Failed. Could not push all blocks textures to corp " + ID);
+                Debug_SMissions.Log("SubMissions: ManTechMaterialSwap - Failed. Could not push all blocks textures to corp " + ID);
             foreach (KeyValuePair<int, Material> CBR in ManTechMaterialSwap.inst.m_FinalCorpMaterials)
             {
-                UnityEngine.Debug.Log("SubMissions: ManTechMaterialSwap - " + CBR.Key + " | " + CBR.Value );
+                Debug_SMissions.Log("SubMissions: ManTechMaterialSwap - " + CBR.Key + " | " + CBR.Value );
             }
         }
         private void UnofficialTryBuildBlockTypes()
@@ -870,7 +921,7 @@ namespace Sub_Missions
                             {
                                 if (techControl.HandlesPlayerInput)
                                 {
-                                    FirstCabUnlocked = BT;
+                                    FirstCabUnlocked = CB.Prefab.name;
                                     smallestCabVolume = cabVolume;
                                 }
                             }
@@ -895,15 +946,15 @@ namespace Sub_Missions
                 if (Patches.OfficialBlocksPool.TryGetValue(FST, out List<SMCCorpBlockRange> range))
                 {
                     GradeUnlockBlocks = range;
-                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - GradeUnlockBlocks for " + MCD.m_DisplayName + " has " + range.Count + " grades");
+                    Debug_SMissions.Log("SubMissions: SMCCorpLicense(OfficialMods) - GradeUnlockBlocks for " + MCD.m_DisplayName + " has " + range.Count + " grades");
                 }
                 else
-                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense(OfficialMods) - GradeUnlockBlocks not present for Corp " + MCD.m_DisplayName);
+                    Debug_SMissions.Log("SubMissions: SMCCorpLicense(OfficialMods) - GradeUnlockBlocks not present for Corp " + MCD.m_DisplayName);
 
                 ModSessionInfo MSI = (ModSessionInfo)sess.GetValue(ManMods.inst);
                 if (GradeUnlockBlocks.Count == 0)
                 {
-                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense - Corp exists but it's respective mod HAS NO BLOCKS!");
+                    Debug_SMissions.Log("SubMissions: SMCCorpLicense - Corp exists but it's respective mod HAS NO BLOCKS!");
                     return;
                 }
                 int smallestCabVolume = 262145;
@@ -931,7 +982,7 @@ namespace Sub_Missions
                 }
                 if (FirstCabUnlocked == "GSOCockpit_111")
                 {
-                    UnityEngine.Debug.Log("SubMissions: SMCCorpLicense - Corp has no valid cab block.  Defaulting to the first block declared...");
+                    Debug_SMissions.Log("SubMissions: SMCCorpLicense - Corp has no valid cab block.  Defaulting to the first block declared...");
                     FirstCabUnlocked = MSI.BlockIDs.First().Value;
                 }
 
@@ -944,9 +995,11 @@ namespace Sub_Missions
 
         private void BuildInfoList()
         {   //
-            if (SMissionJSONLoader.DirectoryExists(GetDirectory() + SMissionJSONLoader.up + "AutoBlockList.txt"))
+            if (!GetDirectory(out string directory))
                 return;
-            UnityEngine.Debug.Log("Building AutoBlockList for faction " + Faction);
+            if (SMissionJSONLoader.DirectoryExists(directory + SMissionJSONLoader.up + "AutoBlockList.txt"))
+                return;
+            Debug_SMissions.Log("Building AutoBlockList for faction " + Faction);
             StringBuilder SB = new StringBuilder();
             int tier = 0;
             int categoriesCount = Enum.GetValues(typeof(BlockCategories)).Length;
@@ -985,35 +1038,44 @@ namespace Sub_Missions
             numberEntries = 0;
             if (corpBlockData == null)
             {
-                List<BlockUnlockTable.GradeData> GDl = new List<BlockUnlockTable.GradeData>();
-                foreach (SMCCorpBlockRange CBR in GradeUnlockBlocks)
+                if (OfficialCorp)
                 {
-                    List<BlockUnlockTable.UnlockData> UDl = new List<BlockUnlockTable.UnlockData>();
-                    BlockUnlockTable.UnlockData UD;
-                    foreach (BlockTypes BT in CBR.BlocksAvail)
-                    {
-                        int hash = ItemTypeInfo.GetHashCode(ObjectTypes.Block, (int)BT);
-                        bool shouldNotShow = (BlockCategories)ManSpawn.inst.VisibleTypeInfo.GetDescriptorFlags<BlockCategories>(hash) == BlockCategories.Standard;
-                        UD = new BlockUnlockTable.UnlockData
-                        {
-                            m_BlockType = BT,
-                            m_BasicBlock = true,
-                            m_DontRewardOnLevelUp = false,
-                            m_HideOnLevelUpScreen = shouldNotShow,
-                        };
-                        numberEntries++;
-                        UDl.Add(UD);
-                    }
-                    BlockUnlockTable.GradeData GD = new BlockUnlockTable.GradeData {
-                        m_BlockList = UDl.ToArray(),
-                        m_AdditionalUnlocks = new BlockTypes[0] { },
-                    };
-                    GDl.Add(GD);
+                    corpBlockData = Singleton.Manager<ManLicenses>.inst.GetBlockUnlockTable().GetCorpBlockData((int)SubMissionTree.GetTreeCorp(Faction));
+                    Debug_SMissions.Log("SubMissions: GetCorpBlockData(SMCCorpLicense) - corpBlockData was fetched for " + Faction + ".");
                 }
+                else
+                {
+                    List<BlockUnlockTable.GradeData> GDl = new List<BlockUnlockTable.GradeData>();
+                    foreach (SMCCorpBlockRange CBR in GradeUnlockBlocks)
+                    {
+                        List<BlockUnlockTable.UnlockData> UDl = new List<BlockUnlockTable.UnlockData>();
+                        BlockUnlockTable.UnlockData UD;
+                        foreach (BlockTypes BT in CBR.BlocksAvail)
+                        {
+                            int hash = ItemTypeInfo.GetHashCode(ObjectTypes.Block, (int)BT);
+                            bool shouldNotShow = (BlockCategories)ManSpawn.inst.VisibleTypeInfo.GetDescriptorFlags<BlockCategories>(hash) == BlockCategories.Standard;
+                            UD = new BlockUnlockTable.UnlockData
+                            {
+                                m_BlockType = BT,
+                                m_BasicBlock = true,
+                                m_DontRewardOnLevelUp = false,
+                                m_HideOnLevelUpScreen = shouldNotShow,
+                            };
+                            numberEntries++;
+                            UDl.Add(UD);
+                        }
+                        BlockUnlockTable.GradeData GD = new BlockUnlockTable.GradeData
+                        {
+                            m_BlockList = UDl.ToArray(),
+                            m_AdditionalUnlocks = new BlockTypes[0] { },
+                        };
+                        GDl.Add(GD);
+                    }
 
-                BlockUnlockTable.CorpBlockData CBD = new BlockUnlockTable.CorpBlockData { m_GradeList = GDl.ToArray(), };
-                corpBlockData = CBD;
-                UnityEngine.Debug.Log("SubMissions: GetCorpBlockData(SMCCorpLicense) - corpBlockData was built for " + Faction + ".");
+                    BlockUnlockTable.CorpBlockData CBD = new BlockUnlockTable.CorpBlockData { m_GradeList = GDl.ToArray(), };
+                    corpBlockData = CBD;
+                    Debug_SMissions.Log("SubMissions: GetCorpBlockData(SMCCorpLicense) - corpBlockData was built for " + Faction + ".");
+                }
             }
             return corpBlockData;
         }
@@ -1026,10 +1088,10 @@ namespace Sub_Missions
                 ManSMCCorps.SkinLoader(this);
                 if (importedSkins.Count == 0)
                 {
-                    UnityEngine.Debug.Log("SubMissions: There were no Skin.json skins for Custom Corp " + Faction);
+                    Debug_SMissions.Log("SubMissions: There were no Skin.json skins for Custom Corp " + Faction);
                     return;
                 }
-                UnityEngine.Debug.Log("SubMissions: Imported " + importedSkins.Count + " Skin.json skins for Custom Corp " + Faction);
+                Debug_SMissions.Log("SubMissions: Imported " + importedSkins.Count + " Skin.json skins for Custom Corp " + Faction);
             }
             catch
             {
@@ -1074,68 +1136,92 @@ namespace Sub_Missions
         {   //
             try
             {
-                if (CrateReferenceFaction > FactionSubTypes.NULL && (int)CrateReferenceFaction < Enum.GetNames(typeof(FactionSubTypes)).Length)
+                bool validFactionRef = CrateReferenceFaction > FactionSubTypes.NULL && (int)CrateReferenceFaction < Enum.GetNames(typeof(FactionSubTypes)).Length;
+                if (GetDirectory(out string directory))
                 {
-                    Dictionary<FactionSubTypes, Crate> refs = (Dictionary<FactionSubTypes, Crate>)crateS.GetValue(ManSpawn.inst);
-                    if (refs.TryGetValue(CrateReferenceFaction, out Crate refCrate))
+                    if (validFactionRef)
                     {
-                        GameObject GO = UnityEngine.Object.Instantiate(refCrate.gameObject, null);
-                        GO.SetActive(false);
-                        Crate newCrate = GO.GetComponent<Crate>();
-                        string crateName = "m_" + CrateReferenceFaction.ToString() + "_";
-                        Mesh mesh;
-                        Transform trans;
-                        mesh = SMissionJSONLoader.LoadMesh(GetDirectory() + SMissionJSONLoader.up + "Crate_Base.obj");
-                        if (mesh != null)
+                        try
                         {
-                            trans = GO.transform.Find(crateName + "Crate_Base");
-                            trans.GetComponent<MeshFilter>().sharedMesh = mesh;
-                        }
-                        else
-                        {
-                            UnityEngine.Debug.Log("Just using defaults for " + Faction + " crate which is " + CrateReferenceFaction);
+                            Dictionary<FactionSubTypes, Crate> refs = (Dictionary<FactionSubTypes, Crate>)crateS.GetValue(ManSpawn.inst);
+                            if (refs.TryGetValue(CrateReferenceFaction, out Crate refCrate))
+                            {
+                                GameObject GO = UnityEngine.Object.Instantiate(refCrate.gameObject, null);
+                                GO.SetActive(false);
+                                Crate newCrate = GO.GetComponent<Crate>();
+                                string crateName = "m_" + CrateReferenceFaction.ToString() + "_";
+                                Mesh mesh;
+                                Transform trans;
+                                mesh = SMissionJSONLoader.LoadMesh(directory + SMissionJSONLoader.up + "Crate_Base.obj");
+                                if (mesh != null)
+                                {
+                                    trans = GO.transform.Find(crateName + "Crate_Base");
+                                    trans.GetComponent<MeshFilter>().sharedMesh = mesh;
+                                }
+                                else
+                                {
+                                    Debug_SMissions.Log("Using defaults for " + Faction + " crate which is " + CrateReferenceFaction);
+                                    HasCratePrefab = false;
+                                    return;
+                                }
+                                BuildCratePart(crateName, GO, "Crate_A");
+                                BuildCratePart(crateName, GO, "Crate_B");
+
+                                FactionSubTypes FST = SubMissionTree.GetTreeCorp(Faction);
+                                GO.SetActive(false);
+                                ForceCrateIn(FST, newCrate);
+                            }
+                            crateS.SetValue(ManSpawn.inst, refs);
+                            HasCratePrefab = true;
                             return;
                         }
-                        BuildCratePart(crateName, GO, "Crate_A");
-                        BuildCratePart(crateName, GO, "Crate_B");
-
-                        FactionSubTypes FST = SubMissionTree.GetTreeCorp(Faction);
-                        GO.SetActive(false);
-                        ForceCrateIn(FST, newCrate);
-                        HasCratePrefab = true;
+                        catch (Exception e)
+                        {
+                            Debug_SMissions.Log("Failiure on crate addition for corp " + Faction + " | The crate has missing models: Make sure you have a: ");
+                            Debug_SMissions.Log("\"Crate_Base.obj\", \"Crate_A.obj\", \"Crate_B.obj\", \"Crate_A_Lock.obj\", \"Crate_B_Lock.obj\", \"Crate_B_LightRed.obj\", \"Crate_B_LightGreen.obj\"");
+                            Debug_SMissions.Log(e);
+                        }
+                        HasCratePrefab = false;
+                        return;
                     }
-
-                    crateS.SetValue(ManSpawn.inst, refs);
+                }
+                if (validFactionRef)
+                {
+                    Debug_SMissions.Log("Using defaults for " + Faction + " crate which is " + CrateReferenceFaction);
                 }
                 else
                 {
-                    UnityEngine.Debug.Log("Just using defaults for " + Faction + " crate which is GSO");
+                    Debug_SMissions.Log("Just using defaults for " + Faction + " crate which is GSO");
                     CrateReferenceFaction = FactionSubTypes.GSO;
                 }
+                HasCratePrefab = false;
+                return;
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("Failiure on crate addition for corp " + Faction + " | " + e);
+                Debug_SMissions.Log("Failiure on crate addition for corp " + Faction + " | " + e);
+                HasCratePrefab = false;
                 return;
             }
-            UnityEngine.Debug.Log("Failiure on crate addition for corp " + Faction + " | The crate has missing models: Make sure you have a: ");
-            UnityEngine.Debug.Log("\"Crate_Base.obj\", \"Crate_A.obj\", \"Crate_B.obj\", \"Crate_A_Lock.obj\", \"Crate_B_Lock.obj\", \"Crate_B_LightRed.obj\", \"Crate_B_LightGreen.obj\"");
         }
 
         internal void BuildCratePart(string crateName, GameObject GO, string partName)
         {   //
             try
             {
-                Mesh mesh = SMissionJSONLoader.LoadMesh(GetDirectory() + SMissionJSONLoader.up + partName + ".obj");
-                if (mesh != null)
+                if (GetDirectory(out string directory))
                 {
-                    Transform trans = GO.transform.Find(crateName + partName);
-                    trans.GetComponent<MeshFilter>().sharedMesh = mesh;
+                    Mesh mesh = SMissionJSONLoader.LoadMesh(directory + SMissionJSONLoader.up + partName + ".obj");
+                    if (mesh != null)
+                    {
+                        Transform trans = GO.transform.Find(crateName + partName);
+                        trans.GetComponent<MeshFilter>().sharedMesh = mesh;
+                    }
                 }
             }
             catch (Exception e)
             {
-                UnityEngine.Debug.Log("Failiure on crate addition for corp " + Faction + " | " + e);
+                Debug_SMissions.Log("Failiure on crate addition for corp " + Faction + " | " + e);
                 return;
             }
         }
@@ -1148,17 +1234,17 @@ namespace Sub_Missions
             BlockTypes BTcab = BlockTypes.GSOCockpit_111;
             if (FirstCabUnlocked.NullOrEmpty())
             {
-                UnityEngine.Debug.Log("SubMissions: THERE IS NO ASSIGNED CAB WITHIN THIS CORP!!!");
+                Debug_SMissions.Log("SubMissions: THERE IS NO ASSIGNED CAB WITHIN THIS CORP!!!");
                 FirstCabUnlocked = ManSpawn.inst.GetBlockPrefab(BlockTypes.GSOCockpit_111).name;
             }
             else
                 BlockIndexer.GetBlockIDLogFree(FirstCabUnlocked, out BTcab);
             if (BTcab == BlockTypes.GSOCockpit_111)
             {
-                UnityEngine.Debug.Log("SubMissions: Cannot make fallback tech.  No block specified for cab.");
+                Debug_SMissions.Log("SubMissions: Cannot make fallback tech.  No block specified for cab.");
                 return;
             }
-            UnityEngine.Debug.Log("SubMissions: Making fallback Tech...");
+            Debug_SMissions.Log("SubMissions: Making fallback Tech...");
             string blockName = ManSpawn.inst.GetBlockPrefab(BTcab).name;
             TechData TD = new TechData();
             TD.Name = "FALLBACK";
@@ -1183,49 +1269,71 @@ namespace Sub_Missions
                 );
             SkinRefTech = TankPreset.CreateInstance();
             techData.SetValue(SkinRefTech, TD);
-            UnityEngine.Debug.Log("SubMissions: Made Skinref Tech (FALLBACK) for ID " + ID);
+            Debug_SMissions.Log("SubMissions: Made Skinref Tech (FALLBACK) for ID " + ID);
         }
 
 
         // FileSys
         public static FieldInfo techData = typeof(TankPreset)
                    .GetField("m_TechData", BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-        internal string GetDirectory()
+        private string directoryCache = null;
+        internal bool GetDirectory(out string directory)
         {
-            return SMissionJSONLoader.MissionCorpsDirectory + SMissionJSONLoader.up + Faction;
+            if (OfficialCorp)
+            {
+                if (directoryCache == null)
+                {
+                    if (SMissionJSONLoader.TryGetCorpInfoDirectory(Faction, out string directoryEnd))
+                    {
+                        directoryCache = directoryEnd;
+                    }
+                    else
+                    {
+                        directory = null;
+                        return false;
+                    }
+                }
+                directory = directoryCache;
+                return true;
+            }
+            directory = SMissionJSONLoader.MissionCorpsDirectory + SMissionJSONLoader.up + Faction;
+            return true;
         }
         public void TryFindTextures()
         {   //
             try
             {
-                if (SmallCorpIcon == null && !StandardCorpIcon.NullOrEmpty())
+                if (GetDirectory(out string directory))
                 {
-                    Texture tex = FileUtils.LoadTexture(GetDirectory() + SMissionJSONLoader.up + StandardCorpIcon);
-                    SmallCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
-                }
-                if (SmallSelectedCorpIcon == null && !SelectedCorpIcon.NullOrEmpty())
-                {
-                    Texture tex = FileUtils.LoadTexture(GetDirectory() + SMissionJSONLoader.up + SelectedCorpIcon);
-                    SmallSelectedCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
-                }
-                if (HighResCorpIcon == null && !HighResolutionCorpIcon.NullOrEmpty())
-                {
-                    Texture tex = FileUtils.LoadTexture(GetDirectory() + SMissionJSONLoader.up + HighResolutionCorpIcon);
-                    HighResCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
-                }
-                if (SkinRefTech == null && !ExampleSkinTech.NullOrEmpty())
-                {
-                    Texture tex = FileUtils.LoadTexture(GetDirectory() + SMissionJSONLoader.up + ExampleSkinTech);
-                    if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)tex, out TechData.SerializedSnapshotData data))
+                    if (SmallCorpIcon == null && !StandardCorpIcon.NullOrEmpty())
                     {
-                        TankPreset TP = TankPreset.CreateInstance();
-                        techData.SetValue(TP, data.CreateTechData());
-                        SkinRefTech = TP;
+                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + StandardCorpIcon);
+                        SmallCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
+                    }
+                    if (SmallSelectedCorpIcon == null && !SelectedCorpIcon.NullOrEmpty())
+                    {
+                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + SelectedCorpIcon);
+                        SmallSelectedCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
+                    }
+                    if (HighResCorpIcon == null && !HighResolutionCorpIcon.NullOrEmpty())
+                    {
+                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + HighResolutionCorpIcon);
+                        HighResCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
+                    }
+                    if (SkinRefTech == null && !ExampleSkinTech.NullOrEmpty())
+                    {
+                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + ExampleSkinTech);
+                        if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)tex, out TechData.SerializedSnapshotData data))
+                        {
+                            TankPreset TP = TankPreset.CreateInstance();
+                            techData.SetValue(TP, data.CreateTechData());
+                            SkinRefTech = TP;
+                        }
                     }
                 }
             }
             catch (Exception e)
-            { UnityEngine.Debug.Log(e); }
+            { Debug_SMissions.Log(e); }
         }
 
 
@@ -1238,8 +1346,11 @@ namespace Sub_Missions
             try
             {
                 SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionCorpsDirectory);
-                SMissionJSONLoader.ValidateDirectory(GetDirectory());
-                SMissionJSONLoader.TryWriteToTextFile(GetDirectory() + SMissionJSONLoader.up + "AutoBlockList", toSave);
+                if (GetDirectory(out string directory))
+                {
+                    SMissionJSONLoader.ValidateDirectory(directory);
+                    SMissionJSONLoader.TryWriteToTextFile(directory + SMissionJSONLoader.up + "AutoBlockList", toSave);
+                }
             }
             catch (Exception e)
             {
@@ -1252,9 +1363,12 @@ namespace Sub_Missions
             try
             {
                 SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionCorpsDirectory);
-                SMissionJSONLoader.ValidateDirectory(GetDirectory());
-                string toSave = JsonConvert.SerializeObject(ConvertToJSON(), Formatting.Indented);
-                SMissionJSONLoader.TryWriteToJSONFile(GetDirectory() + SMissionJSONLoader.up + "MissionCorp", toSave);
+                if (GetDirectory(out string directory))
+                {
+                    SMissionJSONLoader.ValidateDirectory(directory);
+                    string toSave = JsonConvert.SerializeObject(ConvertToJSON(), Formatting.Indented);
+                    SMissionJSONLoader.TryWriteToJSONFile(directory + SMissionJSONLoader.up + "MissionCorp", toSave);
+                }
             }
             catch (Exception e)
             {

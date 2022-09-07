@@ -72,7 +72,7 @@ namespace Sub_Missions
                 return;
             foreach (SMWorldObject SMWO in makePerm)
                 PermWorldObjects.Add(SMWO);
-            Debug.Log("SubMissions: ManModularMonuments - Graduated " + makePerm.Count + " pieces to perm");
+            Debug_SMissions.Log("SubMissions: ManModularMonuments - Graduated " + makePerm.Count + " pieces to perm");
         }
         internal static ModularMonumentSave Save(SMWorldObject SMWO)
         {

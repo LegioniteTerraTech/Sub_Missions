@@ -48,7 +48,7 @@ namespace Sub_Missions
         {
             if (ManSubMissions.SelectedAnon == null)
             {
-                Debug.Log("SubMissions: GUIMissionsList - tried to fetch NULL ANON MISSION");
+                Debug_SMissions.Log("SubMissions: GUIMissionsList - tried to fetch NULL ANON MISSION");
                 return;
             }
             else
@@ -60,7 +60,7 @@ namespace Sub_Missions
         {
             if (ManSubMissions.Selected == null)
             {
-                Debug.Log("SubMissions: GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
+                Debug_SMissions.Log("SubMissions: GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
                 return;
             }
             else
@@ -73,7 +73,7 @@ namespace Sub_Missions
         {
             if (ManSubMissions.Selected == null)
             {
-                Debug.Log("SubMissions: GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
+                Debug_SMissions.Log("SubMissions: GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
                 return;
             }
             else

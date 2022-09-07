@@ -83,7 +83,7 @@ namespace Sub_Missions.Steps
                             if (SMission.SavedInt < 1)
                             {
                                 tTech.Tech.SetTeam((int)SMission.InputNum);
-                                Debug.Log("SubMissions: Changed team of tech " + tTech.Tech.name + " to " + tTech.Tech.Team);
+                                Debug_SMissions.Log("SubMissions: Changed team of tech " + tTech.Tech.name + " to " + tTech.Tech.Team);
                             }
                         }
                         else if (SMission.InputStringAux != null && SMission.InputStringAux != "")
@@ -91,7 +91,7 @@ namespace Sub_Missions.Steps
                             if (SMission.SavedInt < SMission.InputNum)
                             {
                                 Tank techCur = tTech.Tech;
-                                Debug.Log("SubMissions: More than meets the eye");
+                                Debug_SMissions.Log("SubMissions: More than meets the eye");
                                 tTech.Tech = RawTechLoader.TechTransformer(techCur, SMission.InputStringAux);
                             }
                         }
@@ -105,11 +105,11 @@ namespace Sub_Missions.Steps
                         if (KickStart.isTACAIPresent)
                         {
                             SMUtil.Assert(true, "SubMissions: TransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!");
-                            Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                            Debug.Log("SubMissions: Error - " + e);
+                            Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                            Debug_SMissions.Log("SubMissions: Error - " + e);
                         }
                         else
-                            Debug.Log("SubMissions: TransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
+                            Debug_SMissions.Log("SubMissions: TransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
                     }
                     //SMission.SavedInt++;
                 }

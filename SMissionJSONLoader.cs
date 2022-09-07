@@ -115,8 +115,8 @@ namespace Sub_Missions
                 ManSMCCorps.LoadAllCorps();
             }
 #if DEBUG
-            Debug.Log("SubMissions: DLL folder is at: " + DLLDirectory);
-            Debug.Log("SubMissions: Custom SMissions is at: " + MissionsDirectory);
+            Debug_SMissions.Log("SubMissions: DLL folder is at: " + DLLDirectory);
+            Debug_SMissions.Log("SubMissions: Custom SMissions is at: " + MissionsDirectory);
             //SMCCorpLicense.SaveTemplateToDisk();
 #endif
         }
@@ -126,7 +126,7 @@ namespace Sub_Missions
         // First Startup
         public static void MakePrefabMissionTreeToFile(string TreeName)
         {
-            Debug.Log("SubMissions: Setting up template reference...");
+            Debug_SMissions.Log("SubMissions: Setting up template reference...");
 
             SubMission mission1 = MakePrefabMission1();
             SubMission mission2 = MakePrefabMission2();
@@ -171,14 +171,14 @@ namespace Sub_Missions
             try
             {
                 File.WriteAllText(MissionsDirectory + up + TreeName + up + "MissionTree.json", RawTreeJSON);
-                Debug.Log("SubMissions: Saved MissionTree.json for " + TreeName + " successfully.");
+                Debug_SMissions.Log("SubMissions: Saved MissionTree.json for " + TreeName + " successfully.");
             }
             catch
             {
-                Debug.Log("SubMissions: Could not edit MissionTree.json for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                Debug_SMissions.Log("SubMissions: Could not edit MissionTree.json for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
                 return;
             }
-            Debug.Log("SubMissions: Setup template reference successfully.");
+            Debug_SMissions.Log("SubMissions: Setup template reference successfully.");
         }
         public static SubMission MakePrefabMission1()
         {
@@ -187,7 +187,9 @@ namespace Sub_Missions
             mission1.Description = "A complex showcase mission with an NPC involved";
             mission1.GradeRequired = 1;
             mission1.Faction = "GSO";
-            mission1.Position = Vector3.forward * 40;
+            mission1.Position = Vector3.forward * 250;
+            mission1.Type = SubMissionType.Critical;
+            mission1.CannotCancel = true;
             mission1.SpawnPosition = SubMissionPosition.OffsetFromPlayerTechFacing;
             mission1.ClearTechsOnClear = false; // off for now to show the StepActRemove Step
             mission1.VarTrueFalse = new List<bool>
@@ -208,6 +210,11 @@ namespace Sub_Missions
                     ListArticle = "Meet Garrett",
                     ValueType = VarType.Unset,
                     BoolToEnable = 3,
+                },
+                new MissionChecklist
+                {
+                    ListArticle = "Speak to Garrett",
+                    ValueType = VarType.Unset,
                 },
             };
             mission1.EventList = new List<SubMissionStep>
@@ -775,16 +782,16 @@ namespace Sub_Missions
         public static List<SubMissionTree> LoadAllTrees()
         {
             List<SubMissionTree> temps = new List<SubMissionTree>();
-            Debug.Log("SubMissions: Searching Official Mods Folder...");
+            Debug_SMissions.Log("SubMissions: Searching Official Mods Folder...");
             List<string> directories = GetTreeDirectoriesOfficial();
-            Debug.Log("SubMissions: Found " + directories.Count + " trees...");
+            Debug_SMissions.Log("SubMissions: Found " + directories.Count + " trees...");
             foreach (string directed in directories)
             {
                 if (GetName(directed, out string name, true))
                 {
                     if (TreeLoader(name, directed, out SubMissionTree Tree))
                     {
-                        Debug.Log("SubMissions: Added Tree " + name);
+                        Debug_SMissions.Log("SubMissions: Added Tree " + name);
                         temps.Add(Tree);
                     }
                     else
@@ -793,14 +800,14 @@ namespace Sub_Missions
 
             }
             ValidateDirectory(MissionsDirectory);
-            Debug.Log("SubMissions: Searching Custom SMissions Folder...");
+            Debug_SMissions.Log("SubMissions: Searching Custom SMissions Folder...");
             List<string> namesUnofficial = GetCleanedNamesInDirectory();
-            Debug.Log("SubMissions: Found " + namesUnofficial.Count + " trees...");
+            Debug_SMissions.Log("SubMissions: Found " + namesUnofficial.Count + " trees...");
             foreach (string name in namesUnofficial)
             {
                 if (TreeLoader(name, MissionsDirectory + up + name, out SubMissionTree Tree))
                 {
-                    Debug.Log("SubMissions: Added Tree " + name);
+                    Debug_SMissions.Log("SubMissions: Added Tree " + name);
                     temps.Add(Tree);
                 }
                 else
@@ -830,6 +837,41 @@ namespace Sub_Missions
 
 
         // Utilities
+        public static bool TryGetCorpInfoDirectory(string factionShort,  out string directoryEnd)
+        {
+            string location = new DirectoryInfo(Assembly.GetExecutingAssembly().Location).Parent.Parent.ToString();
+            // Goes to the cluster directory where all the mods are
+
+            int attempts = 0;
+            foreach (string directoryLoc in Directory.GetDirectories(location))
+            {
+                while (true)
+                {
+                    try
+                    {
+                        string GO;
+                        string fileName = factionShort + "_MissionCorp.json";
+                        GO = directoryLoc + "\\" + fileName;
+                        if (File.Exists(GO))
+                        {
+                            attempts++;
+                            directoryEnd = fileName;
+                            return true;
+                        }
+                        else
+                            break;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug_SMissions.Log("SubMissions: TryGetCorpInfoDirectory - Error on MissionCorp search " + factionShort + " | " + e);
+                        break;
+                    }
+                }
+                attempts = 0;
+            }
+            directoryEnd = null;
+            return false;
+        }
         public static List<string> GetTreeDirectoriesOfficial()
         {
             List<string> Cleaned = new List<string>();
@@ -850,7 +892,7 @@ namespace Sub_Missions
                             GO = directoryLoc + "\\" + fileName;
                             if (File.Exists(GO))
                             {
-                                UnityEngine.Debug.Log("SubMissions: GetTreeNamesOfficial - " + GO);
+                                Debug_SMissions.Log("SubMissions: GetTreeNamesOfficial - " + GO);
                                 attempts++;
                                 if (GetName(fileName, out string cleanName, true))
                                 {
@@ -862,7 +904,7 @@ namespace Sub_Missions
                         }
                         catch (Exception e)
                         {
-                            UnityEngine.Debug.Log("LocalModCorpAudio: RegisterCorpMusics - Error on Music search " + cCorp + " | " + e);
+                            Debug_SMissions.Log("LocalModCorpAudio: RegisterCorpMusics - Error on Music search " + cCorp + " | " + e);
                             break;
                         }
                     }
@@ -883,7 +925,7 @@ namespace Sub_Missions
                 toClean = Directory.GetFiles(search).ToList();
             else
                 toClean = Directory.GetDirectories(search).ToList();
-            //Debug.Log("SubMissions: Cleaning " + toClean.Count);
+            //Debug_SMissions.Log("SubMissions: Cleaning " + toClean.Count);
             List<string> Cleaned = new List<string>();
             foreach (string cleaning in toClean)
             {
@@ -916,7 +958,7 @@ namespace Sub_Missions
                 final.Remove(final.Length - 5, 5);// remove ".json"
             }
             output = final.ToString();
-            //Debug.Log("SubMissions: Cleaning Name " + output);
+            //Debug_SMissions.Log("SubMissions: Cleaning Name " + output);
             return true;
         }
         public static bool DirectoryExists(string DirectoryIn)
@@ -929,11 +971,11 @@ namespace Sub_Missions
                 return;// error
             if (!Directory.Exists(DirectoryIn))
             {
-                Debug.Log("SubMissions: Generating " + name + " folder.");
+                Debug_SMissions.Log("SubMissions: Generating " + name + " folder.");
                 try
                 {
                     Directory.CreateDirectory(DirectoryIn);
-                    Debug.Log("SubMissions: Made new " + name + " folder successfully.");
+                    Debug_SMissions.Log("SubMissions: Made new " + name + " folder successfully.");
                 }
                 catch
                 {
@@ -949,7 +991,7 @@ namespace Sub_Missions
             try
             {
                 File.WriteAllText(FileDirectory + ".json", ToOverwrite);
-                Debug.Log("SubMissions: Saved " + name + ".json successfully.");
+                Debug_SMissions.Log("SubMissions: Saved " + name + ".json successfully.");
             }
             catch
             {
@@ -964,7 +1006,7 @@ namespace Sub_Missions
             try
             {
                 File.WriteAllText(FileDirectory + ".txt", ToOverwrite);
-                Debug.Log("SubMissions: Saved " + name + ".txt successfully.");
+                Debug_SMissions.Log("SubMissions: Saved " + name + ".txt successfully.");
             }
             catch
             {
@@ -979,12 +1021,12 @@ namespace Sub_Missions
             try
             {
                 File.Copy(FileDirectory, FileDirectoryEnd);
-                Debug.Log("SubMissions: Copied " + name + " successfully.");
+                Debug_SMissions.Log("SubMissions: Copied " + name + " successfully.");
             }
             catch //(Exception e)
             {
                 SMUtil.Assert(false, "SubMissions: Could not copy " + name + ".  \n   The file is already there or it could be due to a bug with this mod or file permissions.");
-                //Debug.Log(e);
+                //Debug_SMissions.Log(e);
                 return;
             }
         }
@@ -1049,10 +1091,10 @@ namespace Sub_Missions
                 }
                 if (foundAny)
                 {
-                    Debug.Log("SubMissions: BuildAllWorldObjects - Loaded " + iGO.Count + " WorldObj.json files from all trees successfully.");
+                    Debug_SMissions.Log("SubMissions: BuildAllWorldObjects - Loaded " + iGO.Count + " WorldObj.json files from all trees successfully.");
                 }
                 else
-                    Debug.Log("SubMissions: BuildAllWorldObjects - There were no WorldObj.json files to load.");
+                    Debug_SMissions.Log("SubMissions: BuildAllWorldObjects - There were no WorldObj.json files to load.");
                 ManModularMonuments.WorldObjects = iGO;
             }
             catch
@@ -1253,7 +1295,7 @@ namespace Sub_Missions
         private static Dictionary<string, object> MakeCompat<T>(T convert)
         {
             List<PropertyInfo> PI = convert.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
-            Debug.Log("SubMissions: MakeCompat - Compiling " + convert.GetType() + " which has " + PI.Count() + " properties");
+            Debug_SMissions.Log("SubMissions: MakeCompat - Compiling " + convert.GetType() + " which has " + PI.Count() + " properties");
             Dictionary<string, object> converted = new Dictionary<string, object>();
             foreach (PropertyInfo PIC in PI)
             {
@@ -1276,7 +1318,7 @@ namespace Sub_Missions
                 string output = File.ReadAllText(TreeDirectory + up + "MissionTree.json");
                 album = LoadTreePNGs(TreeName, TreeDirectory);
                 models = LoadTreeMeshes(TreeName, TreeDirectory);
-                Debug.Log("SubMissions: Loaded MissionTree.json for " + TreeName + " successfully.");
+                Debug_SMissions.Log("SubMissions: Loaded MissionTree.json for " + TreeName + " successfully.");
                 return output;
             }
             catch
@@ -1293,7 +1335,7 @@ namespace Sub_Missions
             try
             {
                 string output = File.ReadAllText(destination + up + MissionName + ".json");
-                Debug.Log("SubMissions: Loaded Mission.json for " + MissionName + " successfully.");
+                Debug_SMissions.Log("SubMissions: Loaded Mission.json for " + MissionName + " successfully.");
                 return output;
             }
             catch
@@ -1310,7 +1352,7 @@ namespace Sub_Missions
             try
             {
                 string output = File.ReadAllText(destination + up + ObjectName + ".json");
-                Debug.Log("SubMissions: Loaded WorldObject.json for " + ObjectName + " successfully.");
+                Debug_SMissions.Log("SubMissions: Loaded WorldObject.json for " + ObjectName + " successfully.");
                 return output;
             }
             catch
@@ -1340,10 +1382,10 @@ namespace Sub_Missions
                 }
                 if (foundAny)
                 {
-                    Debug.Log("SubMissions: Loaded " + dictionary.Count + " PNG files for " + TreeName + " successfully.");
+                    Debug_SMissions.Log("SubMissions: Loaded " + dictionary.Count + " PNG files for " + TreeName + " successfully.");
                 }
                 else
-                    Debug.Log("SubMissions: " + TreeName + " does not have any PNG files to load.");
+                    Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any PNG files to load.");
                 return dictionary;
             }
             catch
@@ -1369,10 +1411,10 @@ namespace Sub_Missions
                 }
                 if (foundAny)
                 {
-                    Debug.Log("SubMissions: Loaded " + dictionary.Count + " .obj files for " + TreeName + " successfully.");
+                    Debug_SMissions.Log("SubMissions: Loaded " + dictionary.Count + " .obj files for " + TreeName + " successfully.");
                 }
                 else
-                    Debug.Log("SubMissions: " + TreeName + " does not have any .obj files to load.");
+                    Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any .obj files to load.");
                 return dictionary;
             }
             catch

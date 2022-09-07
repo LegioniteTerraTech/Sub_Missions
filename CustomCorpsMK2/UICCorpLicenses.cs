@@ -14,7 +14,8 @@ namespace Sub_Missions
 {
     public class UICCorpLicenses : MonoBehaviour
     {
-        public static Dictionary<int, UICorpLicense> CustomCorpLicenses = new Dictionary<int, UICorpLicense>();
+        public static readonly Dictionary<int, UICorpLicense> CustomCorpLicenses = new Dictionary<int, UICorpLicense>();
+        public static readonly Dictionary<int, UICorpLicense> CustomCorpLicensesOfficial = new Dictionary<int, UICorpLicense>();
 
         public static GameObject ModdedCorpsSectionTEMP;
 
@@ -78,7 +79,7 @@ namespace Sub_Missions
         {   //
             if (CustomCorpLicenses.TryGetValue(corp, out UICorpLicense UICL))
             {
-                Debug.Log("SubMissions: ShowFactionLicenseUnofficialUI - showing ID " + corp);
+                Debug_SMissions.Log("SubMissions: ShowFactionLicenseUnofficialUI - showing ID " + corp);
                 UICL.Show(true);
             }
             else
@@ -99,7 +100,102 @@ namespace Sub_Missions
             CustomCorpLicenses.Clear();
         }
 
-        
+        internal static void MakeFactionLicenseOfficialUI(SMCCorpLicense CL)
+        {   //
+            FactionSubTypes FST = (FactionSubTypes)CL.ID;
+            if (CustomCorpLicensesOfficial.TryGetValue(CL.ID, out UICorpLicense val))
+            {
+                Debug_SMissions.Log("SubMissions: MakeFactionLicenseOfficialUI - EXISTS");
+                val.Show(false);
+                val.enabled = true;
+            }
+            else
+            {
+                if (!ManSubMissions.Subscribed)
+                {
+                    Debug_SMissions.Log("ManSubMissions IS NOT SUBSCRIBED");
+                    return;
+                }
+                FactionLicense FL = ManLicenses.inst.GetLicense(FST);
+                if (FL == null)
+                {
+                    Debug_SMissions.Log("Corp license " + CL.Faction + " IS NULL");
+                    return;
+                }
+                UILicenses UIL = (UILicenses)ManHUD.inst.GetHudElement(ManHUD.HUDElementType.FactionLicences);
+                bool wasInit = true;
+                GameObject GO;
+                try
+                {
+                    GO = (GameObject)fabs.GetValue(UIL);
+                }
+                catch
+                {
+                    wasInit = false;
+                    ManHUD.inst.SetCurrentHUD(ManHUD.HUDType.MainGame);
+                    ManHUD.inst.InitialiseHudElement(ManHUD.HUDElementType.FactionLicences);
+                    UIL = (UILicenses)ManHUD.inst.GetHudElement(ManHUD.HUDElementType.FactionLicences);
+                    GO = (GameObject)fabs.GetValue(UIL);
+                }
+
+                UICorpLicense newLicense = GO.GetComponent<UICorpLicense>().Spawn(UIL.transform);
+                newLicense.transform.localPosition = newLicense.transform.localPosition.SetZ(0f);
+                newLicense.transform.localScale = Vector3.one;
+                newLicense.Init(FL);
+                if (ManSaveGame.inst.CurrentState != null)
+                {
+                    newLicense.Show(false);
+                    newLicense.enabled = true;
+                    Debug_SMissions.Log("SubMissions: MakeFactionLicenseOfficialUI - MADE NEW");
+                }
+                else
+                {
+                    newLicense.Show(false);
+                    newLicense.enabled = true;
+                    Debug_SMissions.Log("ManSaveGame was in illegal state");
+                }
+                if (!wasInit)
+                {
+                    ManHUD.inst.HideHudElement(ManHUD.HUDElementType.FactionLicences);
+                    ManHUD.inst.DeInitialiseHudElement(ManHUD.HUDElementType.FactionLicences);
+                    ManHUD.inst.SetCurrentHUD(ManHUD.HUDType.None);
+                }
+                CustomCorpLicensesOfficial.Add(CL.ID, newLicense);
+            }
+
+        }
+        internal static void ShowFactionLicenseOfficialUI(int corp)
+        {   //
+            if (CustomCorpLicensesOfficial.TryGetValue(corp, out UICorpLicense UICL))
+            {
+                Debug_SMissions.Log("SubMissions: ShowFactionLicenseOfficialUI - showing ID " + corp);
+                UICL.Show(true);
+                Debug_SMissions.Log("SubMissions: ShowFactionLicenseOfficialUI - e2e3wr ");
+                UICL.enabled = true;
+            }
+            else
+            {
+                if (ManSMCCorps.TryGetSMCCorpLicense(corp, out SMCCorpLicense CL))
+                {
+                    MakeFactionLicenseOfficialUI(CL);
+                    ShowFactionLicenseOfficialUI(corp);
+                    return;
+                }
+                Debug_SMissions.Log("SubMissions: ShowFactionLicenseOfficialUI - Tried to show ID " + corp + " but it's not inited!");
+            }
+        }
+        internal static void DeInitALLFactionLicenseOfficialUI()
+        {   //
+            Debug_SMissions.Log("SubMissions: DeInitALLFactionLicenseOfficialUI - Deinit all");
+            foreach (KeyValuePair<int, UICorpLicense> pair in CustomCorpLicensesOfficial)
+            {
+                pair.Value.Show(false);
+                pair.Value.transform.SetParent(null);
+                pair.Value.Recycle();
+            }
+            CustomCorpLicensesOfficial.Clear();
+        }
+
 
 
         private static FieldInfo
@@ -128,7 +224,7 @@ namespace Sub_Missions
             if (((GameObject)MCSect.GetValue(inst)) == null && (ManSMCCorps.GetSMCCorpsCount() > 0 || ManMods.inst.GetNumCustomCorps() > 0))
             {
                 //GameObject corpToggles = (GameObject)MCSectW.GetValue((UICorpToggles)MCSect2.GetValue((UIPaletteBlockSelect)ManHUD.inst.GetHudElement(ManHUD.HUDElementType.BlockPalette)));
-                //Debug.Log("SubMissions: ForceAddModdedCorpsSection - PARENT is: " + (corpToggles.transform.parent ? corpToggles.transform.parent.ToString() : "null"));
+                //Debug_SMissions.Log("SubMissions: ForceAddModdedCorpsSection - PARENT is: " + (corpToggles.transform.parent ? corpToggles.transform.parent.ToString() : "null"));
                 if (!ModdedCorpsSectionTEMP)
                 {
                     ModdedCorpsSectionTEMP = new GameObject("ModdedCorpsSectionTEMP");
@@ -136,7 +232,7 @@ namespace Sub_Missions
                     MCS.HUDinstInternal = inst;
                     ModdedCorpsSectionTEMP.SetActive(true);
                     requiresNew = true;
-                    Debug.Log("SubMissions: ForceAddModdedCorpsSection - INITING NEW...");
+                    Debug_SMissions.Log("SubMissions: ForceAddModdedCorpsSection - INITING NEW...");
                 }
                 else
                 {
@@ -148,7 +244,7 @@ namespace Sub_Missions
             {
                 // Too Risky to add new corps in OfficialModding
 #if !STEAM
-                Debug.Log("SubMissions: ForceAddModdedCorpsSection - No action required!  It has been implemented!");
+                Debug_SMissions.Log("SubMissions: ForceAddModdedCorpsSection - No action required!  It has been implemented!");
                 List<SMCCorpLicense> CLs = ManSMCCorps.GetAllSMCCorps();
                 Dictionary<FactionSubTypes, Transform> dict = (Dictionary<FactionSubTypes, Transform>)CKAll.GetValue(inst);
                 GameObject GO = (GameObject)CKPopPanel.GetValue(inst);
@@ -178,7 +274,7 @@ namespace Sub_Missions
                     corpsLoadedCache++;
                 }
                 CKAll.SetValue(inst, dict);
-                Debug.Log("SubMissions: ForceAddModdedCorpsSection - Injected " + dict.Count + " corps");
+                Debug_SMissions.Log("SubMissions: ForceAddModdedCorpsSection - Injected " + dict.Count + " corps");
 #endif
             }
         }

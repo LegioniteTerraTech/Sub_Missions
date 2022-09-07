@@ -28,13 +28,17 @@ namespace Sub_Missions.ManWindows
             {
                 options = (StepActOptions)ActionName;
                 ConnectedToMission = true;
-                Debug.Log("SubMissions: Hooked up a GUIDualButton to StepActOptions of mission " + options.Mission.Name);
+                Debug_SMissions.Log("SubMissions: Hooked up a GUIDualButton to StepActOptions of mission " + options.Mission.Name);
             }
             catch
             {
                 InvokeAction = (string)ActionName;
             }
         }
+        public void OnOpen()
+        {
+        }
+
 
         public void RunGUI(int ID)
         {

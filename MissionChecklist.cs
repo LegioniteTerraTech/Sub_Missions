@@ -110,6 +110,22 @@ namespace Sub_Missions
             output = builder.ToString();
             return true;
         }
+
+        public bool GetNumber(out int output)
+        {
+            switch (ValueType)
+            {
+                case VarType.Bool:
+                    output = 0;
+                    return false;
+                case VarType.IntOverInt:
+                    output = mission.VarInts[GlobalIndex];
+                    return false;
+                default:
+                    output = 0;
+                    return false;
+            }
+        }
     }
     public enum VarType
     {

@@ -16,6 +16,7 @@ namespace Sub_Missions
     {   //  Build the mission!
         //    Core
         public const int alwaysRunValue = int.MinValue;
+        public const float MaxActiveDistValue = 450;
 
         [JsonIgnore]
         internal SubMissionTree Tree;
@@ -52,6 +53,8 @@ namespace Sub_Missions
         public Vector3 OffsetFromTile = Vector3.zero;
         [JsonIgnore]
         public IntVector2 TilePos = Vector2.zero;
+
+        public bool CanCancel => (MissionDist >= ManSubMissions.MaxLoadedSpawnDist && Type != SubMissionType.Immedeate) || KickStart.OverrideRestrictions;
 
 
         public List<MissionChecklist> CheckList; // MUST be set externally via JSON or built C# code!
@@ -93,6 +96,8 @@ namespace Sub_Missions
         public bool IsActive => ActiveState == SubMissionLoadState.Loaded;
         [JsonIgnore]
         private bool Corrupted = false;
+        [JsonIgnore]
+        internal Encounter FakeEncounter = null;
 
 
         public Vector3 GetWorldPosition()
@@ -235,6 +240,10 @@ namespace Sub_Missions
             }
             return minRange;
         }
+        public float GetWorldActiveRange()
+        {   // 
+            return MaxActiveDistValue;
+        }
 
         internal void Startup()
         {   // 
@@ -243,7 +252,7 @@ namespace Sub_Missions
                 SMUtil.Assert(false, "SubMissions: " + Name + " UpdateSpeedMultiplier cannot be lower than 0.5");
                 UpdateSpeedMultiplier = 0.5f;
             }
-            Debug.Log("SubMissions: Startup for mission " + Name);
+            Debug_SMissions.Log("SubMissions: Startup for mission " + Name);
 
             IsCleaningUp = false;
             switch (SpawnPosition)
@@ -355,7 +364,7 @@ namespace Sub_Missions
                     SMUtil.Assert(false, "SubMissions: Mission " + Name + " has encountered some errors while loading the CheckList.  Check your syntax.");
                 }
 
-                Debug.Log("SubMissions: Mission " + Name + " has loaded into the world!");
+                Debug_SMissions.Log("SubMissions: Mission " + Name + " has loaded into the world!");
                 ActiveState = SubMissionLoadState.Loaded;
             }
             catch (Exception e)
@@ -367,7 +376,7 @@ namespace Sub_Missions
 
         private void ReSync()
         {   // 
-            Debug.Log("SubMissions: Resync for SubMission " + Name);
+            Debug_SMissions.Log("SubMissions: Resync for SubMission " + Name);
             IsCleaningUp = false;
             Position = WorldPosition.FromGameWorldPosition(GetWorldPosition()).ScenePosition;
             foreach (SubMissionStep step in GetAllEvents())
@@ -392,8 +401,8 @@ namespace Sub_Missions
             }
             catch { }
             ActiveState = SubMissionLoadState.Loaded;
-            //Debug.Log("SubMissions: ReSynced");
-            //Debug.Log("SubMissions: Tree " + Tree.TreeName);
+            //Debug_SMissions.Log("SubMissions: ReSynced");
+            //Debug_SMissions.Log("SubMissions: Tree " + Tree.TreeName);
         }
         internal void Cleanup(bool isWorldUnloading = false)
         {   //
@@ -541,8 +550,8 @@ namespace Sub_Missions
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionComplete);
             Rewards.Reward(Tree, this);
             CurrentProgressID = -98;
-            EncounterShoehorn.FinishSubMission(this, ManEncounter.FinishState.Completed);
             TriggerUpdate();
+            EncounterShoehorn.OnFinishSubMission(this, ManEncounter.FinishState.Completed);
             Conclude();
             Tree.FinishedMission(this);
         }
@@ -550,7 +559,7 @@ namespace Sub_Missions
         {   //
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
             CurrentProgressID = -100;
-            EncounterShoehorn.FinishSubMission(this, ManEncounter.FinishState.Failed);
+            EncounterShoehorn.OnFinishSubMission(this, ManEncounter.FinishState.Failed);
             TriggerUpdate();
             Cleanup();
             ManSubMissions.ActiveSubMissions.Remove(this);
@@ -568,6 +577,7 @@ namespace Sub_Missions
                 {
                     updateLerp = 0;
                     int position = 0;
+                    Debug_SMissions.Log("SubMissions: LERP " + CurrentProgressID);
                     foreach (SubMissionStep step in EventList)
                     {
                         if (CanRunStep(step.ProgressID))
@@ -578,14 +588,14 @@ namespace Sub_Missions
                             }
                             catch
                             {
-                                Debug.Log("SubMissions: Error on attempting step lerp " + position + " in relation to " + CurrentProgressID + " of mission " + Name + " in tree " + Tree.TreeName);
+                                Debug_SMissions.Log("SubMissions: Error on attempting step lerp " + position + " in relation to " + CurrentProgressID + " of mission " + Name + " in tree " + Tree.TreeName);
                                 try
                                 {
-                                    Debug.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
+                                    Debug_SMissions.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
                                 }
                                 catch
                                 {
-                                    Debug.Log("SubMissions: Confirmed null");
+                                    Debug_SMissions.Log("SubMissions: Confirmed null");
                                 }
                             }
                         }
@@ -594,32 +604,60 @@ namespace Sub_Missions
                 }
                 try
                 {   // can potentially fire too early before mission is set
-                    foreach (MissionChecklist task in CheckList)
+                    if (FakeEncounter)
                     {
-                        try
+                        QuestLogData QLD = FakeEncounter.QuestLog;
+                        int count = CheckList.Count;
+                        for (int step = 0; step < count; step++)
                         {
-                            task.TestForCompleted();
+                            QLD.SetObjectiveVisible(step, VarTrueFalse[CheckList[step].BoolToEnable]);
+                            if (CheckList[step].TestForCompleted() != QLD.GetObjectiveCompleted(step))
+                                QLD.SetObjectiveCompleted(step, true);
+
+                            if (CheckList[step].GetNumber(out int number))
+                                QLD.SetObjectiveCount(step, number);
                         }
-                        catch { }
+
+                        /*
+                        EncounterUpdateMessage EUM = new EncounterUpdateMessage();
+                        FakeEncounter.QuestLog.FillMessage(EUM);
+                        FakeEncounter.
+                        int count = CheckList.Count;
+                        EncounterUpdateMessage.ObjectiveData[] newBatch = new EncounterUpdateMessage.ObjectiveData[count];
+                        for (int step = 0; step < count; step++)
+                        {
+                            try
+                            {
+                                EncounterUpdateMessage.ObjectiveData OD = EUM.m_ObjectiveData[step];
+                                OD.m_ShowCount = CheckList[step].GetNumber(out int numberOb);
+                                if (OD.m_ShowCount)
+                                    OD.m_Count = numberOb;
+                                OD.m_Visible = EUM.m_ActiveObjectiveIdx == step;
+                                OD.m_Completed = CheckList[step].TestForCompleted();
+                                newBatch[step] = OD;
+                            }
+                            catch { }
+                        }
+                        EUM.m_ObjectiveData = newBatch;
+                        FakeEncounter.QuestLog.UpdateFromMessage(EUM);
+                        */
+                    }
+                    else
+                    {
+                        foreach (MissionChecklist task in CheckList)
+                        {
+                            try
+                            {
+                                task.TestForCompleted();
+                            }
+                            catch { }
+                        }
                     }
                 }
                 catch { }
             }
         }
 
-        internal Encounter GetEncounterInfoL()
-        {
-            return null;
-        }
-        /*
-        internal Encounter GetEncounterInfo()
-        {
-            GameObject tempOb = new GameObject("Temp - " + Name);
-            EncounterDetails encD = tempOb.AddComponent<EncounterDetails>();
-            encD.
-            encD.AwardBB = Rewards ? Rewards.MoneyGain : 0;
-            Encounter enc = tempOb.AddComponent<Encounter>();
-        }*/
 
         internal EncounterDisplayData GetEncounterDisplayInfo()
         {
@@ -636,7 +674,7 @@ namespace Sub_Missions
         public bool GetTechPosHeading(string TechName, out Vector3 pos, out Vector3 direction, out int team)
         {   //
             if (!IsActive)
-                Debug.Log("SubMissions: GetTechPosHeading - Called when MISSION IS INACTIVE");
+                Debug_SMissions.Log("SubMissions: GetTechPosHeading - Called when MISSION IS INACTIVE");
             int hash = TechName.GetHashCode();
             foreach (SubMissionStep step in GetAllEvents())
             {
@@ -677,7 +715,7 @@ namespace Sub_Missions
         private static Bitfield<ObjectTypes> searchTypes = new Bitfield<ObjectTypes>(new ObjectTypes[2] { ObjectTypes.Vehicle, ObjectTypes.Crate });
         private void SetPositionClassicMission()
         {
-            Debug.Log("SubMissions: SetPositionClassicMission");
+            Debug_SMissions.Log("SubMissions: SetPositionClassicMission");
             List<WorldTile> IV = new List<WorldTile>();
             Vector2 playerTile = ManWorld.inst.TileManager.SceneToTileCoord(Singleton.playerPos);
             foreach (WorldTile IVc in ManWorld.inst.TileManager.IterateTiles(WorldTile.State.Created))
@@ -692,7 +730,7 @@ namespace Sub_Missions
                 if (IVc.LargestFreeSpaceOnTile > missionReqRad && !ManSubMissions.IsTooCloseToOtherMission(IVc.Coord))
                 {
                     Position = IVc.CalcSceneCentre();
-                    Debug.Log("Decided on Scene Position " + Position);
+                    Debug_SMissions.Log("Decided on Scene Position " + Position);
                     break;
                 }
             }
@@ -725,7 +763,7 @@ namespace Sub_Missions
         }
         private void SetPositionFarFromPlayer()
         {
-            Debug.Log("SubMissions: SetPositionFarFromPlayer");
+            Debug_SMissions.Log("SubMissions: SetPositionFarFromPlayer");
             Vector3 randAngle;
             float loadRange;
             float randDistance;
@@ -743,12 +781,12 @@ namespace Sub_Missions
             while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0 &&
                 !ManSubMissions.IsTooCloseToOtherMission(ManWorld.inst.TileManager.SceneToTileCoord(Position)));
             if (maxAttempts == attemptCount)
-                Debug.Log("SubMissions: SetPositionFarFromPlayer - FAILED TO FIND A REASONABLE POSITION");
+                Debug_SMissions.Log("SubMissions: SetPositionFarFromPlayer - FAILED TO FIND A REASONABLE POSITION");
             return;
         }
         private void SetPositionCloseToPlayer()
         {
-            Debug.Log("SubMissions: SetPositionCloseToPlayer");
+            Debug_SMissions.Log("SubMissions: SetPositionCloseToPlayer");
             Vector3 randAngle;
             float loadRange;
             float randDistance;
@@ -768,8 +806,8 @@ namespace Sub_Missions
         }
         private void SetPositionFromPlayer()
         {
-            Debug.Log("SubMissions: SetPositionFromPlayer");
-            float loadRange = GetMinimumLoadRange();
+            Debug_SMissions.Log("SubMissions: SetPositionFromPlayer");
+            float loadRange = GetWorldActiveRange();
             if (Position.magnitude > loadRange)
             {
                 Position = (loadRange * Position.normalized) + Singleton.playerPos;
@@ -782,8 +820,8 @@ namespace Sub_Missions
         }
         private void SetPositionFromPlayerTankFacing()
         {
-            Debug.Log("SubMissions: SetPositionFromPlayerTankFacing");
-            float loadRange = GetMinimumLoadRange();
+            Debug_SMissions.Log("SubMissions: SetPositionFromPlayerTankFacing");
+            float loadRange = GetWorldActiveRange();
             if (Position.magnitude > loadRange)
             {
                 Position = (loadRange * Position.normalized) + Singleton.playerPos;
@@ -812,7 +850,7 @@ namespace Sub_Missions
                     removeCount++;
                 }
             }
-            Debug.Log("SubMissions: removed " + removeCount + " scenery items around new mission setup");
+            Debug_SMissions.Log("SubMissions: removed " + removeCount + " scenery items around new mission setup");
         }
 
         // Mission pointer when unloaded
@@ -863,7 +901,7 @@ namespace Sub_Missions
             catch (Exception e)
             {
                 SMUtil.Assert(true, "SubMissions: SubMission - Failed: Could not despawn waypoint!");
-                Debug.Log("SubMissions: Error - " + e);
+                Debug_SMissions.Log("SubMissions: Error - " + e);
             }
             return false;
         }

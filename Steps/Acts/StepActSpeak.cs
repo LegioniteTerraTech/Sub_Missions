@@ -22,7 +22,7 @@ namespace Sub_Missions.Steps
                   "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
                   "\n  \"SetMissionVarIndex1\": -1,       // The index that is changed on chat ending." +
                   "\n  // Input Parameters" +
-                  "\n  \"InputNum\": 0.0,             // How fast the speaker should speak" +
+                  "\n  \"InputNum\": 0.0,             // How fast the speaker should speak.  Add the minus sign to change it to a dual display." +
                   "\n  \"InputString\": \"TechName\",   // The name of the Speaker to display.  If there's a respectively named image, this will show that respective image." +
                   "\n  \"InputStringAux\": \"Hello World\",   // What the speaker will say." +
                 "\n},";
@@ -35,7 +35,7 @@ namespace Sub_Missions.Steps
         }
         public override void FirstSetup()
         {
-            WindowManager.AddPopupMessageScroll(SMission.InputString, SMission.InputStringAux, Mathf.Max(SMission.InputNum, 0.02f), this, windowOverride: WindowManager.WideWindow);
+            WindowManager.AddPopupMessageScroll(SMission.InputString, SMission.InputStringAux, Mathf.Max(Mathf.Abs(SMission.InputNum), 0.02f), Mathf.Sign(SMission.InputNum) == -1, this, windowOverride: WindowManager.SmallWideWindow);
             SMission.AssignedWindow = WindowManager.GetCurrentPopup();
             TryFetchImage();
             if (Mathf.Approximately(SMission.Position.z - Mission.Position.z, 0))
@@ -47,7 +47,7 @@ namespace Sub_Missions.Steps
         {   // run the text box things
             if (winClosed)
             {
-                Debug.Log("SubMissions: StepActSpeak - Concluding Global2");
+                Debug_SMissions.Log("SubMissions: StepActSpeak - Concluding Global2");
                 SMUtil.ConcludeGlobal2(ref SMission);
                 return;
             }
@@ -63,15 +63,16 @@ namespace Sub_Missions.Steps
                 }
                 TryFetchImage();
             }
-            catch
+            catch (Exception e)
             {
+                Debug.Log("error " + e);
                 SMUtil.ConcludeGlobal2(ref SMission);
             }
         }
         bool winClosed = false;
         internal void WindowHasClosed()
         {
-            Debug.Log("SubMissions: StepActSpeak - WindowHasClosed");
+            Debug_SMissions.Log("SubMissions: StepActSpeak - WindowHasClosed");
             winClosed = true;
         }
         private void TryFetchImage()

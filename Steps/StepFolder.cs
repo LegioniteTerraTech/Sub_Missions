@@ -52,14 +52,14 @@ namespace Sub_Missions.Steps
                     }
                     catch
                     {
-                        Debug.Log("SubMissions: Error on attempting step lerp (In Folder named " + (SMission.InputString != null ? SMission.InputString  : "unnamed") + ") " + position + " in relation to " + Mission.CurrentProgressID + " of mission " + Mission.Name + " in tree " + Mission.Tree.TreeName);
+                        Debug_SMissions.Log("SubMissions: Error on attempting step lerp (In Folder named " + (SMission.InputString != null ? SMission.InputString  : "unnamed") + ") " + position + " in relation to " + Mission.CurrentProgressID + " of mission " + Mission.Name + " in tree " + Mission.Tree.TreeName);
                         try
                         {
-                            Debug.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
+                            Debug_SMissions.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
                         }
                         catch
                         {
-                            Debug.Log("SubMissions: Confirmed null");
+                            Debug_SMissions.Log("SubMissions: Confirmed null");
                         }
                     }
                 }

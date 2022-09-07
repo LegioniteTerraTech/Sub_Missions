@@ -19,15 +19,17 @@ namespace Sub_Missions
     /// </summary>
     internal class EncounterShoehorn : MonoBehaviour
     {
+        public const int CustomDisplayID = -100000;
         private static readonly FieldInfo
             obsticles = FIFetch(typeof(EncounterDetails), "m_Objectives"),
             Title = FIFetch(typeof(EncounterDetails), "m_TitleStringID"),
             Desc = FIFetch(typeof(EncounterDetails), "m_FullDescriptionStringID"),
             Timed = FIFetch(typeof(EncounterDetails), "m_IsTimed"),
 
+            XPTarg = FIFetch(typeof(EncounterDetails), "m_XPCorp"),
+
             AwardXP = FIFetch(typeof(EncounterDetails), "m_AwardXP"),
             XPAmou = FIFetch(typeof(EncounterDetails), "m_XPAmount"),
-            XPTarg = FIFetch(typeof(EncounterDetails), "m_XPCorp"),
 
             AwardBB = FIFetch(typeof(EncounterDetails), "m_AwardBB"),
             BBAmou = FIFetch(typeof(EncounterDetails), "m_BBAmount"),
@@ -44,51 +46,166 @@ namespace Sub_Missions
 
             popDis = FIFetch(typeof(Encounter), "m_DisablesPopulation"),
             questLog = FIFetch(typeof(Encounter), "m_QuestLog"),
-            RadU = FIFetch(typeof(Encounter), "m_EncounterRadius");
+            saveD = FIFetch(typeof(Encounter), "m_SaveData"),
+            RadU = FIFetch(typeof(Encounter), "m_EncounterRadius"),
+            aEnc = FIFetch(typeof(ManEncounter), "m_ActiveEncounters");
 
-        internal static Dictionary<string, GameObject> FakeEncounters = new Dictionary<string, GameObject>();
-        private static Encounter GetFakeEncounterInternal(string name, out EncounterDetails EDl, bool New = false)
+        internal static Dictionary<int, GameObject> FakeEncounters = new Dictionary<int, GameObject>();
+        
+        /// <summary>
+        /// Returns true if it made a new
+        /// </summary>
+        private static bool GetFakeEncounterInternal(string name, FactionSubTypes faction, int grade, bool important, out Encounter encounter, out EncounterDetails EDl, out EncounterIdentifier EI)
         {
             string searchTerm = "temp - " + name;
-            if (FakeEncounters.TryGetValue(searchTerm, out GameObject val))
+            int hash = searchTerm.GetHashCode();
+            if (FakeEncounters.TryGetValue(hash, out GameObject val))
             {
-                if (New)
-                {
-                    FakeEncounters.Remove(searchTerm);
-                }
-                else
-                {
-                    EDl = val.GetComponent<EncounterDetails>();
-                    return val.GetComponent<Encounter>();
-                }
+                Encounter Enc = val.GetComponent<Encounter>();
+                Debug_SMissions.Log("SubMissions: GetFakeEncounterInternal - Loaded for " + name);
+                EDl = val.GetComponent<EncounterDetails>();
+                EI = ((Encounter.SaveData)saveD.GetValue(Enc)).m_EncounterDef;
+                encounter = Enc;
+                return false;
             }
-            GameObject temp = new GameObject("temp - " + name);
+            Debug_SMissions.Log("SubMissions: GetFakeEncounterInternal - New for " + name);
+            GameObject temp = new GameObject(searchTerm);
             temp.AddComponent<DenySave>();
             EDl = temp.AddComponent<EncounterDetails>();
+
+
             Encounter dummyEmpty = temp.AddComponent<Encounter>();
-            return dummyEmpty;
+            Encounter.SaveData SD = (Encounter.SaveData)saveD.GetValue(dummyEmpty);
+            EI = new EncounterIdentifier(faction, grade, important ? "Core" : "Side", name);
+            SD.m_EncounterDef = EI;
+            SD.m_EncounterStringBankIdx = CustomDisplayID;
+            FakeEncounters.Add(hash, temp);
+            encounter = dummyEmpty;
+            return true;
         }
-        internal static void DestroyAllFakeEncounters()
+
+        public static bool OfficialCall = false;
+        public static bool IsSetting = false;
+        /// <summary>
+        /// Sets the FakeEncounter in the target SubMission
+        /// </summary>
+        /// <param name="faker"></param>
+        /// <param name="init"></param>
+        /// <returns></returns>
+        internal static void SetFakeEncounter(SubMission faker, bool init = true)
+        {
+            if (!OfficialCall)
+            {
+                Encounter Enc2 = GetFakeEncounter(faker, out _, out EncounterIdentifier EI);
+                faker.FakeEncounter = Enc2;
+                IsSetting = true;
+                ManEncounter.inst.SpawnAndStartListedEncounter(GetEncounterSpawnDisplayInfo(faker, EI), null);
+                IsSetting = false;
+            }
+        }
+
+        private static List<Encounter> regiCounter
+        {
+            get
+            {
+                try
+                {
+                    return (List<Encounter>)aEnc.GetValue(ManEncounter.inst);
+                }
+                catch
+                {
+                    Debug_SMissions.Assert("Could not fetch ActiveEncounters!");
+                }
+                return _regiCounter;
+            }
+        }
+        private static List<Encounter> _regiCounter = new List<Encounter>();
+        internal static void SuspendAllFakeEncounters()
         {
             foreach (var item in FakeEncounters)
             {
-                Destroy(item.Value, 0.01f);
+                Encounter Enc = item.Value.GetComponent<Encounter>();
+                if (regiCounter.Contains(Enc))
+                {
+                    regiCounter.Remove(Enc);
+                }
+                else
+                    Debug_SMissions.Assert("SubMissions: Encounter " + Enc.EncounterName + " was not within ManEncounter!");
+            }
+            FakeEncounters.Clear();
+        }
+        internal static void ResumeAllFakeEncounters()
+        {
+            foreach (var item in FakeEncounters)
+            {
+                Encounter Enc = item.Value.GetComponent<Encounter>();
+                if (!regiCounter.Contains(Enc))
+                {
+                    regiCounter.Add(Enc);
+                }
+                else
+                    Debug_SMissions.Assert("SubMissions: Encounter " + Enc.EncounterName + " was already within ManEncounter!");
             }
             FakeEncounters.Clear();
         }
 
-        internal static Encounter GetFakeEncounter(SubMission mission, out EncounterDetails EDl, bool New = false)
+        /// <summary>
+        /// Uses Hash Searching - if issues arise here than it's likely this!
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="Enc"></param>
+        private static void RecycleFakeEncounter(string name, Encounter Enc)
         {
-            Encounter dummyEmpty = GetFakeEncounterInternal(mission.Name, out EDl, New);
+            int hash = ("temp - " + name).GetHashCode();
+            if (FakeEncounters.Remove(hash))
+            {
+                int hash2 = name.GetHashCode();
+                int index = regiCounter.FindIndex(delegate (Encounter cand) { return cand.EncounterName.GetHashCode() == hash2; });
+                if (index != -1)
+                {
+                    regiCounter.RemoveAt(index);
+                }
+                else
+                {
+                    Debug_SMissions.Log("SubMissions: Encounters within ManEncounter:");
+                    foreach (var item in regiCounter)
+                    {
+                        if (item != null && !item.EncounterName.NullOrEmpty())
+                            Debug_SMissions.Log("- " + item.EncounterName);
+                    }
+                    Debug_SMissions.Assert("SubMissions: Encounter " + name + " was removed but was not within ManEncounter!");
+                }
+                if (!cache.Remove(name))
+                    Debug_SMissions.Assert("SubMissions: Encounter " + name + " was removed but cache did not have the entry!");
+                Enc.Recycle();
+                Debug_SMissions.Log("SubMissions: Encounter Destroyed.");
+            }
+        }
+        internal static void RecycleAllFakeEncounters()
+        {
+            foreach (var item in FakeEncounters)
+            {
+                Encounter Enc = item.Value.GetComponent<Encounter>();
+                if (regiCounter.Contains(Enc))
+                {
+                    regiCounter.Remove(Enc);
+                }
+                else
+                    Debug_SMissions.Assert("SubMissions: Encounter " + Enc.EncounterName + " was removed but was not within ManEncounter!");
+                Enc.Recycle();
+            }
+            FakeEncounters.Clear();
+        }
+
+        internal static Encounter GetFakeEncounter(SubMission mission, out EncounterDetails EDl, out EncounterIdentifier EI)
+        {
+            if (!GetFakeEncounterInternal(mission.Name, mission.FactionType, mission.GradeRequired, 
+                mission.Type == SubMissionType.Critical, out Encounter dummyEmpty, out EDl, out EI))
+                return dummyEmpty;
 
             int errorl = 0;
             try
             {
-                errorl++;
-                int tyopes = typeof(EncounterDetails).GetNestedTypes(BindingFlags.NonPublic | BindingFlags.Instance).Length;
-                Debug.Log("There are " + tyopes + " nestedTypes in EncounterDetails");
-
-                errorl++;
                 Type objective = typeof(EncounterDetails).GetNestedType("Objective", BindingFlags.NonPublic | BindingFlags.Instance);
 
                 errorl++;
@@ -108,20 +225,22 @@ namespace Sub_Missions
                     {
                         AwardXP.SetValue(EDl, true);
                         AwardLice.SetValue(EDl, false);
-                        XPAmou.SetValue(EDl, mission.Rewards.EXPGain);
                         XPTarg.SetValue(EDl, FST);
+                        XPAmou.SetValue(EDl, mission.Rewards.EXPGain);
                     }
                     else
                     {
                         AwardXP.SetValue(EDl, false);
                         AwardLice.SetValue(EDl, true);
+                        XPTarg.SetValue(EDl, FST);
                         liceType.SetValue(EDl, FST);
                     }
                 }
                 else
-                { 
+                {
                     AwardXP.SetValue(EDl, false);
                     AwardLice.SetValue(EDl, false);
+                    XPTarg.SetValue(EDl, FST);
                 }
 
                 if (mission.Rewards.MoneyGain > 0)
@@ -145,20 +264,58 @@ namespace Sub_Missions
                     AwardBloc.SetValue(EDl, false);
 
                 track.SetValue(EDl, EncounterDetails.AnalyticsMissionType.DoNotTrack);
+                popDis.SetValue(dummyEmpty, false);
+                RadU.SetValue(dummyEmpty, mission.GetMinimumLoadRange());
+
+
+                FieldInfo objvDesc = objective.GetField("m_DescriptionStringID", BindingFlags.NonPublic | BindingFlags.Instance);
+                FieldInfo objvShow = objective.GetField("m_ShowByDefault", BindingFlags.NonPublic | BindingFlags.Instance);
+                FieldInfo objvCount = objective.GetField("m_TargetCount", BindingFlags.NonPublic | BindingFlags.Instance);
+
+                // Setup the UI stuff
+                QuestLogData QLD = new QuestLogData(dummyEmpty);
+                QuestLogData.EncounterObjective[] objectives = QLD.InternalObjectives;
+                int checkCount = mission.CheckList.Count;
+                Array.Resize(ref objectives, checkCount);
+
+                int checkLength = mission.CheckList.Count;
+                array = Array.CreateInstance(objective, checkLength);
+
+                for (int step = 0; step < checkLength; step++)
+                {
+                    try
+                    {
+                        MissionChecklist ele = mission.CheckList[step];
+                        object objectiveCase = Activator.CreateInstance(objective);
+                        objvDesc.SetValue(objectiveCase, ele.ListArticle);
+                        objvShow.SetValue(objectiveCase, ele.BoolToEnable != 0);
+                        if (ele.ValueType == VarType.IntOverInt)
+                            objvCount.SetValue(objectiveCase, ele.GlobalIndex);
+                        else
+                            objvCount.SetValue(objectiveCase, 0);
+                        array.SetValue(objective, step);
+                        objectives[step] = new QuestLogData.EncounterObjective(EDl, CustomDisplayID, step);
+                    }
+                    catch
+                    {
+                        Debug.Assert(true, "FAILED TO REBUILD " + mission.Name + " MISSION CHECKLIST ON STEP " + step);
+                    }
+                }
+                obsticles.SetValue(EDl, array);
+                questLog.SetValue(dummyEmpty, QLD);
             }
             catch
             {
                 Debug.LogError("Error on " + errorl);
             }
 
-            popDis.SetValue(dummyEmpty, false);
-            RadU.SetValue(dummyEmpty, mission.GetMinimumLoadRange());
-
             return dummyEmpty;
         }
-        internal static Encounter GetFakeEncounter(SubMissionStandby mission, out EncounterDetails EDl, bool New = false)
+        internal static Encounter GetFakeEncounter(SubMissionStandby mission, out EncounterDetails EDl, out EncounterIdentifier EI)
         {
-            Encounter dummyEmpty = GetFakeEncounterInternal(mission.Name, out EDl, New);
+            if (!GetFakeEncounterInternal(mission.Name, SubMissionTree.GetTreeCorp(mission.Faction), mission.GradeRequired, 
+                mission.Type == SubMissionType.Critical, out Encounter dummyEmpty, out EDl, out EI))
+                return dummyEmpty;
 
             int error = 0;
             try
@@ -193,13 +350,14 @@ namespace Sub_Missions
                         {
                             AwardXP.SetValue(EDl, true);
                             AwardLice.SetValue(EDl, false);
-                            XPAmou.SetValue(EDl, mission.Rewards.EXPGain);
                             XPTarg.SetValue(EDl, FST);
+                            XPAmou.SetValue(EDl, mission.Rewards.EXPGain);
                         }
                         else
                         {
                             AwardXP.SetValue(EDl, false);
                             AwardLice.SetValue(EDl, true);
+                            XPTarg.SetValue(EDl, FST);
                             liceType.SetValue(EDl, FST);
                         }
                     }
@@ -207,6 +365,7 @@ namespace Sub_Missions
                     {
                         AwardXP.SetValue(EDl, false);
                         AwardLice.SetValue(EDl, false);
+                        XPTarg.SetValue(EDl, FST);
                     }
 
                     error++;
@@ -233,11 +392,16 @@ namespace Sub_Missions
                 }
 
                 error++;// 10
-                track.SetValue(EDl, EncounterDetails.AnalyticsMissionType.DoNotTrack);
+                // Setup the UI stuff
+                QuestLogData QLD = new QuestLogData(dummyEmpty);
+                QuestLogData.EncounterObjective[] objectives = QLD.InternalObjectives;
+                int checkCount = mission.Checklist.Count;
+                Array.Resize(ref objectives, checkCount);
 
                 int checkLength = mission.Checklist.Count;
                 error++;// 11
                 array = Array.CreateInstance(objective, checkLength);
+
                 for (int step = 0; step < checkLength; step++)
                 {
                     try
@@ -251,6 +415,7 @@ namespace Sub_Missions
                         else
                             objvCount.SetValue(objectiveCase, 0);
                         array.SetValue(objective, step);
+                        objectives[step] = new QuestLogData.EncounterObjective(EDl, CustomDisplayID, step);
                     }
                     catch
                     {
@@ -259,12 +424,10 @@ namespace Sub_Missions
                 }
                 error++;
                 obsticles.SetValue(EDl, array);
+                questLog.SetValue(dummyEmpty, QLD);
+
+                track.SetValue(EDl, EncounterDetails.AnalyticsMissionType.DoNotTrack);
                 popDis.SetValue(dummyEmpty, false);
-
-                //EncounterIdentifier EI = new EncounterIdentifier(SubMissionTree.GetTreeCorp(mission.Faction), mission.GradeRequired, mission.Name, mission.Name);
-                //QuestLogData QLD = new QuestLogData(dummyEmpty);
-                //questLog.SetValue(dummyEmpty);
-
                 RadU.SetValue(dummyEmpty, mission.LoadRadius);
             }
             catch {
@@ -273,17 +436,41 @@ namespace Sub_Missions
             return dummyEmpty;
         }
 
-        internal static void FinishSubMission(SubMission mission, ManEncounter.FinishState finish)
+        internal static void OnFinishSubMission(SubMission mission, ManEncounter.FinishState finish)
         {
-            try
+            Encounter dummyEmpty = ManEncounter.inst.GetActiveEncounter(mission.FakeEncounter.EncounterDef);
+            if (dummyEmpty)
             {
-                Encounter dummyEmpty = GetFakeEncounterInternal(mission.Name, out _);
-                if (dummyEmpty)
+                Debug_SMissions.Log("SubMissions: EncounterShoehorn - Finished SubMission " + mission.Name);
+                ForceFinish(dummyEmpty);
+                if (finish == ManEncounter.FinishState.Cancelled)
                 {
-                    ManEncounter.inst.FinishEncounter(dummyEmpty, finish);
+                    Debug_SMissions.Log("SubMissions: FinishSubMission Cancelled " + mission.Name);
+                    ManQuestLog.inst.RemoveLog(dummyEmpty, ManEncounter.FinishState.Cancelled, null);
                 }
+                else if (finish == ManEncounter.FinishState.Completed)
+                {
+                    Debug_SMissions.Log("SubMissions: FinishSubMission Completed " + mission.Name);
+                    ManQuestLog.inst.RemoveLog(dummyEmpty, ManEncounter.FinishState.Completed, null);
+                }
+                else if (finish == ManEncounter.FinishState.Failed)
+                {
+                    Debug_SMissions.Log("SubMissions: FinishSubMission Failed " + mission.Name);
+                    ManQuestLog.inst.RemoveLog(dummyEmpty, ManEncounter.FinishState.Failed, null);
+                }
+                else
+                {
+                    Debug_SMissions.Assert("SubMissions: FinishSubMission recieved invalid request! " + finish);
+                }
+                //ManEncounter.inst.FinishEncounter(dummyEmpty, finish);
+                RecycleFakeEncounter(mission.Name, dummyEmpty);
             }
-            catch { }
+            else
+                Debug_SMissions.Log("SubMissions: OnFinishSubMission " + mission.Name + " HAS NO ASSIGNED FAKE ENCOUNTER");
+        }
+        internal static void ForceFinish(Encounter mission)
+        {
+            Type loggerr = typeof(ManQuestLog).GetNestedType("EncounterLogEntry", BindingFlags.NonPublic | BindingFlags.Instance);
         }
 
         private static readonly FieldInfo 
@@ -307,10 +494,8 @@ namespace Sub_Missions
 
         internal static EncounterDisplayData GetEncounterDisplayInfo(SubMission mission)
         {
-            int titleStringID = -100001;
-            Encounter encounter = GetFakeEncounter(mission, out EncounterDetails EDl);
+            Encounter encounter = GetFakeEncounter(mission, out EncounterDetails EDl, out EncounterIdentifier EI);
 
-            EncounterIdentifier EI = new EncounterIdentifier(mission.FactionType, mission.GradeRequired, mission.Name, mission.Name);
             EncounterDisplayData EDD = new EncounterDisplayData();
             EncounterData ED = GetEncounterData(mission, encounter);
 
@@ -318,68 +503,57 @@ namespace Sub_Missions
             enc.SetValue(EDD, encounter);
             ID.SetValue(EDD, EI);
             det.SetValue(EDD, ED);
-            nam.SetValue(EDD, titleStringID);
-            log.SetValue(EDD, new QuestLogData(EI, EDl, titleStringID));
+            nam.SetValue(EDD, CustomDisplayID);
+            log.SetValue(EDD, encounter.QuestLog);
             spw.SetValue(EDD, new EncounterToSpawn(ED, EI));
             posB.SetValue(EDD, !mission.IgnorePlayerProximity);
             pos.SetValue(EDD, mission.WorldPos);
-            obj.SetValue(EDD, new QuestLogData.EncounterObjective[1] { new QuestLogData.EncounterObjective(EDl, titleStringID, 0) });
+            obj.SetValue(EDD, encounter.QuestLog.InternalObjectives);
             can.SetValue(EDD, !mission.CannotCancel);
 
             return EDD;
         }
 
-        internal static EncounterToSpawn GetEncounterSpawnDisplayInfo(SubMission mission, Encounter encounter = null)
+        internal static Dictionary<string, EncounterToSpawn> cache = new Dictionary<string, EncounterToSpawn>();
+        internal static EncounterToSpawn GetEncounterSpawnDisplayInfo(SubMission mission, EncounterIdentifier EI)
         {
-
-            EncounterIdentifier EI = new EncounterIdentifier(SubMissionTree.GetTreeCorp(mission.Faction), mission.GradeRequired, mission.Name, mission.Name);
             Dictionary<EncounterIdentifier, EncounterData> knab = (Dictionary<EncounterIdentifier, EncounterData>)manMod.GetValue(ManEncounter.inst);
             if (!knab.TryGetValue(EI, out EncounterData ED))
             {
-                if (encounter == null)
-                    encounter = GetFakeEncounter(mission, out _);
+                Encounter encounter = GetFakeEncounter(mission, out _, out _);
 
                 ED = GetEncounterData(mission, encounter);
 
                 knab.Add(EI, ED);
             }
             EncounterToSpawn ETS = new EncounterToSpawn(ED, EI);
-            ETS.m_EncounterStringBankIdx = -100001;
+            ETS.m_EncounterStringBankIdx = CustomDisplayID;
             ETS.m_UsePosForPlacement = false;
             ETS.m_Rotation = Quaternion.identity;
             return ETS;
         }
 
-        internal static Dictionary<string, EncounterToSpawn> cache = new Dictionary<string, EncounterToSpawn>();
-        internal static EncounterToSpawn GetEncounterSpawnDisplayInfo(SubMissionStandby mission, bool New = false, bool ForceTop = false)
+        internal static EncounterToSpawn GetEncounterSpawnDisplayInfo(SubMissionStandby mission)
         {
-            if (New)
-                cache.Remove(mission.Name);
-
             if (!cache.TryGetValue(mission.Name, out EncounterToSpawn ETS))
             {
-                EncounterIdentifier EI = new EncounterIdentifier(SubMissionTree.GetTreeCorp(mission.Faction), mission.GradeRequired, ForceTop ? "Core" : "Side", mission.Name);
+                Encounter encounter = GetFakeEncounter(mission, out _, out EncounterIdentifier EI);
                 Dictionary<EncounterIdentifier, EncounterData> knab = (Dictionary<EncounterIdentifier, EncounterData>)manMod.GetValue(ManEncounter.inst);
-                if (New)
-                    knab.Remove(EI);
-                if (!knab.TryGetValue(EI, out EncounterData ED))
+                if (!knab.TryGetValue(EI, out _))
                 {
-                    Encounter encounter = GetFakeEncounter(mission, out _, New);
-
-                    ED = GetEncounterData(mission, encounter);
+                    EncounterData ED = GetEncounterData(mission, encounter);
 
                     knab.Add(EI, ED);
                 }
 
-                ETS = new EncounterToSpawn();
-                ETS.m_EncounterData = ED;
-                ETS.m_EncounterDef = EI;
-                ETS.m_EncounterStringBankIdx = -100001;
+                ETS = new EncounterToSpawn(EI);
+                ETS.m_EncounterStringBankIdx = CustomDisplayID;
                 ETS.m_Position = new WorldPosition(mission.TilePosWorld, Vector3.zero);
                 ETS.m_UsePosForPlacement = false;
                 ETS.m_Rotation = Quaternion.identity;
                 _ = ETS.m_EncounterData.m_EncounterPrefab.EncounterDetails;
                 cache.Add(mission.Name, ETS);
+                Debug_SMissions.Log("SubMissions: New EncounterToSpawn for " + mission.Name + ".");
             }
             return ETS;
         }
@@ -443,7 +617,7 @@ namespace Sub_Missions
                 m_SetActiveInLog = false,
                 m_ShowAreaOnMiniMap = false,
                 m_SkippedByTutorialSkip = false,
-                m_SpawnConditions = new EncounterConditions(),
+                m_SpawnConditions = EC,
                 m_SpawnWithoutUserAccept = false,
             };
             return ED;
@@ -493,7 +667,7 @@ namespace Sub_Missions
                 m_SetActiveInLog = false,
                 m_ShowAreaOnMiniMap = false,
                 m_SkippedByTutorialSkip = false,
-                m_SpawnConditions = new EncounterConditions(),
+                m_SpawnConditions = EC,
                 m_SpawnWithoutUserAccept = false,
             };
             return ED;

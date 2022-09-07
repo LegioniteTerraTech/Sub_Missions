@@ -17,6 +17,8 @@ namespace Sub_Missions.ManWindows
         public string Message = "ERROR 404 NOT FOUND (Init Failiure)";
         public string MessageOut = "";
 
+        public bool Dual = false;
+        public bool XFlipped = false;
         public bool DenySkip = false;
         private float scrollDelay = 0.075f;
         private int StepFadeoutDelay = 150;
@@ -29,31 +31,90 @@ namespace Sub_Missions.ManWindows
         private static int StepRate = 1;
 
 
-        public void Setup(GUIPopupDisplay display, string message, float scrollLerpTime, SMissionStep assignedStep)
+        public void Setup(GUIPopupDisplay display, string message, float scrollLerpTime, bool HalfSize, SMissionStep assignedStep)
         {
             Display = display;
             Message = message;
             scrollDelay = scrollLerpTime;
+            Dual = HalfSize;
             this.assignedStep = assignedStep;
+        }
+
+        public void OnOpen()
+        {
+            step = -5;
+            MessageBuilder.Clear();
+            tracker = 0;
+            bleep = false;
+            bleepPrev = false;
+            List<GUIPopupDisplay> disps = WindowManager.GetAllActivePopups(GUISetTypes.MessageScroll);
+            if (disps.Count > 0)
+            {
+                Rect rectOffset = Display.Window;
+                // Offset windows to prevent window statc
+                foreach (var item in disps)
+                {
+                    GUIScrollMessage otherMessage = (GUIScrollMessage)item.GUIFormat;
+                    bool FullDualRow = !otherMessage.Dual || (otherMessage.Dual && otherMessage.XFlipped);
+                    if (rectOffset.y + rectOffset.height <= item.Window.y && (!Dual || FullDualRow))
+                        rectOffset.y = item.Window.y + rectOffset.height + 1;
+                }
+                if (Dual)
+                {   // Enable Dual facing windows!
+                    foreach (var item in disps)
+                    {
+                        GUIScrollMessage otherMessage = (GUIScrollMessage)item.GUIFormat;
+                        if (otherMessage.Dual)
+                        {
+                            otherMessage.XFlipped = true;
+                            break;
+                        }
+                    }
+                }
+                Display.Window = rectOffset;
+            }
         }
 
         public void RunGUI(int ID)
         {
-            if (Image)
+            if (XFlipped)
             {
-                GUI.DrawTexture(new Rect(15, 15, Display.Window.height - 30, Display.Window.height - 30), Image);
-                GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFont);
+                if (Image)
+                {
+                    GUI.DrawTexture(new Rect(Display.Window.width - Display.Window.height - 15, 15, Display.Window.height - 30, Display.Window.height - 30), Image);
+                    GUI.Label(new Rect(30, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                }
+                else
+                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                if (!DenySkip)
+                {
+                    if (GUI.Button(new Rect(10, Display.Window.height - 38, 40, 28), "<b>OK</b>", WindowManager.styleHugeFont))
+                    {
+                        Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
+                        OnRemoval();
+                        WindowManager.HidePopup(Display);
+                        WindowManager.RemovePopup(Display);
+                    }
+                }
             }
             else
-                GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFont);
-            if (!DenySkip)
             {
-                if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 38, 40, 28), "<b>OK</b>", WindowManager.styleHugeFont))
+                if (Image)
                 {
-                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
-                    OnRemoval();
-                    WindowManager.HidePopup(Display);
-                    WindowManager.RemovePopup(Display);
+                    GUI.DrawTexture(new Rect(15, 15, Display.Window.height - 30, Display.Window.height - 30), Image);
+                    GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                }
+                else
+                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                if (!DenySkip)
+                {
+                    if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 38, 40, 28), "<b>OK</b>", WindowManager.styleHugeFont))
+                    {
+                        Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
+                        OnRemoval();
+                        WindowManager.HidePopup(Display);
+                        WindowManager.RemovePopup(Display);
+                    }
                 }
             }
             GUI.DragWindow();
@@ -100,7 +161,7 @@ namespace Sub_Missions.ManWindows
                 step++;
                 return;
             }
-            //Debug.Log("SubMissions: stepchek");
+            //Debug_SMissions.Log("SubMissions: stepchek");
             for (int stepSped = 0; stepSped < StepRate; stepSped++)
             {
                 try
@@ -136,14 +197,14 @@ namespace Sub_Missions.ManWindows
             {
                 bleep = false;
             }
-            //Debug.Log("SubMissions: stepchek2");
+            //Debug_SMissions.Log("SubMissions: stepchek2");
             MessageOut = MessageBuilder.ToString() + (BOLD ? "</b>" : "");
             step += StepRate;
         }
         public void BleepCommand()
         {
             if (!Display.isOpen || Singleton.Manager<ManPauseGame>.inst.IsPaused)
-            {
+            {   // Pause the text noise
                 try
                 {
                     if (fInst.IsInited)
@@ -155,7 +216,7 @@ namespace Sub_Missions.ManWindows
                 return;
             }
             if (!bleep && bleepPrev)
-            {
+            {   // End of text line
                 try
                 {
                     if (fInst.IsInited)
@@ -165,7 +226,7 @@ namespace Sub_Missions.ManWindows
                 catch { }
             }
             else if (step >= Message.Length - 1)
-            {
+            {   // End of message
                 if (!stopped)
                 {
                     try
@@ -179,7 +240,7 @@ namespace Sub_Missions.ManWindows
                 }
             }
             else
-            {
+            {   // Maintain noise
                 try
                 {
                     if (!fInst.IsInited)
@@ -190,7 +251,7 @@ namespace Sub_Missions.ManWindows
                 catch { }
             }
             bleepPrev = bleep;
-            //Debug.Log("Is playing noise " + fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.PLAYING));
+            //Debug_SMissions.Log("Is playing noise " + fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.PLAYING));
         }
 
         public void FastUpdate()
@@ -211,7 +272,7 @@ namespace Sub_Missions.ManWindows
         {
             try
             {
-                Debug.Log("SubMissions: GUIScrollMessage - OnRemoval");
+                //Debug_SMissions.Assert("SubMissions: GUIScrollMessage - OnRemoval");
                 if (assignedStep != null)
                 {
                     if (assignedStep is StepActSpeak SAS)

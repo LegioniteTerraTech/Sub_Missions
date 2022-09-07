@@ -25,6 +25,9 @@ namespace Sub_Missions.ManWindows
             Display = display;
             ManSubMissions.SideUI = this.Display;
         }
+        public void OnOpen()
+        {
+        }
 
         public void RunGUI(int ID)
         {

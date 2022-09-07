@@ -157,8 +157,8 @@ namespace Sub_Missions.Steps
                 {
                     SMUtil.Assert(true, "SubMissions: StepAirstrike(Instant) - Failed: COULD NOT FETCH INFORMATION!!!");
                 }
-                //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                Debug.Log("SubMissions: Error - " + e);
+                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                Debug_SMissions.Log("SubMissions: Error - " + e);
             }
         }
         public void Fire(Vector3 scenePos)
@@ -182,8 +182,8 @@ namespace Sub_Missions.Steps
                 {
                     SMUtil.Assert(true, "SubMissions: StepAirstrike - Failed: COULD NOT FETCH INFORMATION!!!");
                 }
-                //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                Debug.Log("SubMissions: Error - " + e);
+                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                Debug_SMissions.Log("SubMissions: Error - " + e);
             }
         }
     }

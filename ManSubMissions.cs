@@ -75,6 +75,8 @@ namespace Sub_Missions
         internal static bool SelectedIsAnon = false;
         internal static bool IgnoreSaveThisSession = false;
 
+        internal static List<KeyValuePair<string, KeyValuePair<int, int>>> SavedModLicences = new List<KeyValuePair<string, KeyValuePair<int, int>>>();
+
         internal static List<SubMissionTree> SubMissionTrees = new List<SubMissionTree>();
 
 
@@ -120,7 +122,7 @@ namespace Sub_Missions
             if (!inst)
             {
                 inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
-                Debug.Log("SubMissions: ManSubMissions initated");
+                Debug_SMissions.Log("SubMissions: ManSubMissions initated");
             }
             Active = true;
         }
@@ -135,7 +137,7 @@ namespace Sub_Missions
                 Singleton.Manager<ManWorld>.inst.TileManager.TilePopulatedEvent.Subscribe(OnTileLoaded);
                 Singleton.Manager<ManWorld>.inst.TileManager.TileDepopulatedEvent.Subscribe(OnTileUnloaded);
                 Singleton.Manager<ManWorldTreadmill>.inst.AddListener(inst);
-                Debug.Log("SubMissions: Core module hooks launched");
+                Debug_SMissions.Log("SubMissions: Core module hooks launched");
                 WindowManager.LateInitiate();
 
                 WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.MicroWindow);
@@ -154,7 +156,7 @@ namespace Sub_Missions
 
                 SideUI = WindowManager.GetCurrentPopup();
 
-                Debug.Log("SubMissions: ManSubMissions subscribed");
+                Debug_SMissions.Log("SubMissions: ManSubMissions subscribed");
                 ManSMCCorps.Subscribe();
                 Subscribed = true;
             }
@@ -173,21 +175,20 @@ namespace Sub_Missions
                 Singleton.Manager<ManWorld>.inst.TileManager.TilePopulatedEvent.Unsubscribe(OnTileLoaded);
                 Singleton.Manager<ManWorld>.inst.TileManager.TileDepopulatedEvent.Unsubscribe(OnTileUnloaded);
                 KickStart.FullyLoadedGame = false;
-                Debug.Log("SubMissions: Core module hooks removed");
+                Debug_SMissions.Log("SubMissions: Core module hooks removed");
 
-                Debug.Log("SubMissions: ManSubMissions De-Init");
+                Debug_SMissions.Log("SubMissions: ManSubMissions De-Init");
                 Subscribed = false;
             }
             Active = false;
         }
 
-        private static int CustCorpStartID = 16;
        
         internal void HarvestAllTrees()
         {
             if (!Active)
                 return;
-            Debug.Log("SubMissions: HARVESTING ALL TREES!!!");
+            Debug_SMissions.Log("SubMissions: HARVESTING ALL TREES!!!");
             SubMissionTrees.Clear();
             List<SubMissionTree> trees = SMissionJSONLoader.LoadAllTrees();
             foreach (SubMissionTree tree in trees)
@@ -195,7 +196,7 @@ namespace Sub_Missions
                 if (tree.CompileMissionTree(out SubMissionTree treeOut))
                 {
                     SubMissionTrees.Add(treeOut);
-                    Debug.Log("SubMissions: Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
+                    Debug_SMissions.Log("SubMissions: Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
                 }
                 else
                     SMUtil.Assert(false, "SubMissions: Failed to compress tree " + tree.TreeName + " properly, unable to push to ManSubMissions...");
@@ -205,7 +206,7 @@ namespace Sub_Missions
         }
         internal void GetAllPossibleMissions()
         {
-            Debug.Log("SubMissions: Fetching available missions...");
+            Debug.Assert(true, "SubMissions: Fetching available missions...");
             anonSubMissions.Clear();
             foreach (SubMissionTree tree in SubMissionTrees)
             {
@@ -218,14 +219,14 @@ namespace Sub_Missions
         {
             if (KickStart.OverrideRestrictions)
                 return;
-            Debug.Log("SubMissions: Fetching available ImmediateMissions...");
+            Debug_SMissions.Log("SubMissions: Fetching available ImmediateMissions...");
             foreach (SubMissionTree tree in SubMissionTrees)
             {
                 List<SubMissionStandby> nowMissions = tree.GetImmediateMissions();
 
                 foreach (SubMissionStandby nM in nowMissions)
                 {
-                    Debug.Log("SubMissions: Forcing mission " + nM.AltName + " to active");
+                    Debug_SMissions.Log("SubMissions: Forcing mission " + nM.AltName + " to active");
                     tree.AcceptTreeMission(nM);
                 }
             }
@@ -272,10 +273,10 @@ namespace Sub_Missions
         }
 
         // Missions
-        internal void AcceptMission()
+        internal void AcceptMission(Encounter Enc = null)
         {   // We bite the bullet and insure the file has been marked tampered with - because it was
             Singleton.Manager<ManSaveGame>.inst.CurrentState.m_FileHasBeenTamperedWith = true;
-            SelectedAnon.Tree.AcceptTreeMission(SelectedAnon);
+            SelectedAnon.Tree.AcceptTreeMission(SelectedAnon, Enc);
             SelectedIsAnon = false;
         }
         internal void CancelMission()
@@ -315,6 +316,25 @@ namespace Sub_Missions
             }
             return false;
         }
+        internal static bool IsSubMissionActive(string name)
+        {
+            foreach (SubMission sub in ActiveSubMissions)
+            {
+                if (sub.Name.CompareTo(name) == 0)
+                    return true;
+            }
+            return false;
+        }
+        public static List<Encounter> GetAllFakeEncounters()
+        {
+            List<Encounter> Encs = new List<Encounter>();
+            foreach (SubMission sub in ActiveSubMissions)
+            {
+                if (sub.FakeEncounter != null)
+                    Encs.Add(sub.FakeEncounter);
+            }
+            return Encs;
+        }
         public static List<SubMissionStandby> GetAllFinishedMissions()
         {
             List<SubMissionStandby> SMS = new List<SubMissionStandby>();
@@ -344,7 +364,7 @@ namespace Sub_Missions
             {
                 if (Input.GetKey(KeyCode.LeftControl))
                 {
-                    Debug.Log("SubMissions: Key combination pressed!!");
+                    Debug_SMissions.Log("SubMissions: Key combination pressed!!");
                     //ManSMCCorps.ReloadAllCorps(); // Disabled as it's broken... for now.
                     HarvestAllTrees();
                     LoadSubMissionsFromSave();
@@ -403,13 +423,13 @@ namespace Sub_Missions
                 {
                     tree.ResetALLTreeMissions();
                 }
-                EncounterShoehorn.DestroyAllFakeEncounters();
+                EncounterShoehorn.RecycleAllFakeEncounters();
                 inst.GetAllPossibleMissions();
             }
         }
         internal static void BroadcastTechDeath(Tank techIn, ManDamage.DamageInfo oof)
         {
-            //Debug.Log("SubMissions: Tech " + techIn.name + " of ID " + techIn.visible.ID + " was destroyed");
+            //Debug_SMissions.Log("SubMissions: Tech " + techIn.name + " of ID " + techIn.visible.ID + " was destroyed");
             foreach (SubMissionTree tree in SubMissionTrees)
             {
                 foreach (SubMission mission in tree.ActiveMissions)
@@ -430,6 +450,27 @@ namespace Sub_Missions
             }
         }
 
+        internal static void UpdateSaveStateForCustomCorps()
+        {
+            if (inst)
+                inst.UpdateSaveStateForCustomCorpsInternal();
+        }
+        private void UpdateSaveStateForCustomCorpsInternal()
+        {
+            SavedModLicences.Clear();
+            foreach (var item in ManSMCCorps.GetAllSMCCorpFactionTypes())
+            {
+                if (ManLicenses.inst.IsLicenseDiscovered(item))
+                {
+                    FactionLicense FL = ManLicenses.inst.GetLicense(item);
+                    if (FL != null && ManSMCCorps.TryGetSMCCorpLicense((int)item, out SMCCorpLicense CL))
+                    {
+                        KeyValuePair<int, int> gradeEXP = new KeyValuePair<int, int>(FL.CurrentLevel, FL.CurrentAbsoluteXP);
+                        SavedModLicences.Add(new KeyValuePair<string, KeyValuePair<int, int>>(CL.Faction, gradeEXP));
+                    }
+                }
+            }
+        }
 
         //Saving
         private static void ClearAllActiveSubMissionsForUnload()
@@ -449,10 +490,13 @@ namespace Sub_Missions
             if ((mode is ModeMain && KickStart.Debugger) || mode is ModeMisc)
             {
                 IgnoreSaveThisSession = false;
-                Debug.Log("SubMissions: ManSubMissions Loading from save!");
+                Debug_SMissions.Log("SubMissions: ManSubMissions Loading from save!");
                 Debug_SMissions.Assert(inst == null, "ManSubMissions IS NULL");
+                ManSMCCorps.ReloadAllOfficialIfApplcable();
                 PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomatic();
+                ForceCreateNewLicences();
+                LoadModdedLicencesInst();
                 inst.GetAllPossibleMissions();
                 Debug_SMissions.Assert(Button == null, "UI Mission menu Button is null");
                 WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
@@ -475,12 +519,19 @@ namespace Sub_Missions
                 var saver = Singleton.Manager<ManSaveGame>.inst;
                 if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
                 {
-                    Debug.Log("SubMissions: ManSubMissions Saving!");
+                    Debug_SMissions.Log("SubMissions: ManSubMissions Saving!");
                     SaveManSubMissions.SaveDataAutomatic();
                 }
+
             }
-            ClearAllActiveSubMissionsForUnload();
-            ManModularMonuments.PurgeAllActive();
+            UICCorpLicenses.DeInitALLFactionLicenseOfficialUI();
+            try
+            {
+                ClearAllActiveSubMissionsForUnload();
+                ManModularMonuments.PurgeAllActive();
+                SavedModLicences.Clear();
+            }
+            catch { }
         }
         private static void SaveSubMissionsToSave()
         {
@@ -491,7 +542,7 @@ namespace Sub_Missions
                     var saver = Singleton.Manager<ManSaveGame>.inst;
                     if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
                     {
-                        Debug.Log("SubMissions: ManSubMissions Saving!");
+                        Debug_SMissions.Log("SubMissions: ManSubMissions Saving!");
                         SaveManSubMissions.SaveDataAutomatic();
                     }
                 }
@@ -503,12 +554,15 @@ namespace Sub_Missions
             if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
             {
                 IgnoreSaveThisSession = false;
-                Debug.Log("SubMissions: ManSubMissions Loading from save!");
+                Debug_SMissions.Log("SubMissions: ManSubMissions Loading from save!");
                 PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomatic();
                 inst.GetAllPossibleMissions();
-                WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
-                WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+                if (KickStart.Debugger)
+                {
+                    WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                    WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+                }
             }
             else
             {
@@ -519,7 +573,71 @@ namespace Sub_Missions
                 }
             }
         }
+        private static void LoadModdedLicencesInst()
+        {
+            Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Adding modded corp save states...");
+            try
+            {
+                Dictionary<FactionSubTypes, FactionLicense> licences = (Dictionary<FactionSubTypes, FactionLicense>)Patches.licencesAll.GetValue(ManLicenses.inst);
+                foreach (var item in SavedModLicences)
+                {
+                    Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Loading for " + item);
+                    SMCCorpLicense CL = ManSMCCorps.GetSMCCorp(item.Key);
+                    if (SubMissionTree.GetTreeCorp(item.Key, out FactionSubTypes FST) && CL != null)
+                    {
+                        UICCorpLicenses.MakeFactionLicenseOfficialUI(CL);
+                        if (licences.TryGetValue(FST, out FactionLicense FL))
+                        {
+                            FactionLicense.Progress pog = (FactionLicense.Progress)Patches.progg.GetValue(FL);
+                            pog.m_Discovered = true;
+                            pog.m_CurrentLevel = item.Value.Key;
+                            pog.m_CurrentXP = item.Value.Value;
+                            ManLicenses.inst.AddXP(FST, 0, true);
+                            UICCorpLicenses.ShowFactionLicenseOfficialUI((int)FST);
+                        }
+                        else
+                        {
+                            Debug_SMissions.FatalError("SubMissions: Fired load attempt too early with unofficial mods installed");
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Entry corrupted");
+            }
+        }
+        internal static void ForceCreateNewLicences()
+        {
+            try
+            {
+                Dictionary<FactionSubTypes, FactionLicense> licences = (Dictionary<FactionSubTypes, FactionLicense>)Patches.licencesAll.GetValue(ManLicenses.inst);
+                foreach (var item in SavedModLicences)
+                {
+                    SMCCorpLicense CL = ManSMCCorps.GetSMCCorp(item.Key);
+                    if (SubMissionTree.GetTreeCorp(item.Key, out FactionSubTypes FST) && CL != null)
+                    {
+                        if (!licences.TryGetValue(FST, out _))
+                        {
+                            licences.Add(FST, new FactionLicense(FST, CL.BuildThresholds(), CL.BuildProgress()));
+                            Debug_SMissions.Log("SubMissions: Added Licence " + CL.Faction);
+                        }
+                    }
+                }
+            }
+            catch
+            {
+                Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Entry corrupted");
+            }
+        }
 
+        private static void PushFakeEncounters()
+        {
+            foreach (var item in activeSubMissions)
+            {
+                EncounterShoehorn.SetFakeEncounter(item);
+            }
+        }
 
         // testing
 

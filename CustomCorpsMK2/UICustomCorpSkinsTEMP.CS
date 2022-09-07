@@ -38,7 +38,7 @@ namespace Sub_Missions
 
         private void OnGUI()
         {
-            //Debug.Log("SubMissions: UICustomCorpSkinsTEMP - ACTIVE: " + (bool)HUDinst + ((bool)HUDinst ? " - Expanded: " + HUDinst.IsShowing : "not expanded"));
+            //Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - ACTIVE: " + (bool)HUDinst + ((bool)HUDinst ? " - Expanded: " + HUDinst.IsShowing : "not expanded"));
 
             if (HUDinst && HUDinst.IsShowing && !ManPauseGame.inst.IsPaused)
                 Window = GUI.Window(ID, Window, RunGUI, isOpen ? context : "");
@@ -46,7 +46,7 @@ namespace Sub_Missions
 
         public void RunGUI(int ID)
         {
-            //Debug.Log("SubMissions: UICustomCorpSkinsTEMP - GUIACTIVE");
+            //Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - GUIACTIVE");
             try
             {
                 if (!isOpen)
@@ -115,14 +115,14 @@ namespace Sub_Missions
                                     if (PC)
                                     {
                                         PC.SetCurrentSelectedCorp(FST);
-                                        Debug.Log("SubMissions: UICustomCorpSkinsTEMP - SetCurrentSelectedCorp " + (int)PC.GetCurrentSelectedCorp() + "... CustomSkins - " + (int)Singleton.Manager<ManCustomSkins>.inst.GetCurrentSelectedCorp());
+                                        Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - SetCurrentSelectedCorp " + (int)PC.GetCurrentSelectedCorp() + "... CustomSkins - " + (int)Singleton.Manager<ManCustomSkins>.inst.GetCurrentSelectedCorp());
                                     }
                                 }
                                 posLerp++;
                             }
                             catch (Exception e)
                             {
-                                Debug.Log("SubMissions: UICustomCorpSkinsTEMP - SetCurrentSelectedCorp ERROR - " + e);
+                                Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - SetCurrentSelectedCorp ERROR - " + e);
                             }
                         }
                     }
@@ -132,7 +132,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: UICustomCorpSkinsTEMP(FULL) - SetCurrentSelectedCorp ERROR - " + e);
+                Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP(FULL) - SetCurrentSelectedCorp ERROR - " + e);
             }
         }
     }

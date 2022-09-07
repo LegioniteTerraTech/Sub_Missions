@@ -35,7 +35,7 @@ namespace Sub_Missions
             {
                 string saveName = Singleton.Manager<ManSaveGame>.inst.GetCurrentSaveName(false);
                 LoadData(saveName);
-                //Debug.Log("SubMissions: SaveManSubMissions - LoadDataAutomatic: Loaded save " + saveName + " successfully");
+                //Debug_SMissions.Log("SubMissions: SaveManSubMissions - LoadDataAutomatic: Loaded save " + saveName + " successfully");
             }
             catch
             {
@@ -48,7 +48,7 @@ namespace Sub_Missions
             {
                 string saveName = Singleton.Manager<ManSaveGame>.inst.GetCurrentSaveName(false);
                 SaveData(saveName);
-                //Debug.Log("SubMissions: SaveManSubMissions - SaveDataAutomatic: Saved save " + saveName + " successfully");
+                //Debug_SMissions.Log("SubMissions: SaveManSubMissions - SaveDataAutomatic: Saved save " + saveName + " successfully");
             }
             catch
             {
@@ -80,7 +80,7 @@ namespace Sub_Missions
                                 }
                             }
                             ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.SMSAV for " + saveName + " successfully.");
+                            Debug_SMissions.Log("SubMissions: Loaded MissionSave.SMSAV for " + saveName + " successfully.");
                         }
                         else if (File.Exists(destination + ".json"))
                         {
@@ -89,7 +89,7 @@ namespace Sub_Missions
 
                             DeserializeToManager(output);
                             ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.json for " + saveName + " successfully.");
+                            Debug_SMissions.Log("SubMissions: Loaded MissionSave.json for " + saveName + " successfully.");
                         }
                     }
                     else
@@ -101,7 +101,7 @@ namespace Sub_Missions
 
                             DeserializeToManager(output);
                             ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.json for " + saveName + " successfully.");
+                            Debug_SMissions.Log("SubMissions: Loaded MissionSave.json for " + saveName + " successfully.");
                         }
                         else if (File.Exists(destination + ".SMSAV"))
                         {
@@ -116,14 +116,14 @@ namespace Sub_Missions
                                 }
                             }
                             ManSubMissions.ReSyncSubMissions();
-                            Debug.Log("SubMissions: Loaded MissionSave.SMSAV for " + saveName + " successfully.");
+                            Debug_SMissions.Log("SubMissions: Loaded MissionSave.SMSAV for " + saveName + " successfully.");
                         }
                     }
                 }
                 catch (Exception e)
                 {
                     SMUtil.Assert(false, "SubMissions: Could not load contents of MissionSave.json/.SMSAV for " + saveName + "!");
-                    Debug.Log(e);
+                    Debug_SMissions.Log(e);
                     return;
                 }
                 return;
@@ -133,19 +133,19 @@ namespace Sub_Missions
                 try
                 {
                     File.WriteAllText(destination + ".json", SerializeFromManager(true));
-                    Debug.Log("SubMissions: Created new MissionSave.json for " + saveName + " successfully.");
+                    Debug_SMissions.Log("SubMissions: Created new MissionSave.json for " + saveName + " successfully.");
                     return;
                 }
                 catch
                 {
-                    Debug.Log("SubMissions: Could not read MissionSave.json for " + saveName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                    Debug_SMissions.Log("SubMissions: Could not read MissionSave.json for " + saveName + ".  \n   This could be due to a bug with this mod or file permissions.");
                     return;
                 }
             }
         }
         public static void SaveData(string saveName)
         {
-            Debug.Log("SubMissions: Setting up template reference...");
+            Debug_SMissions.Log("SubMissions: Setting up template reference...");
             string destination = SMissionJSONLoader.MissionSavesDirectory + SMissionJSONLoader.up + saveName;
             SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionSavesDirectory);
             try
@@ -164,13 +164,13 @@ namespace Sub_Missions
                         }
                     }
                     CleanUpCache();
-                    Debug.Log("SubMissions: Saved MissionSave.SMSAV for " + saveName + " successfully.");
+                    Debug_SMissions.Log("SubMissions: Saved MissionSave.SMSAV for " + saveName + " successfully.");
                 }
                 else
                 {
                     File.WriteAllText(destination + ".json", SerializeFromManager());
                     CleanUpCache();
-                    Debug.Log("SubMissions: Saved MissionSave.json for " + saveName + " successfully.");
+                    Debug_SMissions.Log("SubMissions: Saved MissionSave.json for " + saveName + " successfully.");
                 }
             }
             catch
@@ -204,7 +204,7 @@ namespace Sub_Missions
         {
             if (defaultState)
             {
-                Debug.Log("SubMissions: Resetting ManSubMissions for new save instance...");
+                Debug_SMissions.Log("SubMissions: Resetting ManSubMissions for new save instance...");
             }
 
             treesSaved = new List<ManSubMissionTreeSave>();
@@ -242,6 +242,7 @@ namespace Sub_Missions
 
                 Selected = ManSubMissions.ActiveSubMissions.IndexOf(ManSubMissions.Selected),
                 SelectedAnon = ManSubMissions.AnonSubMissions.IndexOf(ManSubMissions.SelectedAnon),
+                SavedModLicences = ManSubMissions.SavedModLicences,
             };
             return save;
         }
@@ -249,14 +250,14 @@ namespace Sub_Missions
         {
             if (save == null)
             {
-                Debug.Log("SubMissions: SaveManSubMissions - Save is corrupted!");
+                Debug_SMissions.Log("SubMissions: SaveManSubMissions - Save is corrupted!");
                 return;
             }
             if (save.ModularMonuments != null)
                 ManModularMonuments.LoadAll(save.ModularMonuments);
             if (save.SubMissionTrees.Count > ManSubMissions.SubMissionTrees.Count)
             {
-                Debug.Log("SubMissions: SaveManSubMissions - Tree counts are wrong! There are missing trees!");
+                Debug_SMissions.Log("SubMissions: SaveManSubMissions - Tree counts are wrong! There are missing trees!");
             }
 
             bool hasMissingItems = false;
@@ -303,7 +304,7 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    Debug.Log("SubMissions: SaveManSubMissions - Missing tree " + treeSaved.TreeName + " from save!  If this tree is not returned then all data will be lost!");
+                    Debug_SMissions.Log("SubMissions: SaveManSubMissions - Missing tree " + treeSaved.TreeName + " from save!  If this tree is not returned then all data will be lost!");
                     missingTrees.Append(treeSaved.TreeName + " - ");
                     hasMissingItems = true;
                 }
@@ -318,6 +319,10 @@ namespace Sub_Missions
                 WindowManager.ShowPopup(new Vector2(0.5f, 1));
             }
 
+            if (save.SavedModLicences == null)
+                ManSubMissions.SavedModLicences = new List<KeyValuePair<string, KeyValuePair<int, int>>>();
+            else
+                ManSubMissions.SavedModLicences = save.SavedModLicences;
             ManSubMissions.SelectedIsAnon = save.SelectedIsAnon;
             SubMission chek1 = ManSubMissions.ActiveSubMissions.ElementAtOrDefault(save.Selected);
             if (chek1 != default(SubMission))
@@ -393,7 +398,7 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    Debug.Log("SubMissions: SaveManSubMissions - Missing step " + treeSaved.StepType + ", ID " + treeSaved.ProgressID + " from save!  \n  The mission may handle strangely as it was changed!");
+                    Debug_SMissions.Log("SubMissions: SaveManSubMissions - Missing step " + treeSaved.StepType + ", ID " + treeSaved.ProgressID + " from save!  \n  The mission may handle strangely as it was changed!");
                 }
             }
             mission.SelectedAltName = missionLoad.SelectedAltName;
@@ -408,6 +413,7 @@ namespace Sub_Missions
             mission.TrackedTechs = missionLoad.TrackedTechs;
             mission.VarTrueFalse = missionLoad.VarTrueFalse;
             mission.VarInts = missionLoad.VarInts;
+            EncounterShoehorn.SetFakeEncounter(mission);
             return;
         }
     }
@@ -463,6 +469,11 @@ namespace Sub_Missions
         public bool SelectedIsAnon = false;
         public int Selected;
         public int SelectedAnon;
+
+        /// <summary>
+        /// Licence Short Name, Grade, EXP
+        /// </summary>
+        public List<KeyValuePair<string, KeyValuePair<int, int>>> SavedModLicences = new List<KeyValuePair<string, KeyValuePair<int, int>>>();
 
         public List<ManSubMissionTreeSave> SubMissionTrees = new List<ManSubMissionTreeSave>();
 

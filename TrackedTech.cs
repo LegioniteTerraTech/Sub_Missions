@@ -116,7 +116,7 @@ namespace Sub_Missions
                 {
                     if (tech != Singleton.playerTank)
                     {
-                        Debug.Log("SubMissions: Removing " + TechName + " | " + StackTraceUtility.ExtractStackTrace());
+                        Debug_SMissions.Log("SubMissions: Removing " + TechName + " | " + StackTraceUtility.ExtractStackTrace());
                         tech.visible.RemoveFromGame();
                     }
                     else
@@ -170,7 +170,7 @@ namespace Sub_Missions
                 }
             }
             //else
-            //    Debug.Log("SubMissions: Tech does not match " + TechName + " of ID " + TechID + ".");
+            //    Debug_SMissions.Log("SubMissions: Tech does not match " + TechName + " of ID " + TechID + ".");
         }
     }
 }

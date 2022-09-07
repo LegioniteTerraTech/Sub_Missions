@@ -35,8 +35,8 @@ namespace Sub_Missions.Steps
             {
                 if (SMission.SavedInt == 0)
                     SMission.SavedInt = Singleton.Manager<ManStats>.inst.GetNumResourcesHarvested((ChunkTypes)SMission.InputNum);
-                Debug.Log("SubMissions: StepCheckResources - ChunkType assigned is " + ((ChunkTypes)SMission.InputNum).ToString());
-                Debug.Log("SubMissions: StepCheckResources - current count is " + Singleton.Manager<ManStats>.inst.GetNumResourcesHarvested((ChunkTypes)SMission.InputNum) + ".");
+                Debug_SMissions.Log("SubMissions: StepCheckResources - ChunkType assigned is " + ((ChunkTypes)SMission.InputNum).ToString());
+                Debug_SMissions.Log("SubMissions: StepCheckResources - current count is " + Singleton.Manager<ManStats>.inst.GetNumResourcesHarvested((ChunkTypes)SMission.InputNum) + ".");
             }
             catch
             {   // not assigned correctly

@@ -49,8 +49,8 @@ namespace Sub_Missions.Steps
             catch //(Exception e)
             {   // Cannot work without TACtical_AI
                 //SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
-                //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                //Debug.Log("SubMissions: Error - " + e);
+                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                //Debug_SMissions.Log("SubMissions: Error - " + e);
             }
         }
         public override void Trigger()
@@ -106,8 +106,8 @@ namespace Sub_Missions.Steps
                 catch //(Exception e)
                 {   // Cannot work without TACtical_AI
                     //SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
-                    //Debug.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                    //Debug.Log("SubMissions: Error - " + e);
+                    //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                    //Debug_SMissions.Log("SubMissions: Error - " + e);
                 }
             }
         }

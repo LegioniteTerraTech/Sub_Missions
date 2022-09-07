@@ -35,7 +35,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: GetRandomBlock - BLOCK could not be obtained - " + e);
+                Debug_SMissions.Log("SubMissions: GetRandomBlock - BLOCK could not be obtained - " + e);
             }
             return new BlockTypes[3] { GetRandomBlock(), GetRandomBlock(), GetRandomBlock() };
         }
@@ -49,7 +49,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: GetRandomBlock - BLOCK could not be obtained - " + e);
+                Debug_SMissions.Log("SubMissions: GetRandomBlock - BLOCK could not be obtained - " + e);
             }
             return BlockTypes.GSOAIController_111;
         }

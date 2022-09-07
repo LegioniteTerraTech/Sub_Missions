@@ -15,5 +15,7 @@ namespace Sub_Missions.ManWindows
         void DelayedUpdate();
         void FastUpdate();
         void OnRemoval();
+
+        void OnOpen();
     }
 }

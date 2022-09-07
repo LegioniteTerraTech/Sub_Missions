@@ -182,7 +182,7 @@ namespace TerraTechETCUtil
 #if DEBUG
                             /*
                         if ((int)type > 5000)
-                            Debug.Log("TACtical_AI: ConstructErrorBlocksList - Added Modded Block " + name + " | " + type.ToString());
+                            Debug_SMissions.Log("TACtical_AI: ConstructErrorBlocksList - Added Modded Block " + name + " | " + type.ToString());
                             */
 #endif
                         }
@@ -195,7 +195,7 @@ namespace TerraTechETCUtil
             }
             catch { };
 
-            Debug.Log("BlockUtils: ConstructErrorBlocksList - There are " + errorNames.Count + " blocks with names not equal to their type");
+            Debug_SMissions.Log("BlockUtils: ConstructErrorBlocksList - There are " + errorNames.Count + " blocks with names not equal to their type");
             Compiled = true;
         }
 
@@ -231,13 +231,13 @@ namespace TerraTechETCUtil
                         if (FindInt(SCAN, "\"ID\":", ref num)) //&& FindText(SCAN, "\"Name\" :", ref name))
                         {
                             UnOf_Offi.Add(("_C_BLOCK:" + num.ToString()).GetHashCode(), (BlockTypes)ManMods.inst.GetBlockID(MBD.name));
-                            //Debug.Log("TACtical_AI: ConstructModdedIDList - " + "_C_BLOCK:" + num.ToString() + " | " + MBD.name + " | " + (BlockTypes)ManMods.inst.GetBlockID(MBD.name));
+                            //Debug_SMissions.Log("TACtical_AI: ConstructModdedIDList - " + "_C_BLOCK:" + num.ToString() + " | " + MBD.name + " | " + (BlockTypes)ManMods.inst.GetBlockID(MBD.name));
                         }
                     }
                 }
             }
-            catch { Debug.Log("BlockUtils: ConstructModdedIDList - Error on compile"); };
-            Debug.Log("BlockUtils: ConstructModdedIDList - compiled " + UnOf_Offi.Count());
+            catch { Debug_SMissions.Log("BlockUtils: ConstructModdedIDList - Error on compile"); };
+            Debug_SMissions.Log("BlockUtils: ConstructModdedIDList - compiled " + UnOf_Offi.Count());
 #else
             try
             {
@@ -252,8 +252,8 @@ namespace TerraTechETCUtil
                     }
                 }
             }
-            catch { Debug.Log("TACtical_AI: ConstructModdedIDList - Error on compile"); };
-            Debug.Log("TACtical_AI: ConstructModdedIDList - compiled " + Offi_UnOf.Count());
+            catch { Debug_SMissions.Log("TACtical_AI: ConstructModdedIDList - Error on compile"); };
+            Debug_SMissions.Log("TACtical_AI: ConstructModdedIDList - compiled " + Offi_UnOf.Count());
 #endif
         }
 
@@ -330,7 +330,7 @@ namespace TerraTechETCUtil
                         intCase = (int)float.Parse(output);
                         return true;
                     }
-                    //Debug.Log(searchEnd + " | " + searchLength + " | " + output + " | ");
+                    //Debug_SMissions.Log(searchEnd + " | " + searchLength + " | " + output + " | ");
                 }
                 catch (Exception e) { Debug.LogError(searchEnd + " | " + searchLength + " | " + output + " | " + e); }
             }

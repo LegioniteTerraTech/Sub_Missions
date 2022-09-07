@@ -68,8 +68,8 @@ namespace Sub_Missions
                     }
                     catch (Exception e)
                     {
-                        Debug.Log("SubMissions: Error on mass patch");
-                        Debug.Log(e);
+                        Debug_SMissions.Log("SubMissions: Error on mass patch");
+                        Debug_SMissions.Log(e);
                     }
                     List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
                     foreach (MethodBase MB in MP)
@@ -78,18 +78,18 @@ namespace Sub_Missions
                         {
                             if (isBlockInjectorPresent)
                             {
-                                Debug.Log("SubMissions: Patching " + MB.Name);
+                                Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
                                 //harmonyInstance.Patch(Patches.);
                             }
                             else
                             {
-                                Debug.Log("SubMissions: UnPatching " + MB.Name);
+                                Debug_SMissions.Log("SubMissions: UnPatching " + MB.Name);
                                 harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
                             }
                         }
                         else
                         {
-                            Debug.Log("SubMissions: Patching " + MB.Name);
+                            Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
                             //harmonyInstance.Patch(MB);
                         }
                     }
@@ -98,8 +98,8 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: Error on patch");
-                Debug.Log(e);
+                Debug_SMissions.Log("SubMissions: Error on patch");
+                Debug_SMissions.Log(e);
             };
             WindowManager.Initiate();
             ManSubMissions.Initiate();
@@ -135,8 +135,8 @@ namespace Sub_Missions
                     }
                     catch (Exception e)
                     {
-                        Debug.Log("SubMissions: Error on mass patch");
-                        Debug.Log(e);
+                        Debug_SMissions.Log("SubMissions: Error on mass patch");
+                        Debug_SMissions.Log(e);
                     }
                     List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
                     foreach (MethodBase MB in MP)
@@ -145,18 +145,18 @@ namespace Sub_Missions
                         {
                             if (isBlockInjectorPresent)
                             {
-                                Debug.Log("SubMissions: Patching " + MB.Name);
+                                Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
                                 //harmonyInstance.Patch(Patches.);
                             }
                             else
                             {
-                                Debug.Log("SubMissions: UnPatching " + MB.Name);
+                                Debug_SMissions.Log("SubMissions: UnPatching " + MB.Name);
                                 harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
                             }
                         }
                         else
                         {
-                            Debug.Log("SubMissions: Patching " + MB.Name);
+                            Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
                             //harmonyInstance.Patch(MB);
                         }
                     }
@@ -165,8 +165,8 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: Error on patch");
-                Debug.Log(e);
+                Debug_SMissions.Log("SubMissions: Error on patch");
+                Debug_SMissions.Log(e);
             }
             WindowManager.Initiate();
             ButtonAct.Initiate();
@@ -205,8 +205,8 @@ namespace Sub_Missions
                 }
                 catch (Exception e)
                 {
-                    Debug.Log("SubMissions: Error on mass un-patch");
-                    Debug.Log(e);
+                    Debug_SMissions.Log("SubMissions: Error on mass un-patch");
+                    Debug_SMissions.Log(e);
                 }
                 patched = false;
             }
@@ -219,11 +219,11 @@ namespace Sub_Missions
 
         internal static bool isTACAIPresent = false;
         internal static bool isWaterModPresent = false;
-        internal static bool isTougherEnemiesPresent = false;
         internal static bool isWeaponAimModPresent = false;
         internal static bool isBlockInjectorPresent = false;
         internal static bool isPopInjectorPresent = false;
         internal static bool isRandomAdditionsPresent = false;
+        internal static bool isCustomCorpsFixPresent = false;
 
 
         internal static bool isSteamManaged = false;
@@ -258,30 +258,12 @@ namespace Sub_Missions
 #endif
                 return false;
             }
-            if (LookForMod("WaterMod"))
-            {
-                isWaterModPresent = true;
-            }
-            if (LookForMod("WeaponAimMod"))
-            {
-                isWeaponAimModPresent = true;
-            }
-            if (LookForMod("TougherEnemies"))
-            {
-                isTougherEnemiesPresent = true;
-            }
-            if (LookForMod("BlockInjector"))
-            {
-                isBlockInjectorPresent = true;
-            }
-            if (LookForMod("PopulationInjector"))
-            {
-                isPopInjectorPresent = true;
-            }
-            if (LookForMod("RandomAdditions"))
-            {
-                isRandomAdditionsPresent = true;
-            }
+            isWaterModPresent = LookForMod("WaterMod");
+            isWeaponAimModPresent = LookForMod("WeaponAimMod");
+            isBlockInjectorPresent = LookForMod("BlockInjector");
+            isPopInjectorPresent = LookForMod("PopulationInjector");
+            isRandomAdditionsPresent = LookForMod("RandomAdditions");
+            isCustomCorpsFixPresent = LookForMod("TerraTechCustomCorpFix");
             return true;
         }
         public static void TACAIRequiredWarning()
@@ -393,7 +375,7 @@ namespace Sub_Missions
         }
         public override void Init()
         {
-            Debug.Log("SubMissions: CALLED INIT");
+            Debug_SMissions.Log("SubMissions: CALLED INIT");
             if (isInit)
                 return;
             if (oInst == null)
@@ -404,7 +386,7 @@ namespace Sub_Missions
         }
         public override void DeInit()
         {
-            Debug.Log("SubMissions: CALLED DE-INIT");
+            Debug_SMissions.Log("SubMissions: CALLED DE-INIT");
             if (!isInit)
                 return;
             KickStart.MainOfficialDeInit();

@@ -26,7 +26,7 @@ namespace Sub_Missions
 
         internal static void LevelTerrain(WorldTile WT)
         {
-            Debug.Log("SubMissions: Leveling terrain....");
+            Debug_SMissions.Log("SubMissions: Leveling terrain....");
             TerrainData TD = WT.Terrain.terrainData;
             TD.size = new Vector3(TD.size.x, TD.size.y * RescaleFactor, TD.size.z);
             float[,] floats = TD.GetHeights(0, 0, 129, 129);
@@ -41,7 +41,7 @@ namespace Sub_Missions
             TD.SetHeights(0, 0, floats);
             WT.Terrain.terrainData = TD;
             WT.Terrain.Flush();
-            Debug.Log("SubMissions: Leveling terrain complete!");
+            Debug_SMissions.Log("SubMissions: Leveling terrain complete!");
         }
     }
 }

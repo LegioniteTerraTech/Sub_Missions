@@ -32,7 +32,7 @@ namespace Sub_Missions
                 if (!loaded)
                 {
                     if (!mission.GetBlockPos(BlockName, out Vector3 pos))
-                        Debug.Log("SubMissions: Block in TrackedBlocks list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
+                        Debug_SMissions.Log("SubMissions: Block in TrackedBlocks list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
                     //block = SMUtil.SpawnTechAuto(ref mission, pos);
                     loaded = true;
                 }

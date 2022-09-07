@@ -45,7 +45,7 @@ namespace Sub_Missions
                 }
             }
         }
-        public static void Assert(bool repeatingError, string input)
+        public static void Assert(bool logSpammer, string input)
         {
             if (KickStart.Debugger && !repeatingErrored)
             {
@@ -57,7 +57,7 @@ namespace Sub_Missions
                                 "\n Thanks!" +
                                 "\n Unresolvable error! - No automatic debugging context was thrown in for this edge case!" +
                                 "\n At " + StackTraceUtility.ExtractStackTrace();
-                        repeatingError = true;
+                        logSpammer = true;
                     }
                     else
                     {
@@ -67,18 +67,18 @@ namespace Sub_Missions
                             input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
                         }
                     }
-                    if (repeatingError)
+                    if (logSpammer)
                     {
-                        errorList += "<b>-MAJOR ERROR-<b> ";
+                        errorList += "<b>------ MAJOR ERROR ------<b> ";
                         repeatingErrored = true;
                     }
                     errorList += input + "\n";
-                    Debug.Log(input);
+                    Debug_SMissions.Log(input);
                 }
                 catch (Exception e)
                 {
                     errorList = "Error collector failed, please contact Legionite (or some SubMissions maintainer).";
-                    Debug.Log(errorList + e);
+                    Debug_SMissions.Log(errorList + e);
                 }
                 errorQueued = true;
             }
@@ -216,7 +216,7 @@ namespace Sub_Missions
         public static void ProceedID(ref SubMissionStep Step)
         {
             Step.Mission.CurrentProgressID = Step.SuccessProgressID;
-            Debug.Log("SubMissions: ProceedID - Mission " + Step.Mission.Name + " has moved on to ID " + Step.Mission.CurrentProgressID);
+            Debug_SMissions.Log("SubMissions: ProceedID - Mission " + Step.Mission.Name + " has moved on to ID " + Step.Mission.CurrentProgressID);
             if (ManNetwork.IsNetworked && ManNetwork.IsHost)
             {
                 //NetworkHandler
@@ -347,7 +347,7 @@ namespace Sub_Missions
             // Load from folder
             Tank tech;
             string dest = "Custom SMissions" + SMissionJSONLoader.up +  mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-            //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);if ("__Airstrike".Equals(TechName))
+            //Debug_SMissions.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);if ("__Airstrike".Equals(TechName))
             if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
             {
                 tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
@@ -385,7 +385,7 @@ namespace Sub_Missions
             if (instant)
             {
                 string dest = "Custom SMissions" + SMissionJSONLoader.up + mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-                //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
+                //Debug_SMissions.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
                 if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
                 {
                     tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
@@ -440,7 +440,7 @@ namespace Sub_Missions
             if (instant)
             {
                 string dest = "Custom SMissions" + SMissionJSONLoader.up + mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-                //Debug.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
+                //Debug_SMissions.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
                 if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
                 {
                     tech.Tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
