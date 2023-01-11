@@ -585,7 +585,7 @@ namespace Sub_Missions
             {
                 MoneyGain = 950,
                 EXPGain = 100,
-                BlocksToSpawn = new List<BlockTypes> { BlockTypes.GSOCockpit_111 }
+                BlocksToSpawn = new List<string> { BlockTypes.GSOCockpit_111.ToString() }
             };
             return mission2;
         }
@@ -745,14 +745,14 @@ namespace Sub_Missions
             };
             mission4.Rewards = new SubMissionReward
             {
-                BlocksToSpawn = new List<BlockTypes>
+                BlocksToSpawn = new List<string>
                  {
-                     (BlockTypes)584812,
-                     (BlockTypes)584812,
-                     (BlockTypes)584812,
-                     (BlockTypes)584812,
-                     (BlockTypes)584811,
-                     (BlockTypes)584811
+                     "GSO_Ebb",
+                     "GSO_Ebb",
+                     "GSO_One_Flote",
+                     "GSO_One_Flote",
+                     "GSO_One_Flote",
+                     "GSO_One_Flote",
                  }
             };
             return mission4;

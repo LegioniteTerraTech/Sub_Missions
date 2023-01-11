@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions
 {
@@ -18,7 +19,18 @@ namespace Sub_Missions
 
 
         public int RandomBlocksToSpawn = 0;
-        public List<BlockTypes> BlocksToSpawn = new List<BlockTypes>();
+        public List<string> BlocksToSpawn = new List<string>();
+        public List<BlockTypes> BlockTypesToSpawn {
+            get {
+                List<BlockTypes> BTs = new List<BlockTypes>();
+                foreach (var item in BlocksToSpawn)
+                {
+                    _ = BlockIndexer.StringToBlockType(item, out BlockTypes BT);
+                    BTs.Add(BT);
+                }
+                return BTs;
+            }
+        }
 
         public void TryChange(ref sbyte input, sbyte toChangeBy)
         {
@@ -95,7 +107,7 @@ namespace Sub_Missions
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)
             {
                 SMCCorpLicense CL;
-                List<BlockTypes> items = new List<BlockTypes>(BlocksToSpawn);
+                List<BlockTypes> items = new List<BlockTypes>(BlockTypesToSpawn);
                 //if (ManSMCCorps.IsUnofficialSMCCorpLicense(FST))
                 //{
                 if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))

@@ -606,13 +606,18 @@ namespace Sub_Missions
                 UICCorpLicenses.ForceAddModdedCorpsSectionPost(__instance);
             }
         }
+        /*
         [HarmonyPatch(typeof(BlockUnlockTable))]
         [HarmonyPatch("GetCorpBlockData")]// shoehorn in unofficial corps
         private static class ShoveCorpsIntoInventoryCorrectly
         {
             private static bool Prefix(BlockUnlockTable __instance, ref int corpIndex, ref BlockUnlockTable.CorpBlockData __result)
             {
-                if (ManSMCCorps.IsUnofficialSMCCorpLicense(corpIndex))
+                if (KickStart.isCustomCorpsFixPresent)
+                {
+                    Debug_SMissions.Log("SubMissions: CustomCorpsFix is present, holding off GetCorpBlockData.");
+                }
+                else if (ManSMCCorps.IsUnofficialSMCCorpLicense(corpIndex))
                 {
                     if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                     {
@@ -631,15 +636,22 @@ namespace Sub_Missions
         {
             private static bool Prefix(BlockUnlockTable __instance, ref BlockTypes blockType, ref int __result)
             {
-                int corpIndex = (int)Singleton.Manager<ManSpawn>.inst.GetCorporation(blockType);
-                if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
+                if (KickStart.isCustomCorpsFixPresent)
                 {
-                    foreach (SMCCorpBlockRange CBR in CL.GradeUnlockBlocks)
+                    Debug_SMissions.Log("SubMissions: CustomCorpsFix is present, holding offGetBlockTier.");
+                }
+                else
+                {
+                    int corpIndex = (int)Singleton.Manager<ManSpawn>.inst.GetCorporation(blockType);
+                    if (ManSMCCorps.TryGetSMCCorpLicense(corpIndex, out SMCCorpLicense CL))
                     {
-                        if (CBR.BlocksAvail.Contains(blockType))
+                        foreach (SMCCorpBlockRange CBR in CL.GradeUnlockBlocks)
                         {
-                            __result = CL.GradeUnlockBlocks.IndexOf(CBR);
-                            return false;
+                            if (CBR.BlocksAvail.Contains(blockType))
+                            {
+                                __result = CL.GradeUnlockBlocks.IndexOf(CBR);
+                                return false;
+                            }
                         }
                     }
                 }
@@ -708,7 +720,7 @@ namespace Sub_Missions
                 }
                 return false;
             }
-        }
+        }*/
 
 
         internal static FieldInfo licencesAll = typeof(ManLicenses).GetField("m_FactionLicenses", BindingFlags.NonPublic | BindingFlags.Instance),
