@@ -129,7 +129,7 @@ namespace Sub_Missions
             };
             return final;
         }
-        public void Remove(bool immedeate,bool RemoveFromManager = true)
+        public void Remove(bool immedeate, bool RemoveFromManager = true)
         {
             if (RemoveFromManager)
                 ManModularMonuments.Unregister(this);

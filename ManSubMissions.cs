@@ -206,7 +206,7 @@ namespace Sub_Missions
         }
         internal void GetAllPossibleMissions()
         {
-            Debug.Assert(true, "SubMissions: Fetching available missions...");
+            Debug_SMissions.Assert(true, "SubMissions: Fetching available missions...");
             anonSubMissions.Clear();
             foreach (SubMissionTree tree in SubMissionTrees)
             {

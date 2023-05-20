@@ -404,8 +404,7 @@ namespace Sub_Missions
             mission.SelectedAltName = missionLoad.SelectedAltName;
             mission.Description = missionLoad.SelectedAltDesc;
 
-            mission.TilePos = missionLoad.TilePos;
-            mission.OffsetFromTile = missionLoad.OffsetFromTile;
+            mission.WorldPos = new WorldPosition(missionLoad.TilePos, missionLoad.OffsetFromTile);
             mission.ActiveState = missionLoad.NeedsFirstInit ? SubMissionLoadState.NeedsFirstInit : SubMissionLoadState.PositionSetReady;
 
             mission.CurrentProgressID = missionLoad.CurrentProgressID;

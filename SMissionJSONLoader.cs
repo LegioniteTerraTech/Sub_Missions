@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Reflection; 
 using UnityEngine;
+using TerraTechETCUtil;
 using Sub_Missions.Steps;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -120,6 +121,33 @@ namespace Sub_Missions
             //SMCCorpLicense.SaveTemplateToDisk();
 #endif
         }
+        public static void SetupWorkingDirectoriesLegacy()
+        {
+            if (Application.platform == RuntimePlatform.OSXPlayer)
+                up = '/'; //Support OSX
+            DirectoryInfo di = new DirectoryInfo(Assembly.GetExecutingAssembly().Location);
+            di = di.Parent; // off of this DLL
+            DLLDirectory = di.ToString();
+            DirectoryInfo game = new DirectoryInfo(Application.dataPath);
+            game = game.Parent; // out of the game folder
+            BaseDirectory = game.ToString();
+            MissionsDirectory = game.ToString() + up + "Custom SMissions";
+            MissionSavesDirectory = game.ToString() + up + "SMissions Saves";
+            MissionCorpsDirectory = game.ToString() + up + "SMissions Corps";
+            ValidateDirectory(MissionsDirectory);
+            ValidateDirectory(MissionSavesDirectory);
+            ValidateDirectory(MissionCorpsDirectory);
+
+            if (!ManSMCCorps.hasScanned)
+            {
+                ManSMCCorps.LoadAllCorps();
+            }
+#if DEBUG
+            Debug_SMissions.Log("SubMissions: DLL folder is at: " + DLLDirectory);
+            Debug_SMissions.Log("SubMissions: Custom SMissions is at: " + MissionsDirectory);
+            //SMCCorpLicense.SaveTemplateToDisk();
+#endif
+        }
 
 
 
@@ -138,6 +166,7 @@ namespace Sub_Missions
             SubMissionTree tree = new SubMissionTree();
             tree.TreeName = "Template";
             tree.Faction = "GSO";
+            tree.ModID = "Mod Missions";
             tree.MissionNames.Add("NPC Mission");
             tree.MissionNames.Add("Harvest Mission");
             tree.MissionNames.Add("Water Blocks Aid");
@@ -187,7 +216,7 @@ namespace Sub_Missions
             mission1.Description = "A complex showcase mission with an NPC involved";
             mission1.GradeRequired = 1;
             mission1.Faction = "GSO";
-            mission1.Position = Vector3.forward * 250;
+            mission1.SetStartingPosition = Vector3.forward * 250;
             mission1.Type = SubMissionType.Critical;
             mission1.CannotCancel = true;
             mission1.SpawnPosition = SubMissionPosition.OffsetFromPlayerTechFacing;
@@ -719,7 +748,7 @@ namespace Sub_Missions
             mission4.MinProgressX = 0;
             mission4.Faction = "GSO";
             mission4.ClearTechsOnClear = true;
-            mission4.Position = Vector3.forward * 32;
+            mission4.SetStartingPosition = Vector3.forward * 32;
             mission4.SpawnPosition = SubMissionPosition.OffsetFromPlayer;
             mission4.VarTrueFalse = new List<bool>
             {
@@ -1121,7 +1150,7 @@ namespace Sub_Missions
                     return false;
                 }
                 else
-                    GO = BuildNewWorldObject(SMT, name);
+                    GO = BuildNewWorldObjectPrefab(SMT, name);
                 return true;
             }
             catch
@@ -1133,7 +1162,7 @@ namespace Sub_Missions
             return false;
         }
 
-        public static GameObject BuildNewWorldObject(SubMissionTree SMT, string ObjectName)
+        public static GameObject BuildNewWorldObjectPrefab(SubMissionTree SMT, string ObjectName)
         {
             try
             {
@@ -1142,59 +1171,21 @@ namespace Sub_Missions
                 SMWorldObject worldObj = gameObj.AddComponent<SMWorldObject>();
                 worldObj.SetFromJSON(JsonConvert.DeserializeObject<SMWorldObjectJSON>(output));
                 gameObj.name = worldObj.Name;
-                var MRender = gameObj.AddComponent<MeshRenderer>();
-                Material Mat = null;
-                if (worldObj.GameMaterialName != null)
+                var mod = ManMods.inst.FindMod(SMT.ModID);
+                WorldObjInfo WOI = new WorldObjInfo
                 {
-                    Material[] mats = Resources.FindObjectsOfTypeAll<Material>();
-                    mats = mats.Where(cases => cases.name == worldObj.GameMaterialName).ToArray();
-                    if (mats != null && mats.Count() > 0)
-                        Mat = mats.First();
-                    if (!Mat)
-                    {
-                        SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + worldObj.Name + "'s GameMaterialName is not a valid material!  Tree: " + SMT.TreeName);
-                        Mat = (Material)Resources.Load("GSO_Scenery");
-                    }
-                }
-                else 
-                    Mat = (Material)Resources.Load("GSO_Scenery");
-                if (worldObj.TextureName != null && SMT.MissionTextures.TryGetValue(worldObj.TextureName.GetHashCode(), out Texture tex))
-                {
-                    Material newMat = new Material(Mat);
-                    newMat.mainTexture = tex;
-                    MRender.sharedMaterial = newMat;
-                }
-                else
-                {
-                    MRender.sharedMaterial = Mat;
-                }
-                var MFilter = gameObj.AddComponent<MeshFilter>();
-                if (worldObj.VisualMeshName != null && SMT.MissionMeshes.TryGetValue(worldObj.VisualMeshName.GetHashCode(), out Mesh obj))
-                    MFilter.sharedMesh = obj;
-                else
-                {
-                    SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + worldObj.Name + " for a mesh!  It MUST have a valid VisualMeshName (with .obj included) provided in it's base SubMission folder!  Tree: " + SMT.TreeName);
-                    worldObj.Remove(true);
-                    return null;
-                }
-                if (worldObj.ColliderMeshName != null && SMT.MissionMeshes.TryGetValue(worldObj.ColliderMeshName.GetHashCode(), out Mesh obj2))
-                {
-                    var meshCol = gameObj.AddComponent<MeshCollider>();
-                    meshCol.sharedMesh = obj2;
-                }
-                else
-                {
-                    var boxCol = gameObj.AddComponent<BoxCollider>();
-                    boxCol.size = MFilter.sharedMesh.bounds.size;
-                    boxCol.center = MFilter.sharedMesh.bounds.center;
-                    //SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + worldObj.Name + " for a mesh!  It MUST have a valid ColliderMeshName (with .obj included) provided in it's base SubMission folder!  Tree: " + SMT.TreeName);
-                    //return null;
-                }
+                    MC = mod,
+                    SMT = SMT,
+                    worldObj = worldObj,
+                };
+                AssignMaterialBase(ref WOI);
+                AssignMeshBase(ref WOI);
+                AssignColliderBase(ref WOI);
                 Damageable dmg = gameObj.AddComponent<Damageable>();
                 dmg.SetInvulnerable(true, true);
                 if (worldObj.WorldObjectJSON != null)
                 {
-                    RecursiveGameObjectBuilder(SMT, gameObj, gameObj, worldObj.WorldObjectJSON);
+                    RecursiveGameObjectBuilder(ref WOI, gameObj, worldObj.WorldObjectJSON);
                 }
                 int layerSet = Globals.inst.layerTerrain;
                 if (worldObj.aboveGround) 
@@ -1229,9 +1220,48 @@ namespace Sub_Missions
             }
         }
 
+        private static void AssignMaterialBase(ref WorldObjInfo info)
+        {
+            var MRender = info.baseGO.AddComponent<MeshRenderer>();
+            MRender.sharedMaterial = GetMaterial(info, info.worldObj.GameMaterialName, info.worldObj.TextureName);
+            info.baseMat = MRender.sharedMaterial;
+        }
+        private static void AssignMeshBase(ref WorldObjInfo info)
+        {
+            var MFilter = info.baseGO.AddComponent<MeshFilter>();
+            if (info.worldObj.VisualMeshName != null)
+            {
+                MFilter.sharedMesh = GetMesh(info, info.worldObj.VisualMeshName);
+            }
+            else
+            {
+                SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + info.worldObj.Name + " for a mesh!  " +
+                    "It MUST have a valid VisualMeshName (with .obj included) provided in it's base SubMission folder or " +
+                            "a valid in-game mesh to use!  Tree: " + info.SMT.TreeName);
+                //info.worldObj.Remove(true);
+            }
+            info.baseMesh = MFilter.sharedMesh;
+        }
+        private static void AssignColliderBase(ref WorldObjInfo info)
+        {
+            if (info.worldObj.ColliderMeshName != null)
+            {
+                var meshCol = info.baseGO.AddComponent<MeshCollider>();
+                meshCol.sharedMesh = GetMesh(info, info.worldObj.ColliderMeshName);
+            }
+            else
+            {
+                var boxCol = info.baseGO.AddComponent<BoxCollider>();
+                boxCol.size = info.baseMesh.bounds.size;
+                boxCol.center = info.baseMesh.bounds.center;
+                //SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + worldObj.Name + " for a mesh!  It MUST have a valid ColliderMeshName (with .obj included) provided in it's base SubMission folder!  Tree: " + SMT.TreeName);
+                //return null;
+            }
+        }
+
         private static int depth = 0;
         private const int MaxDepth = 10;
-        private static void RecursiveGameObjectBuilder(SubMissionTree SMT, GameObject baseCase, GameObject parent, Dictionary<string, object> WorldObject)
+        private static void RecursiveGameObjectBuilder(ref WorldObjInfo info, GameObject parent, Dictionary<string, object> WorldObject)
         {
             depth++;
             try
@@ -1244,58 +1274,150 @@ namespace Sub_Missions
                         {
                             if (depth > MaxDepth)
                             {
-                                SMUtil.Assert(false, "SubMissions: Error in " + baseCase.name + " WorldObjectJSON Tree: " + SMT.TreeName + "\n You have exceeded the maximum safe GameObject depth of " + MaxDepth + "!");
+                                SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " + 
+                                    info.SMT.TreeName + "\n You have exceeded the maximum safe GameObject depth of " + MaxDepth + "!");
                                 continue;
                             }
                             GameObject nextLevel = Instantiate(new GameObject(entry.Key.Skip(11).ToString()), parent.transform);
 
-                            RecursiveGameObjectBuilder(SMT, baseCase, nextLevel, (Dictionary<string, object>)entry.Value);
+                            RecursiveGameObjectBuilder(ref info, nextLevel, (Dictionary<string, object>)entry.Value);
                         }
                         else
                         {
                             try
                             {
-                                Type type = Type.GetType(entry.Key);
+                                Type type = KickStart.LookForType(entry.Key);
                                 if (type == null)
                                     continue;
                                 if (!type.IsClass)
                                     continue;
-                                var comp = parent.GetComponent(type.GetType());
+                                var comp = parent.GetComponent(type);
                                 if (!comp)
-                                    comp = parent.AddComponent(type.GetType());
+                                    comp = parent.AddComponent(type);
 
                                 foreach (KeyValuePair<string, object> pair in (Dictionary<string, object>)entry.Value)
                                 {
-                                    PropertyInfo PI = type.GetType().GetProperty(pair.Key, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+                                    PropertyInfo PI = type.GetProperty(pair.Key, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
                                     if (PI != null)
                                     {
-                                        PI.SetValue(comp, pair.Value);
+                                        Construct(ref info, comp, PI, pair.Value);
                                     }
+                                    else
+                                        SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + 
+                                            " WorldObjectJSON Tree: " + info.SMT.TreeName + "\n No such variable exists: " + 
+                                            (pair.Key.NullOrEmpty() ? pair.Key : "ENTRY IS NULL OR EMPTY"));
                                 }
                             }
                             catch
                             {   // report missing component 
-                                SMUtil.Assert(false, "SubMissions: Error in " + baseCase.name + " WorldObjectJSON Tree: " + SMT.TreeName + "\n No such variable exists: " + (entry.Key.NullOrEmpty() ? entry.Key : "ENTRY IS NULL OR EMPTY"));
+                                SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " + 
+                                    info.SMT.TreeName + "\n No such type exists: " + (entry.Key.NullOrEmpty() ? entry.Key : 
+                                    "ENTRY IS NULL OR EMPTY"));
                             }
                         }
                     }
                     catch (Exception e)
                     {
-                        SMUtil.Assert(false, "SubMissions: Error in " + baseCase.name + " WorldObjectJSON Tree: " + SMT.TreeName + "\n" + e);
+                        SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
+                            info.SMT.TreeName + "\n" + e);
                     }
                 }
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Error in " + baseCase.name + " WorldObjectJSON Tree: " + SMT.TreeName + "\n GameObject case: " + e);
+                SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " + 
+                    info.SMT.TreeName + "\n GameObject case: " + e);
             }
             depth--;
+        }
+        private static void Construct(ref WorldObjInfo info, Component comp, PropertyInfo PI, object obj)
+        {
+            if (PI.PropertyType == typeof(Mesh))
+            {
+                PI.SetValue(comp, GetMesh(info, obj.ToString()));
+            }
+            else if (PI.PropertyType == typeof(Material))
+            {
+                PI.SetValue(comp, info.baseMat);
+            }
+            else
+                PI.SetValue(comp, obj);
+        }
+        private static Material GetMaterial(WorldObjInfo info, string GameMaterialName, string nameWithExt)
+        {
+            Material Mat = null;
+            if (GameMaterialName != null)
+            {
+                Material[] mats = Resources.FindObjectsOfTypeAll<Material>();
+                mats = mats.Where(cases => cases.name == GameMaterialName).ToArray();
+                if (mats != null && mats.Count() > 0)
+                    Mat = mats.First();
+                if (!Mat)
+                {
+                    SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + info.baseGO.name + 
+                        "'s GameMaterialName is not a valid material!  Tree: " + info.SMT.TreeName);
+                    Mat = (Material)Resources.Load("GSO_Scenery");
+                }
+            }
+            else
+                Mat = (Material)Resources.Load("GSO_Scenery");
+            Texture tex;
+            if (info.MC != null && nameWithExt != null)
+            {
+                tex = ResourcesHelper.GetTextureFromModAssetBundle(info.MC, nameWithExt.Replace(".png", ""), false);
+                if (tex != null)
+                {
+                    Material newMat = new Material(Mat);
+                    newMat.mainTexture = tex;
+                    return newMat;
+                }
+            }
+            if (nameWithExt != null && info.SMT.MissionTextures.TryGetValue(nameWithExt.GetHashCode(), out tex))
+            {
+                Material newMat = new Material(Mat);
+                newMat.mainTexture = tex;
+                return newMat;
+            }
+            else
+            {
+                return Mat;
+            }
+        }
+        private static Mesh GetMesh(WorldObjInfo info, string nameWithExt)
+        {
+            //Debug_SMissions.Log("1");
+            if (nameWithExt != null)
+            {
+                //Debug_SMissions.Log("2");
+                if (info.MC != null)
+                {
+                    //Debug_SMissions.Log("3");
+                    var mesh = ResourcesHelper.GetMeshFromModAssetBundle(info.MC, nameWithExt.Replace(".obj", ""), false);
+                    if (mesh != null)
+                        return mesh;
+                }
+                //Debug_SMissions.Log("4");
+                if (info.SMT.MissionMeshes.TryGetValue(nameWithExt.GetHashCode(), out Mesh obj))
+                    return obj;
+                else
+                {
+                    //Debug_SMissions.Log("5");
+                    var mes = Resources.FindObjectsOfTypeAll<Mesh>().First(x => !x.name.NullOrEmpty() && nameWithExt.CompareTo(x.name) == 0);
+                    if (mes != null)
+                        return mes;
+                }
+            }
+            //Debug_SMissions.Log("6");
+            SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + info.baseGO.name + " for the mesh!  " +
+                "It MUST have a valid VisualMeshName (with .obj included) provided in it's base SubMission folder or " +
+                "a valid in-game mesh to use!  Tree: " + info.SMT.TreeName);
+            return null;
         }
 
         private static Dictionary<string, object> MakeCompat<T>(T convert)
         {
-            List<PropertyInfo> PI = convert.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
-            Debug_SMissions.Log("SubMissions: MakeCompat - Compiling " + convert.GetType() + " which has " + PI.Count() + " properties");
+            List<PropertyInfo> PI = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
+            Debug_SMissions.Log("SubMissions: MakeCompat - Compiling " + typeof(T) + " which has " + PI.Count() + " properties");
             Dictionary<string, object> converted = new Dictionary<string, object>();
             foreach (PropertyInfo PIC in PI)
             {
@@ -1310,14 +1432,18 @@ namespace Sub_Missions
         // Loaders
         private static string LoadMissionTreeFromFile(string TreeName, string TreeDirectory, out Dictionary<int, Texture> album, out Dictionary<int, Mesh> models)
         {
-            album = null;
-            models = null;
+            album = new Dictionary<int, Texture>();
+            models = new Dictionary<int, Mesh>();
             ValidateDirectory(TreeDirectory);
             try
             {
                 string output = File.ReadAllText(TreeDirectory + up + "MissionTree.json");
+#if !STEAM
                 album = LoadTreePNGs(TreeName, TreeDirectory);
                 models = LoadTreeMeshes(TreeName, TreeDirectory);
+#else
+                Debug_SMissions.Log("SubMissions: Skipped loading in PNGS and Meshes from file for OFFICIAL.");
+#endif
                 Debug_SMissions.Log("SubMissions: Loaded MissionTree.json for " + TreeName + " successfully.");
                 return output;
             }
@@ -1417,9 +1543,9 @@ namespace Sub_Missions
                     Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any .obj files to load.");
                 return dictionary;
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not load .obj files for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                SMUtil.Assert(false, "SubMissions: Could not load .obj files for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions. " + e);
                 return null;
             }
         }
@@ -1435,6 +1561,16 @@ namespace Sub_Missions
 #else
             throw new NotImplementedException("SMissionJSONLoader.LoadMesh is not currently supported in Official.");
 #endif
+        }
+
+        private struct WorldObjInfo
+        {
+            public SubMissionTree SMT;
+            public ModContainer MC;
+            public SMWorldObject worldObj;
+            public GameObject baseGO => worldObj.gameObject;
+            public Material baseMat;
+            public Mesh baseMesh;
         }
     }
 }

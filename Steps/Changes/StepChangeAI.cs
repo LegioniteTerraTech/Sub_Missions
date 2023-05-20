@@ -125,7 +125,7 @@ namespace Sub_Missions.Steps
                             mind.EvilCommander = result;
                         break;
                     case 1: //CommanderAttack
-                        if (Enum.TryParse(ch.ToString(), out EnemyAttack result2))
+                        if (Enum.TryParse(ch.ToString(), out EAttackMode result2))
                             mind.CommanderAttack = result2;
                         break;
                     case 2: //CommanderAttitude

@@ -21,6 +21,7 @@ namespace Sub_Missions
 
         public string TreeName = "unset";
         public string Faction = "GSO";
+        public string ModID = "Unset";
 
         // Cache
         [JsonIgnore]
@@ -65,7 +66,27 @@ namespace Sub_Missions
 
         // Documentation
         public static string GetDocumentation()
-        {   
+        {
+            return "{" +
+  "\"TreeName\": \"Template\", //The name of the mission tree.  Must be unique." +
+  "\"Faction\": \"GSO\", //The Faction/Corp the mission tree is affilated with." +
+  "\"WorldObjectFileNames\": [//The names of the world objects affilated with this mission tree." +
+  "  \"ModularBrickCube_(636)\"" +
+  "]," +
+  "\"MissionNames\": [//The names of the missions affilated with this mission tree." +
+  "  \"NPC Mission\"," +
+  "  \"Harvest Mission\"," +
+  "  \"Water Blocks Aid\"" +
+  "]," +
+  "\"RepeatMissionNames\": [//The names of the missions affilated with this mission tree that should REPEAT." +
+  "  \"Combat Mission\"" +
+  "]," +
+  "\"ImmedeateMissionNames\": [],//The names of the missions affilated with this mission tree that should trigger as soon as they can." +
+  "\"ProgressXName\": \"Prestiege\"," +
+  "\"ProgressYName\": \"Status\"," +
+  "\"CustomCorpInfo\": null" +
+"}";
+        
             throw new NotImplementedException();
             //return null;
         }
@@ -671,74 +692,5 @@ namespace Sub_Missions
             }
         }
 
-    }
-    public class SubMissionStandby 
-    {
-        [JsonIgnore]
-        public SubMissionTree tree;
-        [JsonIgnore]
-        public SubMissionTree Tree
-        {
-            get 
-            {
-                if (tree == null)
-                    tree = GetTree();
-                return tree; 
-            }
-            set
-            {
-                treeName = value.TreeName;
-                tree = value;
-            }
-        }
-        public string treeName;
-
-        public string Name = "Unset";
-        public string AltName;
-        public List<string> AltNames;
-        public string Desc = "Nothing";
-        public List<string> AltDescs;
-        public string Faction = "";
-        public int GradeRequired = 0;
-        public SubMissionType Type;
-        public byte MinProgressX = 0;
-        public byte MinProgressY = 0;
-        public bool SPOnly = false;
-        public bool CannotCancel = false;
-
-        // Mostly just to prevent overlapping
-        public IntVector2 TilePosWorld = IntVector2.zero;
-        public SubMissionPosition placementMethod;
-
-        public float LoadRadius = 0;
-
-        public List<MissionChecklist> Checklist;
-        public SubMissionReward Rewards; //
-
-        public void GetAndSetDisplayName()
-        {   // 
-            if (!AltName.NullOrEmpty())
-                return;
-            if (AltNames == null)
-                AltName = Name;
-            else if (AltNames.Count < 1)
-                AltName = Name;
-            else
-            {
-                string check = AltNames.GetRandomEntry();
-                if (check.NullOrEmpty())
-                    AltName = Name;
-                AltName = check;
-                try
-                {
-                    Desc = AltDescs.ElementAt(AltNames.IndexOf(check));
-                }
-                catch { }// don't change
-            }
-        }
-        public SubMissionTree GetTree()
-        {   // 
-            return ManSubMissions.GetTree(treeName);
-        }
     }
 }

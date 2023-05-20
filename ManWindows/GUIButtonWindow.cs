@@ -33,7 +33,7 @@ namespace Sub_Missions.ManWindows
             if (GUI.Button(new Rect(0, 10, Display.Window.width, Display.Window.height - 10), buttonMessage, WindowManager.styleHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
-                ButtonAct.inst.Invoke(InvokeAction, 0);// has frame delay
+                ButtonAct.Invoke(InvokeAction);// has frame delay
 
                 if (DestroyOnPress)
                 {

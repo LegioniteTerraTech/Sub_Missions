@@ -296,6 +296,18 @@ namespace Sub_Missions
             return false;
         }
 
+        public static Type LookForType(string name)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var typeGet = assembly.GetType(name);
+                if (typeGet != null)
+                {
+                    return typeGet;
+                }
+            }
+            return null;
+        }
     }
 
     public class KickStartOptions

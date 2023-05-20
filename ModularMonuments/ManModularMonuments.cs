@@ -22,8 +22,8 @@ namespace Sub_Missions
             if (WorldObjects.TryGetValue(hash, out GameObject inst))
             {
                 scale.x = scale.x <= 0 ? 1 : scale.x;
-                scale.y = scale.x <= 0 ? 1 : scale.y;
-                scale.z = scale.x <= 0 ? 1 : scale.z;
+                scale.y = scale.y <= 0 ? 1 : scale.y;
+                scale.z = scale.z <= 0 ? 1 : scale.z;
                 MM = Instantiate(inst, null, true);
                 MM.GetComponent<SMWorldObject>().Activate(scenePos);
                 ActiveWorldObjects.Add(MM);
@@ -42,8 +42,8 @@ namespace Sub_Missions
             if (WorldObjects.TryGetValue(hash, out GameObject inst))
             {
                 MMS.scale.x = MMS.scale.x <= 0 ? 1 : MMS.scale.x;
-                MMS.scale.y = MMS.scale.x <= 0 ? 1 : MMS.scale.y;
-                MMS.scale.z = MMS.scale.x <= 0 ? 1 : MMS.scale.z;
+                MMS.scale.y = MMS.scale.y <= 0 ? 1 : MMS.scale.y;
+                MMS.scale.z = MMS.scale.z <= 0 ? 1 : MMS.scale.z;
                 MM = Instantiate(inst, null, true);
                 MM.GetComponent<SMWorldObject>().Activate(MMS.tilePos, MMS.offsetFromTile);
                 ActiveWorldObjects.Add(MM);

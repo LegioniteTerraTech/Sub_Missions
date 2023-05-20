@@ -26,6 +26,11 @@ namespace Sub_Missions.Steps
                   "\n    \"y\": 0.0," +
                   "\n    \"z\": 0.0" +
                   "\n  }," +
+                  "\n  \"Forwards\": {  // The scale of the ModularMonument." +
+                  "\n    \"x\": 1.0," +
+                  "\n    \"y\": 1.0," +
+                  "\n    \"z\": 1.0" +
+                  "\n  }," +
                   "\n  \"TerrainHandling\": 2,      // " + TerrainHandlingDesc + 
                   "\n  // Conditions TO CHECK before executing" +
                   "\n  \"VaribleType\": \"True\",       // See the top of this file." +

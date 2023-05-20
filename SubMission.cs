@@ -44,15 +44,24 @@ namespace Sub_Missions
         internal FactionSubTypes FactionType => SubMissionTree.GetTreeCorp(Faction);
 
         // GLOBAL
-        public WorldPosition WorldPos => new WorldPosition(TilePos, OffsetFromTile);
+        public WorldPosition WorldPos
+        {
+            get => worldPos;
+            set { SetPosition_Internal(value); }
+        }
+        private WorldPosition worldPos = new WorldPosition(Vector2.zero, Vector3.zero);
         /// <summary>
         /// The ScenePosition of the mission (If needed)
         /// </summary>
-        public Vector3 Position = Vector3.zero;
+        public Vector3 ScenePosition => worldPos.ScenePosition;
+        /// <summary>
+        /// The ScenePosition of the mission (If needed)
+        /// </summary>
+        public Vector3 SetStartingPosition { set { WorldPos = WorldPosition.FromScenePosition(value); } }
         [JsonIgnore]
-        public Vector3 OffsetFromTile = Vector3.zero;
+        public Vector3 OffsetFromTile => worldPos.TileRelativePos;
         [JsonIgnore]
-        public IntVector2 TilePos = Vector2.zero;
+        public IntVector2 TilePos => worldPos.TileCoord;
 
         public bool CanCancel => (MissionDist >= ManSubMissions.MaxLoadedSpawnDist && Type != SubMissionType.Immedeate) || KickStart.OverrideRestrictions;
 
@@ -100,10 +109,6 @@ namespace Sub_Missions
         internal Encounter FakeEncounter = null;
 
 
-        public Vector3 GetWorldPosition()
-        {
-            return OffsetFromTile + ManWorld.inst.TileManager.CalcTileCentre(TilePos);
-        }
         public static string GetDocumentation()
         {
             return
@@ -285,8 +290,6 @@ namespace Sub_Missions
             if (isMissionImpossible)
                 SMUtil.Assert(false, "SubMissions: " + Name + " is impossible to complete as there are no existing Win Steps in the Event List!!!");
             
-            TilePos = ManWorld.inst.TileManager.SceneToTileCoord(Position);
-            OffsetFromTile = Position - ManWorld.inst.TileManager.CalcTileCentreScene(TilePos);
             ActiveState = SubMissionLoadState.NeedsFirstInit;
             UpdateDistance();
             if (IgnorePlayerProximity)
@@ -306,13 +309,13 @@ namespace Sub_Missions
             }   
             else
                 RunWaypoint(false);
-            MissionDist = SMUtil.GetPlayerDist(GetWorldPosition() - ManWorld.inst.GetSceneToGameWorld());
+            MissionDist = SMUtil.GetPlayerDist(ScenePosition);
         }
         public void CheckIfCanSpawn()
         {   // 
             if (IsActive || MissionDist > ManSubMissions.LoadCheckDist)
                 return;
-            if (ManWorld.inst.CheckAllTilesAtPositionHaveReachedLoadStep(Position, GetMinimumLoadRange()))
+            if (ManWorld.inst.CheckAllTilesAtPositionHaveReachedLoadStep(ScenePosition, GetMinimumLoadRange()))
             {
                 FirstLoad();
             }
@@ -378,7 +381,6 @@ namespace Sub_Missions
         {   // 
             Debug_SMissions.Log("SubMissions: Resync for SubMission " + Name);
             IsCleaningUp = false;
-            Position = WorldPosition.FromGameWorldPosition(GetWorldPosition()).ScenePosition;
             foreach (SubMissionStep step in GetAllEvents())
             {
                 step.Mission = this;
@@ -713,6 +715,10 @@ namespace Sub_Missions
 
         private const int maxAttempts = 32;
         private static Bitfield<ObjectTypes> searchTypes = new Bitfield<ObjectTypes>(new ObjectTypes[2] { ObjectTypes.Vehicle, ObjectTypes.Crate });
+        private void SetPosition_Internal(WorldPosition Wp)
+        {
+            worldPos = Wp;
+        }
         private void SetPositionClassicMission()
         {
             Debug_SMissions.Log("SubMissions: SetPositionClassicMission");
@@ -729,8 +735,8 @@ namespace Sub_Missions
             {
                 if (IVc.LargestFreeSpaceOnTile > missionReqRad && !ManSubMissions.IsTooCloseToOtherMission(IVc.Coord))
                 {
-                    Position = IVc.CalcSceneCentre();
-                    Debug_SMissions.Log("Decided on Scene Position " + Position);
+                    WorldPos = WorldPosition.FromScenePosition(IVc.CalcSceneCentre());
+                    Debug_SMissions.Log("Decided on Scene Position " + ScenePosition);
                     break;
                 }
             }
@@ -774,12 +780,13 @@ namespace Sub_Missions
                 randAngle = new Vector3(UnityEngine.Random.Range(-1000f, 1000f), 0, UnityEngine.Random.Range(-1000f, 1000f)).normalized;
                 loadRange = GetMinimumLoadRange();
                 randDistance = UnityEngine.Random.Range(ManSubMissions.MaxLoadedSpawnDist + loadRange, ManSubMissions.MaxUnloadedSpawnDist - loadRange);
-                Position = Singleton.playerPos + (randAngle * randDistance);
-                if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
-                    Position.y = height;
+                Vector3 pos = Singleton.playerPos + (randAngle * randDistance);
+                if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(ScenePosition, out float height))
+                    pos.y = height;
+                WorldPos = WorldPosition.FromScenePosition(pos);
             }
-            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0 &&
-                !ManSubMissions.IsTooCloseToOtherMission(ManWorld.inst.TileManager.SceneToTileCoord(Position)));
+            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(ScenePosition, loadRange, searchTypes).Count > 0 &&
+                !ManSubMissions.IsTooCloseToOtherMission(ManWorld.inst.TileManager.SceneToTileCoord(ScenePosition)));
             if (maxAttempts == attemptCount)
                 Debug_SMissions.Log("SubMissions: SetPositionFarFromPlayer - FAILED TO FIND A REASONABLE POSITION");
             return;
@@ -797,52 +804,57 @@ namespace Sub_Missions
                 randAngle = new Vector3(UnityEngine.Random.Range(-1000f, 1000f), 0, UnityEngine.Random.Range(-1000f, 1000f)).normalized;
                 loadRange = GetMinimumLoadRange();
                 randDistance = UnityEngine.Random.Range(loadRange + ManSubMissions.MinLoadedSpawnDist, ManSubMissions.MaxLoadedSpawnDist - loadRange);
-                Position = Singleton.playerPos + (randAngle * randDistance);
-                if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
-                    Position.y = height;
+                Vector3 pos = Singleton.playerPos + (randAngle * randDistance);
+                if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(ScenePosition, out float height))
+                    pos.y = height;
+                WorldPos = WorldPosition.FromScenePosition(pos);
             }
-            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(Position, loadRange, searchTypes).Count > 0);
+            while (maxAttempts > attemptCount && ManVisible.inst.VisiblesTouchingRadius(ScenePosition, loadRange, searchTypes).Count > 0);
             return;
         }
         private void SetPositionFromPlayer()
         {
             Debug_SMissions.Log("SubMissions: SetPositionFromPlayer");
             float loadRange = GetWorldActiveRange();
-            if (Position.magnitude > loadRange)
+            Vector3 pos = WorldPos.ScenePosition;
+            if (pos.magnitude > loadRange)
             {
-                Position = (loadRange * Position.normalized) + Singleton.playerPos;
+                pos = (loadRange * ScenePosition.normalized) + Singleton.playerPos;
             }
-            else 
-                Position = Singleton.playerPos + Position;
-            if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
-                Position.y = height;
+            else
+                pos = Singleton.playerPos + ScenePosition;
+            if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(ScenePosition, out float height))
+                pos.y = height;
+            WorldPos = WorldPosition.FromScenePosition(pos);
             return;
         }
         private void SetPositionFromPlayerTankFacing()
         {
             Debug_SMissions.Log("SubMissions: SetPositionFromPlayerTankFacing");
             float loadRange = GetWorldActiveRange();
-            if (Position.magnitude > loadRange)
+            Vector3 pos = WorldPos.ScenePosition;
+            if (pos.magnitude > loadRange)
             {
-                Position = (loadRange * Position.normalized) + Singleton.playerPos;
+                pos = (loadRange * ScenePosition.normalized) + Singleton.playerPos;
             }
             else
             {
                 if (Singleton.playerTank)
                 {
-                    Position = Singleton.playerTank.rootBlockTrans.TransformPoint(Position);
+                    pos = Singleton.playerTank.rootBlockTrans.TransformPoint(ScenePosition);
                 }
                 else
-                    Position = Singleton.playerPos + Position;
+                    pos = Singleton.playerPos + ScenePosition;
             }
-            if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(Position, out float height))
-                Position.y = height;
+            if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(ScenePosition, out float height))
+                pos.y = height;
+            WorldPos = WorldPosition.FromScenePosition(pos);
             return;
         }
         private void TryClearAreaForMission()
         {   //N/A
             int removeCount = 0;
-            foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(Position, GetMinimumLoadRange(), new Bitfield<ObjectTypes>(new ObjectTypes[1] { ObjectTypes.Scenery })))
+            foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(ScenePosition, GetMinimumLoadRange(), new Bitfield<ObjectTypes>(new ObjectTypes[1] { ObjectTypes.Scenery })))
             {   
                 if (vis.resdisp.IsNotNull())
                 {
@@ -868,7 +880,7 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    UnloadedPosWayVis.SetPos(Position);
+                    UnloadedPosWayVis.SetPos(ScenePosition);
                 }
 
             }
@@ -882,7 +894,7 @@ namespace Sub_Missions
         }
         private void CreateNewWaypoint()
         {
-            UnloadedPosWay = ManSpawn.inst.HostSpawnWaypoint(GetWorldPosition() - ManWorld.inst.GetSceneToGameWorld(), Quaternion.identity);
+            UnloadedPosWay = ManSpawn.inst.HostSpawnWaypoint(ScenePosition - ManWorld.inst.GetSceneToGameWorld(), Quaternion.identity);
             UnloadedPosWayVis = new TrackedVisible(UnloadedPosWay.visible.ID, UnloadedPosWay.visible, ObjectTypes.Waypoint, RadarTypes.AreaQuest);
             ManOverlay.inst.AddWaypointOverlay(UnloadedPosWayVis);
         }
@@ -906,6 +918,76 @@ namespace Sub_Missions
             return false;
         }
 
+    }
+
+    public class SubMissionStandby
+    {
+        [JsonIgnore]
+        public SubMissionTree tree;
+        [JsonIgnore]
+        public SubMissionTree Tree
+        {
+            get
+            {
+                if (tree == null)
+                    tree = GetTree();
+                return tree;
+            }
+            set
+            {
+                treeName = value.TreeName;
+                tree = value;
+            }
+        }
+        public string treeName;
+
+        public string Name = "Unset";
+        public string AltName;
+        public List<string> AltNames;
+        public string Desc = "Nothing";
+        public List<string> AltDescs;
+        public string Faction = "";
+        public int GradeRequired = 0;
+        public SubMissionType Type;
+        public byte MinProgressX = 0;
+        public byte MinProgressY = 0;
+        public bool SPOnly = false;
+        public bool CannotCancel = false;
+
+        // Mostly just to prevent overlapping
+        public IntVector2 TilePosWorld = IntVector2.zero;
+        public SubMissionPosition placementMethod;
+
+        public float LoadRadius = 0;
+
+        public List<MissionChecklist> Checklist;
+        public SubMissionReward Rewards; //
+
+        public void GetAndSetDisplayName()
+        {   // 
+            if (!AltName.NullOrEmpty())
+                return;
+            if (AltNames == null)
+                AltName = Name;
+            else if (AltNames.Count < 1)
+                AltName = Name;
+            else
+            {
+                string check = AltNames.GetRandomEntry();
+                if (check.NullOrEmpty())
+                    AltName = Name;
+                AltName = check;
+                try
+                {
+                    Desc = AltDescs.ElementAt(AltNames.IndexOf(check));
+                }
+                catch { }// don't change
+            }
+        }
+        public SubMissionTree GetTree()
+        {   // 
+            return ManSubMissions.GetTree(treeName);
+        }
     }
 
     public enum SubMissionPosition

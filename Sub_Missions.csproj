@@ -266,6 +266,8 @@
     <Compile Include="CustomCorpsMK2\SMCCorpBlockRange.cs" />
     <Compile Include="CustomCorpsMK2\SMCSkinID.cs" />
     <Compile Include="SMExplosion.cs" />
+    <Compile Include="Steps\Checks\StepCheckMoney.cs" />
+    <Compile Include="Steps\IPositioned.cs" />
     <Compile Include="Steps\StepAirstrike.cs" />
     <Compile Include="Steps\StepFolder.cs" />
     <Compile Include="CustomCorpsMK2\UICCorpLicenses.cs" />
@@ -369,7 +371,7 @@ xcopy /S /Y /R "!e:~0,-1!" !modpath!
 )
 )
 
-set modpath2="C:\Users\Legionite\Desktop\Advanced AI\Assets\Mods\Mission Injector"
+set modpath2="C:\Users\Legionite\Desktop\Advanced AI\Assets\Mods\Mod Missions"
 
 if exist !modpath2! (
 if $(ConfigurationName) == Steam (
@@ -379,7 +381,7 @@ xcopy /S /Y /R "!e:~0,-1!" !modpath2!
 )
 )
 
-set modpath3="C:\Program Files (x86)\Steam\steamapps\common\TerraTech\LocalMods\Mission Injector"
+set modpath3="C:\Program Files (x86)\Steam\steamapps\common\TerraTech\LocalMods\Mod Missions"
 
 if exist !modpath3! (
 if $(ConfigurationName) == Steam (

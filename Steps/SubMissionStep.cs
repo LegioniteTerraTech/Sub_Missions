@@ -93,7 +93,7 @@ namespace Sub_Missions.Steps
             {
                 if (Forwards == Vector3.zero)
                     Forwards = Vector3.forward;
-                SMUtil.SetPosTerrain(ref Position, Mission.Position, TerrainHandling);
+                SMUtil.SetPosTerrain(ref Position, Mission.ScenePosition, TerrainHandling);
                 TrySetupOnType();
                 stepGenerated.Mission = Mission;
                 stepGenerated.SMission = this;
@@ -248,6 +248,9 @@ namespace Sub_Missions.Steps
                 case SMStepType.CheckHealth:
                     stepGenerated = new StepCheckHealth();
                     break;
+                case SMStepType.CheckMoney:
+                    stepGenerated = new StepCheckMoney();
+                    break;
                 case SMStepType.CheckDestroy:
                     stepGenerated = new StepCheckDestroy();
                     break;
@@ -324,6 +327,7 @@ namespace Sub_Missions.Steps
         // CHECKS
         CheckLogic,
         CheckHealth,
+        CheckMoney,
         CheckDestroy,
         CheckPlayerDist,
         CheckResources,

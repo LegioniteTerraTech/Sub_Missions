@@ -50,7 +50,7 @@ namespace Sub_Missions.ManWindows
                     options.OptionSelect();
                 }
                 else
-                    ButtonAct.inst.Invoke(InvokeAction, 0);// has frame delay
+                    ButtonAct.Invoke(InvokeAction);// has frame delay
 
                 WindowManager.HidePopup(Display);
                 if (DestroyOnPress)

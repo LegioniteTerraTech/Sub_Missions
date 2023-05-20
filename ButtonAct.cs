@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
 using UnityEngine;
 using Sub_Missions.ManWindows;
 
@@ -21,6 +21,34 @@ namespace Sub_Missions
         {
             if (!inst)
                 return;
+        }
+
+        private static BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
+        public static void Invoke(string InvokeAction)
+        {
+            if (InvokeAction.Contains("|"))
+            {
+                Type getType = KickStart.LookForType(InvokeAction.Substring(0, InvokeAction.IndexOf("|")));
+                if (getType != null)
+                {
+                    MethodInfo MI = getType.GetMethod(InvokeAction, flags);
+                    if (MI != null)
+                        MI.Invoke(null, new object[0]);
+                    else
+                        SMUtil.Assert(false, "Button(External) - " + InvokeAction + " Method field does not exist");
+                }
+                else
+                    SMUtil.Assert(false, "Button(External) - " + InvokeAction + " Type field does not exist");
+            }
+            else
+            {
+                MethodInfo MI = typeof(ButtonAct).GetMethod(InvokeAction, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                if (MI != null)
+                    MI.Invoke(inst, new object[0]);
+                else
+                    SMUtil.Assert(false, "Button(ButtonAct) - " + InvokeAction + " Method field does not exist");
+                //inst.Invoke(InvokeAction, 0);
+            }
         }
 
         public void Nothing()

@@ -38,10 +38,10 @@ namespace Sub_Missions.Steps
             WindowManager.AddPopupMessageScroll(SMission.InputString, SMission.InputStringAux, Mathf.Max(Mathf.Abs(SMission.InputNum), 0.02f), Mathf.Sign(SMission.InputNum) == -1, this, windowOverride: WindowManager.SmallWideWindow);
             SMission.AssignedWindow = WindowManager.GetCurrentPopup();
             TryFetchImage();
-            if (Mathf.Approximately(SMission.Position.z - Mission.Position.z, 0))
+            if (Mathf.Approximately(SMission.Position.z - Mission.ScenePosition.z, 0))
                 WindowManager.ChangePopupPositioning(new Vector2(0.5f, 1), SMission.AssignedWindow);
             else
-                WindowManager.ChangePopupPositioning(new Vector2(Mathf.Clamp(SMission.Position.x - Mission.Position.x, -1, 1), Mathf.Clamp(SMission.Position.y - Mission.Position.y, -1, 1)), SMission.AssignedWindow);
+                WindowManager.ChangePopupPositioning(new Vector2(Mathf.Clamp(SMission.Position.x - Mission.ScenePosition.x, -1, 1), Mathf.Clamp(SMission.Position.y - Mission.ScenePosition.y, -1, 1)), SMission.AssignedWindow);
         }
         public override void Trigger()
         {   // run the text box things
@@ -65,7 +65,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                Debug.Log("error " + e);
+                Debug_SMissions.Log("error " + e);
                 SMUtil.ConcludeGlobal2(ref SMission);
             }
         }

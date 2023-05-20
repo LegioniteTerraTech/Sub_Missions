@@ -197,6 +197,11 @@ namespace Sub_Missions
             FakeEncounters.Clear();
         }
 
+
+        private static Type objective = typeof(EncounterDetails).GetNestedType("Objective", BindingFlags.NonPublic | BindingFlags.Instance);
+        private static FieldInfo objvDesc = objective.GetField("m_DescriptionStringID", BindingFlags.Public | BindingFlags.Instance);
+        private static FieldInfo objvShow = objective.GetField("m_ShowByDefault", BindingFlags.Public | BindingFlags.Instance);
+        private static FieldInfo objvCount = objective.GetField("m_TargetCount", BindingFlags.Public | BindingFlags.Instance);
         internal static Encounter GetFakeEncounter(SubMission mission, out EncounterDetails EDl, out EncounterIdentifier EI)
         {
             if (!GetFakeEncounterInternal(mission.Name, mission.FactionType, mission.GradeRequired, 
@@ -206,8 +211,6 @@ namespace Sub_Missions
             int errorl = 0;
             try
             {
-                Type objective = typeof(EncounterDetails).GetNestedType("Objective", BindingFlags.NonPublic | BindingFlags.Instance);
-
                 errorl++;
                 Array array = Array.CreateInstance(objective, 0);
 
@@ -267,17 +270,7 @@ namespace Sub_Missions
                 popDis.SetValue(dummyEmpty, false);
                 RadU.SetValue(dummyEmpty, mission.GetMinimumLoadRange());
 
-
-                FieldInfo objvDesc = objective.GetField("m_DescriptionStringID", BindingFlags.NonPublic | BindingFlags.Instance);
-                FieldInfo objvShow = objective.GetField("m_ShowByDefault", BindingFlags.NonPublic | BindingFlags.Instance);
-                FieldInfo objvCount = objective.GetField("m_TargetCount", BindingFlags.NonPublic | BindingFlags.Instance);
-
                 // Setup the UI stuff
-                QuestLogData QLD = new QuestLogData(dummyEmpty);
-                QuestLogData.EncounterObjective[] objectives = QLD.InternalObjectives;
-                int checkCount = mission.CheckList.Count;
-                Array.Resize(ref objectives, checkCount);
-
                 int checkLength = mission.CheckList.Count;
                 array = Array.CreateInstance(objective, checkLength);
 
@@ -288,25 +281,24 @@ namespace Sub_Missions
                         MissionChecklist ele = mission.CheckList[step];
                         object objectiveCase = Activator.CreateInstance(objective);
                         objvDesc.SetValue(objectiveCase, ele.ListArticle);
-                        objvShow.SetValue(objectiveCase, ele.BoolToEnable != 0);
+                        objvShow.SetValue(objectiveCase, (ele.BoolToEnable != 0));
                         if (ele.ValueType == VarType.IntOverInt)
                             objvCount.SetValue(objectiveCase, ele.GlobalIndex);
                         else
                             objvCount.SetValue(objectiveCase, 0);
-                        array.SetValue(objective, step);
-                        objectives[step] = new QuestLogData.EncounterObjective(EDl, CustomDisplayID, step);
+                        array.SetValue(objectiveCase, step);
                     }
-                    catch
+                    catch (Exception e)
                     {
-                        Debug.Assert(true, "FAILED TO REBUILD " + mission.Name + " MISSION CHECKLIST ON STEP " + step);
+                        Debug_SMissions.Assert(true, "FAILED TO REBUILD " + mission.Name + " MISSION CHECKLIST ON STEP " + step + " | " + e);
                     }
                 }
                 obsticles.SetValue(EDl, array);
-                questLog.SetValue(dummyEmpty, QLD);
+                questLog.SetValue(dummyEmpty, new QuestLogData(EI, EDl, CustomDisplayID));
             }
             catch
             {
-                Debug.LogError("Error on " + errorl);
+                Debug_SMissions.LogError("Error on " + errorl);
             }
 
             return dummyEmpty;
@@ -419,7 +411,7 @@ namespace Sub_Missions
                     }
                     catch
                     {
-                        Debug.Assert(true, "FAILED TO REBUILD " + mission.Name + " MISSION CHECKLIST ON STEP " + step);
+                        Debug_SMissions.Assert(true, "FAILED TO REBUILD " + mission.Name + " MISSION CHECKLIST ON STEP " + step);
                     }
                 }
                 error++;
@@ -431,7 +423,7 @@ namespace Sub_Missions
                 RadU.SetValue(dummyEmpty, mission.LoadRadius);
             }
             catch {
-                Debug.LogError("EROOR IN ACTIONS - level " + error);
+                Debug_SMissions.LogError("EROOR IN ACTIONS - level " + error);
             }
             return dummyEmpty;
         }
@@ -528,8 +520,11 @@ namespace Sub_Missions
             }
             EncounterToSpawn ETS = new EncounterToSpawn(ED, EI);
             ETS.m_EncounterStringBankIdx = CustomDisplayID;
-            ETS.m_UsePosForPlacement = false;
+            ETS.m_Position = mission.WorldPos;
             ETS.m_Rotation = Quaternion.identity;
+            ETS.m_UsePosForPlacement = false;
+            _ = ETS.m_EncounterData.m_EncounterPrefab.EncounterDetails;
+            Debug_SMissions.Log("SubMissions: GetEncounterSpawnDisplayInfo(SubMission) - New EncounterToSpawn for " + mission.Name + ".");
             return ETS;
         }
 
@@ -549,11 +544,11 @@ namespace Sub_Missions
                 ETS = new EncounterToSpawn(EI);
                 ETS.m_EncounterStringBankIdx = CustomDisplayID;
                 ETS.m_Position = new WorldPosition(mission.TilePosWorld, Vector3.zero);
-                ETS.m_UsePosForPlacement = false;
                 ETS.m_Rotation = Quaternion.identity;
+                ETS.m_UsePosForPlacement = false;
                 _ = ETS.m_EncounterData.m_EncounterPrefab.EncounterDetails;
                 cache.Add(mission.Name, ETS);
-                Debug_SMissions.Log("SubMissions: New EncounterToSpawn for " + mission.Name + ".");
+                Debug_SMissions.Log("SubMissions: GetEncounterSpawnDisplayInfo(SubMissionStandby) - New EncounterToSpawn for " + mission.Name + ".");
             }
             return ETS;
         }
