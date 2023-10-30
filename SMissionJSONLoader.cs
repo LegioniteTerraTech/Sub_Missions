@@ -4,10 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
-using System.Reflection; 
+using System.Reflection;
+using Unity;
 using UnityEngine;
 using TerraTechETCUtil;
 using Sub_Missions.Steps;
+using Sub_Missions.ModularMonuments;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
@@ -44,39 +46,6 @@ namespace Sub_Missions
         public static string MissionsDirectory;
         public static string MissionSavesDirectory;
         public static string MissionCorpsDirectory;
-        public static char up = '\\';
-
-        public static readonly PhysicMaterial PM = new PhysicMaterial("MMPM") {
-            dynamicFriction = 0.75f,
-            bounciness = 0.1f,
-            bounceCombine = PhysicMaterialCombine.Maximum,
-            frictionCombine = PhysicMaterialCombine.Maximum,
-            staticFriction = 0.75f,
-        };
-        public static readonly PhysicMaterial PMR = new PhysicMaterial("RUBR")
-        {
-            dynamicFriction = 0.75f,
-            bounciness = 0.9f,
-            bounceCombine = PhysicMaterialCombine.Maximum,
-            frictionCombine = PhysicMaterialCombine.Maximum,
-            staticFriction = 0.75f,
-        };
-        public static readonly PhysicMaterial PMI = new PhysicMaterial("ICE")
-        {
-            dynamicFriction = 0.1f,
-            bounciness = 0.0f,
-            bounceCombine = PhysicMaterialCombine.Average,
-            frictionCombine = PhysicMaterialCombine.Average,
-            staticFriction = 0.1f,
-        };
-        public static readonly PhysicMaterial PMN = new PhysicMaterial("NOFRICT")
-        {
-            dynamicFriction = 0.0f,
-            bounciness = 0.0f,
-            bounceCombine = PhysicMaterialCombine.Average,
-            frictionCombine = PhysicMaterialCombine.Minimum,
-            staticFriction = 0.0f,
-        };
 
         private static JsonSerializerSettings JSONSaver = new JsonSerializerSettings
         {
@@ -96,17 +65,15 @@ namespace Sub_Missions
 
         public static void SetupWorkingDirectories()
         {
-            if (Application.platform == RuntimePlatform.OSXPlayer)
-                up = '/'; //Support OSX
             DirectoryInfo di = new DirectoryInfo(Assembly.GetExecutingAssembly().Location);
             di = di.Parent; // off of this DLL
             DLLDirectory = di.ToString();
             DirectoryInfo game = new DirectoryInfo(Application.dataPath);
             game = game.Parent; // out of the game folder
             BaseDirectory = game.ToString();
-            MissionsDirectory = game.ToString() + up + "Custom SMissions";
-            MissionSavesDirectory = game.ToString() + up + "SMissions Saves";
-            MissionCorpsDirectory = game.ToString() + up + "SMissions Corps";
+            MissionsDirectory = Path.Combine(game.ToString(), "Custom SMissions");
+            MissionSavesDirectory = Path.Combine(game.ToString(), "SMissions Saves");
+            MissionCorpsDirectory = Path.Combine(game.ToString(), "SMissions Corps");
             ValidateDirectory(MissionsDirectory);
             ValidateDirectory(MissionSavesDirectory);
             ValidateDirectory(MissionCorpsDirectory);
@@ -123,17 +90,15 @@ namespace Sub_Missions
         }
         public static void SetupWorkingDirectoriesLegacy()
         {
-            if (Application.platform == RuntimePlatform.OSXPlayer)
-                up = '/'; //Support OSX
             DirectoryInfo di = new DirectoryInfo(Assembly.GetExecutingAssembly().Location);
             di = di.Parent; // off of this DLL
             DLLDirectory = di.ToString();
             DirectoryInfo game = new DirectoryInfo(Application.dataPath);
             game = game.Parent; // out of the game folder
             BaseDirectory = game.ToString();
-            MissionsDirectory = game.ToString() + up + "Custom SMissions";
-            MissionSavesDirectory = game.ToString() + up + "SMissions Saves";
-            MissionCorpsDirectory = game.ToString() + up + "SMissions Corps";
+            MissionsDirectory = Path.Combine(game.ToString(), "Custom SMissions");
+            MissionSavesDirectory = Path.Combine(game.ToString(), "SMissions Saves");
+            MissionCorpsDirectory = Path.Combine(game.ToString(), "SMissions Corps");
             ValidateDirectory(MissionsDirectory);
             ValidateDirectory(MissionSavesDirectory);
             ValidateDirectory(MissionCorpsDirectory);
@@ -152,63 +117,6 @@ namespace Sub_Missions
 
 
         // First Startup
-        public static void MakePrefabMissionTreeToFile(string TreeName)
-        {
-            Debug_SMissions.Log("SubMissions: Setting up template reference...");
-
-            SubMission mission1 = MakePrefabMission1();
-            SubMission mission2 = MakePrefabMission2();
-            SubMission mission3 = MakePrefabMission3();
-            SubMission mission4 = MakePrefabMission4();
-
-            SMWorldObjectJSON SMWO = MakePrefabWorldObject();
-
-            SubMissionTree tree = new SubMissionTree();
-            tree.TreeName = "Template";
-            tree.Faction = "GSO";
-            tree.ModID = "Mod Missions";
-            tree.MissionNames.Add("NPC Mission");
-            tree.MissionNames.Add("Harvest Mission");
-            tree.MissionNames.Add("Water Blocks Aid");
-            tree.RepeatMissionNames.Add("Combat Mission");
-            tree.WorldObjectFileNames.Add("ModularBrickCube_(636)");
-
-            string RawTreeJSON = JsonConvert.SerializeObject(tree, Formatting.Indented, JSONSaver);
-            ValidateDirectory(MissionsDirectory);
-            ValidateDirectory(MissionsDirectory + up + TreeName);
-            ValidateDirectory(MissionsDirectory + up + TreeName + up + "Raw Techs");
-            ValidateDirectory(MissionsDirectory + up + TreeName + up + "Missions");
-            ValidateDirectory(MissionsDirectory + up + TreeName + up + "Pieces");
-            string one = JsonConvert.SerializeObject(mission1, Formatting.Indented, JSONSaverMission);
-            string two = JsonConvert.SerializeObject(mission2, Formatting.Indented, JSONSaverMission);
-            string three = JsonConvert.SerializeObject(mission3, Formatting.Indented, JSONSaverMission);
-            string four = "{\n\"Name\": \"Garrett Gruntle\",\n\"IsAnchored\": true,\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSO_Chassis_Cab_314\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOGyroAllAxisActive_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOAIGuardController_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":3}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":1}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":3.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":12}|{\\\"t\\\":\\\"GSOBattery_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOTractorMini_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":16}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":23}|{\\\"t\\\":\\\"VENBracketStraight_211\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":5.0,\\\"z\\\":-1.0},\\\"r\\\":8}|{\\\"t\\\":\\\"GSORadar_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":6.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightSpot_111\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightFixed_111\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":2.0},\\\"r\\\":4}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-2.0},\\\"r\\\":6}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":11}|{\\\"t\\\":\\\"GSOFuelTank_121\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":6}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false,\n\"Cost\": 42828\n}";
-            string five = "{\n\"Name\": \"TestTarget\",\n\"IsAnchored\": true,\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBlock_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":2}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":11}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false\n}";
-            string six = JsonConvert.SerializeObject(mission4, Formatting.Indented, JSONSaverMission); 
-            string seven = JsonConvert.SerializeObject(SMWO, Formatting.Indented, JSONSafe);
-            TryWriteToJSONFile(MissionsDirectory + up + TreeName + up + "Missions" + up +  "NPC Mission", one);
-            TryWriteToJSONFile(MissionsDirectory + up + TreeName + up + "Missions" + up +  "Combat Mission", two);
-            TryWriteToJSONFile(MissionsDirectory + up + TreeName + up + "Missions" + up +  "Harvest Mission", three);
-            TryWriteToJSONFile(MissionsDirectory + up + TreeName + up + "Raw Techs" + up +  "Garrett Gruntle", four);
-            TryWriteToJSONFile(MissionsDirectory + up + TreeName + up + "Raw Techs" + up +  "TestTarget", five);
-            TryWriteToJSONFile(MissionsDirectory + up + TreeName + up + "Missions" + up +  "Water Blocks Kit", six);
-            TryWriteToJSONFile(MissionsDirectory + up + TreeName + up + "Pieces" + up + "ModularBrickCube_(636)", seven);
-            TryWriteToJSONFile(MissionsDirectory + up + "SubMissionHelp", SubMission.GetDocumentation());
-            TryWriteToJSONFile(MissionsDirectory + up + "SubMissionsSteps", SubMissionStep.GetALLStepDocumentations());
-            TryCopyFile(DLLDirectory + up + "Garrett Gruntle.png", MissionsDirectory + up + TreeName + up + "Garrett Gruntle.png");
-            TryCopyFile(DLLDirectory + up + "ModularBrickCube_6x3x6.obj", MissionsDirectory + up + TreeName + up + "ModularBrickCube_6x3x6.obj");
-            try
-            {
-                File.WriteAllText(MissionsDirectory + up + TreeName + up + "MissionTree.json", RawTreeJSON);
-                Debug_SMissions.Log("SubMissions: Saved MissionTree.json for " + TreeName + " successfully.");
-            }
-            catch
-            {
-                Debug_SMissions.Log("SubMissions: Could not edit MissionTree.json for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
-                return;
-            }
-            Debug_SMissions.Log("SubMissions: Setup template reference successfully.");
-        }
         public static SubMission MakePrefabMission1()
         {
             SubMission mission1 = new SubMission();
@@ -253,7 +161,7 @@ namespace Sub_Missions
                 {
                     StepType = SMStepType.SetupTech,
                     ProgressID = 0,
-                    Position = new Vector3(2,0,6), // needs specific location
+                    InitPosition = new Vector3(2,0,6), // needs specific location
                     InputNum = -2, // team
                     VaribleType = EVaribleType.None,
                     InputString = "Garrett Gruntle",
@@ -262,7 +170,7 @@ namespace Sub_Missions
                 {
                     StepType = SMStepType.SetupWaypoint,
                     ProgressID = SubMission.alwaysRunValue,// update For all time. Always.
-                    Position = new Vector3(2,0,6),
+                    InitPosition = new Vector3(2,0,6),
                     VaribleType = EVaribleType.None,
                     InputString = "Garrett Gruntle", // give it a TrackedTech Tech name to assign it to that tech
                 },
@@ -287,7 +195,7 @@ namespace Sub_Missions
                 {
                     StepType = SMStepType.CheckPlayerDist,
                     ProgressID = 1, // note that this still works even when the CurrentProgressID is 0 or 2 due to the adjecency rule
-                    Position = new Vector3(2,0,6), // needs specific location
+                    InitPosition = new Vector3(2,0,6), // needs specific location
                     InputNum = 64, // distance before it gets true
                     VaribleType = EVaribleType.True,
                     SetMissionVarIndex1 = 0, //enable
@@ -354,7 +262,7 @@ namespace Sub_Missions
                 {
                     StepType = SMStepType.CheckPlayerDist,
                     ProgressID = 30,
-                    Position = new Vector3(2,0,6), // needs specific location
+                    InitPosition = new Vector3(2,0,6), // needs specific location
                     InputNum = -64, // distance before it gets true - Negative makes this trigger when player outside
                     VaribleType = EVaribleType.True,
                     SetMissionVarIndex1 = 3, //ooop
@@ -552,7 +460,7 @@ namespace Sub_Missions
                 {
                     StepType = SMStepType.SetupMM,
                     ProgressID = 0,
-                    Position = Vector3.up * 2f,//Vector3.forward * 6,
+                    InitPosition = Vector3.up * 2f,//Vector3.forward * 6,
                     Forwards = Vector3.one * 2f,     // Changes the scale
                     InputString = "ModularBrickCube_(636)",
                 },
@@ -560,7 +468,7 @@ namespace Sub_Missions
                 {
                     StepType = SMStepType.SetupMM,
                     ProgressID = 0,
-                    Position = -Vector3.forward * 9,//Vector3.forward * 6,
+                    InitPosition = -Vector3.forward * 9,//Vector3.forward * 6,
                     Forwards = Vector3.one * 1.9f,     // Changes the scale
                     EulerAngles = Quaternion.LookRotation(new Vector3(0,0.5f,1).normalized).eulerAngles, // Changes the rotation
                     InputString = "ModularBrickCube_(636)",
@@ -587,7 +495,7 @@ namespace Sub_Missions
                 {
                     StepType = SMStepType.SetupWaypoint,
                     ProgressID = SubMission.alwaysRunValue,// update For all time. Always.
-                    Position = new Vector3(2,0,6),
+                    InitPosition = new Vector3(2,0,6),
                     VaribleType = EVaribleType.None,
                     InputString = "TestTarget"
                 },
@@ -805,6 +713,84 @@ namespace Sub_Missions
             Destroy(GOInst);
             return SMWO;
         }
+        public static void MakePrefabMissionTreeToFile(string TreeName)
+        {
+            Debug_SMissions.Log("SubMissions: Setting up template reference...");
+
+            SubMission mission1 = MakePrefabMission1();
+            SubMission mission2 = MakePrefabMission2();
+            SubMission mission3 = MakePrefabMission3();
+            SubMission mission4 = MakePrefabMission4();
+
+            SMWorldObjectJSON SMWO = MakePrefabWorldObject();
+
+            SubMissionTree tree = new SubMissionTree();
+            tree.TreeName = "Template";
+            tree.Faction = "GSO";
+            tree.ModID = "Mod Missions";
+            tree.MissionNames.Add("NPC Mission");
+            tree.MissionNames.Add("Harvest Mission");
+            tree.MissionNames.Add("Water Blocks Aid");
+            tree.RepeatMissionNames.Add("Combat Mission");
+            tree.WorldObjectFileNames.Add("ModularBrickCube_(636)");
+
+            string RawTreeJSON = JsonConvert.SerializeObject(tree, Formatting.Indented, JSONSaver);
+            ValidateDirectory(MissionsDirectory);
+            ValidateDirectory(Path.Combine(MissionsDirectory, TreeName));
+            ValidateDirectory(Path.Combine(MissionsDirectory, TreeName, "Raw Techs"));
+            ValidateDirectory(Path.Combine(MissionsDirectory, TreeName,"Missions"));
+            ValidateDirectory(Path.Combine(MissionsDirectory, TreeName, "Pieces"));
+            string one = JsonConvert.SerializeObject(mission1, Formatting.Indented, JSONSaverMission);
+            string two = JsonConvert.SerializeObject(mission2, Formatting.Indented, JSONSaverMission);
+            string three = JsonConvert.SerializeObject(mission3, Formatting.Indented, JSONSaverMission);
+            string four = "{\n\"Name\": \"Garrett Gruntle\",\n\"IsAnchored\": true,\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSO_Chassis_Cab_314\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOGyroAllAxisActive_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOAIGuardController_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":3}|{\\\"t\\\":\\\"GSO_Character_A_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":1}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":22}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":3.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_211\\\",\\\"p\\\":{\\\"x\\\":-2.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":12}|{\\\"t\\\":\\\"GSOBattery_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOTractorMini_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":16}|{\\\"t\\\":\\\"GSOMortarFixed_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":1.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":21}|{\\\"t\\\":\\\"GSOBlockLongHalf_211\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":3.0,\\\"z\\\":-1.0},\\\"r\\\":23}|{\\\"t\\\":\\\"VENBracketStraight_211\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":5.0,\\\"z\\\":-1.0},\\\"r\\\":8}|{\\\"t\\\":\\\"GSORadar_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":6.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightSpot_111\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOLightFixed_111\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":4.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":18}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOBooster_112\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":20}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOWheelHub_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":2.0},\\\"r\\\":4}|{\\\"t\\\":\\\"GSOArmourPlateCab_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":-2.0},\\\"r\\\":6}|{\\\"t\\\":\\\"GSOBlockHalf_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":1.0},\\\"r\\\":11}|{\\\"t\\\":\\\"GSOFuelTank_121\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":-1.0},\\\"r\\\":6}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false,\n\"Cost\": 42828\n}";
+            string five = "{\n\"Name\": \"TestTarget\",\n\"IsAnchored\": true,\n\"Blueprint\": \"{\\\"t\\\":\\\"GSOAnchorRotating_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":0.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOBlock_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOCockpit_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":2.0,\\\"z\\\":0.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":17}|{\\\"t\\\":\\\"GSOPlough_311\\\",\\\"p\\\":{\\\"x\\\":-1.0,\\\"y\\\":1.0,\\\"z\\\":0.0},\\\"r\\\":19}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":1.0},\\\"r\\\":0}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":1.0,\\\"z\\\":-1.0},\\\"r\\\":2}|{\\\"t\\\":\\\"GSOArmourPlateSmall_111\\\",\\\"p\\\":{\\\"x\\\":0.0,\\\"y\\\":3.0,\\\"z\\\":0.0},\\\"r\\\":11}\",\n\"InfBlocks\": false,\n\"Faction\": 1,\n\"NonAggressive\": false\n}";
+            string six = JsonConvert.SerializeObject(mission4, Formatting.Indented, JSONSaverMission);
+            string seven = JsonConvert.SerializeObject(SMWO, Formatting.Indented, JSONSafe);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, TreeName, "Missions", "NPC Mission"), one);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, TreeName, "Missions", "Combat Mission"), two);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, TreeName, "Missions", "Harvest Mission"), three);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, TreeName, "Raw Techs", "Garrett Gruntle"), four);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, TreeName, "Raw Techs", "TestTarget"), five);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, TreeName, "Missions", "Water Blocks Kit"), six);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, TreeName, "Pieces", "ModularBrickCube_(636)"), seven);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, "SubMissionHelp"), SubMission.GetDocumentation());
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, "SubMissionsSteps"), SubMissionStep.GetALLStepDocumentations());
+            TryCopyFile(Path.Combine(DLLDirectory, "Garrett Gruntle.png"), Path.Combine(MissionsDirectory, TreeName, "Garrett Gruntle.png"));
+            TryCopyFile(Path.Combine(DLLDirectory, "ModularBrickCube_6x3x6.obj"), Path.Combine(MissionsDirectory, TreeName, "ModularBrickCube_6x3x6.obj"));
+            try
+            {
+                File.WriteAllText(Path.Combine(MissionsDirectory, TreeName, "MissionTree.json"), RawTreeJSON);
+                Debug_SMissions.Log("SubMissions: Saved MissionTree.json for " + TreeName + " successfully.");
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + TreeName +
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+            }
+            catch (PathTooLongException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + TreeName +
+                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                    " for the OS to navigate correctly", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + TreeName +
+                    "\n - File MissionTree.json is not at destination", e);
+                //Debug_SMissions.Log(e);
+            }
+            catch (IOException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + TreeName +
+                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
+            }
+            Debug_SMissions.Log("SubMissions: Setup template reference successfully.");
+        }
 
 
         // Majors
@@ -818,44 +804,85 @@ namespace Sub_Missions
             {
                 if (GetName(directed, out string name, true))
                 {
-                    if (TreeLoader(name, directed, out SubMissionTree Tree))
+                    try
                     {
+                        TreeLoader(new SubMissionHierachyDirectory(name, directed), out SubMissionTree Tree);
                         Debug_SMissions.Log("SubMissions: Added Tree " + name);
                         temps.Add(Tree);
                     }
-                    else
-                        SMUtil.Assert(false, "Could not load mission tree " + name);
+                    catch (MandatoryException e)
+                    {
+                        throw e;
+                    }
+                    catch (Exception e)
+                    {
+                        SMUtil.Assert(false, "Mission Tree ~ " + name, "Could not load mission tree " + name, e);
+                    }
                 }
 
             }
+            // LOAD OFFICIAL
+            foreach (var item in ResourcesHelper.IterateAllMods())
+            {
+                foreach (var item2 in ResourcesHelper.IterateObjectsFromModContainer<TextAsset>(item.Value))
+                {
+                    if (item2 != null && item2.name.Contains("_Hierarchy"))
+                    {
+                        try
+                        {
+                            var bundleDir = SubMissionHierachyAssetBundle.MakeInstance(item.Value, item2.text);
+                            TreeLoader(bundleDir, out SubMissionTree Tree);
+                            Debug_SMissions.Log("SubMissions: Added Bundled Tree " + bundleDir.TreeName);
+                            temps.Add(Tree);
+                        }
+                        catch (MandatoryException e)
+                        {
+                            throw e;
+                        }
+                        catch (Exception e)
+                        {
+                            SMUtil.Assert(false, "Mission Tree ~ UNKNOWN", "Could not load Bundled mission tree for " + item.Key, e);
+                        }
+                    }
+                }
+            }
+            //
             ValidateDirectory(MissionsDirectory);
             Debug_SMissions.Log("SubMissions: Searching Custom SMissions Folder...");
             List<string> namesUnofficial = GetCleanedNamesInDirectory();
             Debug_SMissions.Log("SubMissions: Found " + namesUnofficial.Count + " trees...");
             foreach (string name in namesUnofficial)
             {
-                if (TreeLoader(name, MissionsDirectory + up + name, out SubMissionTree Tree))
+                try
                 {
+                    TreeLoader(new SubMissionHierachyDirectory(name, Path.Combine(MissionsDirectory, name)), out SubMissionTree Tree);
                     Debug_SMissions.Log("SubMissions: Added Tree " + name);
                     temps.Add(Tree);
                 }
-                else
-                    SMUtil.Assert(false, "Could not load mission tree " + name);
-
+                catch (MandatoryException e)
+                {
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    SMUtil.Assert(false, "Mission Tree ~ " + name, "Could not load mission tree " + name, e);
+                }
             }
             return temps;
         }
+
         public static List<SubMission> LoadAllMissions(SubMissionTree tree)
         {
             ValidateDirectory(MissionsDirectory);
-            List<string> names = GetCleanedNamesInDirectory(tree.TreeName + up + "Missions", true);
+            List<string> names = GetCleanedNamesInDirectory(Path.Combine(tree.TreeName, "Missions"), true);
             List<SubMission> temps = new List<SubMission>();
             foreach (string name in names)
             {
                 var mission = MissionLoader(tree, name);
                 if (mission == null)
                 {
-                    SMUtil.Assert(false, "<b> CRITICAL ERROR IN HANDLING MISSION " + name + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
+                    SMUtil.Error(false, "Mission(Load) ~ " + name, "<b> CRITICAL ERROR IN HANDLING MISSION " + 
+                        name + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
                     continue;
                 }
                 temps.Add(mission);
@@ -866,10 +893,11 @@ namespace Sub_Missions
 
 
         // Utilities
-        public static bool TryGetCorpInfoDirectory(string factionShort,  out string directoryEnd)
+        public static bool TryGetCorpInfoData(string factionShort,  out string results)
         {
             string location = new DirectoryInfo(Assembly.GetExecutingAssembly().Location).Parent.Parent.ToString();
             // Goes to the cluster directory where all the mods are
+            string fileName = factionShort + "_MissionCorp.json";
 
             int attempts = 0;
             foreach (string directoryLoc in Directory.GetDirectories(location))
@@ -879,12 +907,11 @@ namespace Sub_Missions
                     try
                     {
                         string GO;
-                        string fileName = factionShort + "_MissionCorp.json";
                         GO = directoryLoc + "\\" + fileName;
                         if (File.Exists(GO))
                         {
                             attempts++;
-                            directoryEnd = fileName;
+                            results = File.ReadAllText(GO);
                             return true;
                         }
                         else
@@ -898,7 +925,22 @@ namespace Sub_Missions
                 }
                 attempts = 0;
             }
-            directoryEnd = null;
+
+            string dataName = factionShort + "_MissionCorp";
+            foreach (var contained in ResourcesHelper.IterateAllMods())
+            {
+                if (contained.Value == null)
+                    continue;
+                foreach (var item in ResourcesHelper.IterateObjectsFromModContainer<TextAsset>(contained.Value))
+                {
+                    if (item.name.Contains(dataName))
+                    {
+                        results = item.text;
+                        return true;
+                    }
+                }
+            }
+            results = null;
             return false;
         }
         public static List<string> GetTreeDirectoriesOfficial()
@@ -948,12 +990,12 @@ namespace Sub_Missions
             if (directoryFromMissionsDirectory == "")
                 search = MissionsDirectory;
             else
-                search = MissionsDirectory + up + directoryFromMissionsDirectory;
-            List<string> toClean;
+                search = Path.Combine(MissionsDirectory, directoryFromMissionsDirectory);
+            IEnumerable<string> toClean;
             if (doJSON)
-                toClean = Directory.GetFiles(search).ToList();
+                toClean = Directory.GetFiles(search);
             else
-                toClean = Directory.GetDirectories(search).ToList();
+                toClean = Directory.GetDirectories(search);
             //Debug_SMissions.Log("SubMissions: Cleaning " + toClean.Count);
             List<string> Cleaned = new List<string>();
             foreach (string cleaning in toClean)
@@ -970,7 +1012,7 @@ namespace Sub_Missions
             StringBuilder final = new StringBuilder();
             foreach (char ch in FolderDirectory)
             {
-                if (ch == up)
+                if (ch == Path.DirectorySeparatorChar || ch == Path.AltDirectorySeparatorChar)
                 {
                     final.Clear();
                 }
@@ -1006,10 +1048,31 @@ namespace Sub_Missions
                     Directory.CreateDirectory(DirectoryIn);
                     Debug_SMissions.Log("SubMissions: Made new " + name + " folder successfully.");
                 }
-                catch
+                catch (UnauthorizedAccessException e)
                 {
-                    SMUtil.Assert(false, "SubMissions: Could not create new " + name + " folder.  \n   This could be due to a bug with this mod or file permissions.");
-                    return;
+                    SMUtil.Assert(false, "IO Sanity Check", "SubMissions: Could not create new " + name + " folder" +
+                        "\n - TerraTech + SubMissions was not permitted to access Folder \"" + name + "\"", e);
+                }
+                catch (PathTooLongException e)
+                {
+                    SMUtil.Assert(false, "IO Sanity Check", "SubMissions: Could not create new " + name + " folder" +
+                        "\n - Folder \"" + name + "\" is located in a directory that makes it too deep and long" +
+                        " for the OS to navigate correctly", e);
+                }
+                catch (DirectoryNotFoundException e)
+                {
+                    SMUtil.Assert(false, "IO Sanity Check", "SubMissions: Could not create new " + name + " folder" +
+                        "\n - Path to place Folder \"" + name + "\" is incomplete (there are missing folders in" +
+                        " the target folder hierachy)", e);
+                }
+                catch (IOException e)
+                {
+                    SMUtil.Assert(false, "IO Sanity Check", "SubMissions: Could not create new " + name + " folder" +
+                        "\n - Folder \"" + name + "\" is not accessable because IOException(?) was thrown!", e);
+                }
+                catch (Exception e)
+                {
+                    throw new MandatoryException("Encountered exception not properly handled", e);
                 }
             }
         }
@@ -1022,10 +1085,31 @@ namespace Sub_Missions
                 File.WriteAllText(FileDirectory + ".json", ToOverwrite);
                 Debug_SMissions.Log("SubMissions: Saved " + name + ".json successfully.");
             }
-            catch
+            catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not edit " + name + ".json.  \n   This could be due to a bug with this mod or file permissions.");
-                return;
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not edit " + name + ".json" +
+                    "\n - TerraTech + SubMissions was not permitted to access the " + name + ".json destination", e);
+            }
+            catch (PathTooLongException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not edit " + name + ".json" +
+                    "\n - File " + name + ".json is located in a directory that makes it too deep and long" +
+                    " for the OS to navigate correctly", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not edit " + name + ".json" +
+                    "\n - File " + name + ".json is not at destination", e);
+                //Debug_SMissions.Log(e);
+            }
+            catch (IOException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not edit " + name + ".json" +
+                    "\n - File " + name + ".json is not accessable because IOException(?) was thrown!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
             }
         }
         public static void TryWriteToTextFile(string FileDirectory, string ToOverwrite)
@@ -1037,10 +1121,31 @@ namespace Sub_Missions
                 File.WriteAllText(FileDirectory + ".txt", ToOverwrite);
                 Debug_SMissions.Log("SubMissions: Saved " + name + ".txt successfully.");
             }
-            catch
+            catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not edit " + name + ".json.  \n   This could be due to a bug with this mod or file permissions.");
-                return;
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not write to " + name + ".txt" +
+                    "\n - TerraTech + SubMissions was not permitted to access the target file", e);
+            }
+            catch (PathTooLongException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not write to " + name + ".txt" +
+                    "\n - File " + name + ".txt is located in a directory that makes it too deep and long" +
+                    " for the OS to navigate correctly", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not write to " + name + ".txt" +
+                    "\n -  File " + name + ".txt is not at destination", e);
+                //Debug_SMissions.Log(e);
+            }
+            catch (IOException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not write to " + name + ".txt" +
+                    "\n -  File " + name + ".txt is not accessable because IOException(?) was thrown!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
             }
         }
         private static void TryCopyFile(string FileDirectory, string FileDirectoryEnd)
@@ -1052,85 +1157,78 @@ namespace Sub_Missions
                 File.Copy(FileDirectory, FileDirectoryEnd);
                 Debug_SMissions.Log("SubMissions: Copied " + name + " successfully.");
             }
-            catch //(Exception e)
+            catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not copy " + name + ".  \n   The file is already there or it could be due to a bug with this mod or file permissions.");
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not copy " + name +
+                    "\n   TerraTech + SubMissions was not permitted to access the target file", e);
+            }
+            catch (PathTooLongException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not copy " + name +
+                    "\n - Target file is too deep and long for the OS to navigate correctly", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not copy " + name +
+                    "\n - Target file is not at destination", e);
                 //Debug_SMissions.Log(e);
-                return;
+            }
+            catch (IOException e)
+            {
+                SMUtil.Assert(false, "Saving", "SubMissions: Could not copy " + name +
+                    "\n - Target file is not accessable because IOException(?) was thrown!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
             }
         }
 
 
-        // JSON Handlers
-        public static bool TreeLoader(string TreeName, string TreeDirectory, out SubMissionTree Tree)
+        // -------------------------------- JSON Handlers --------------------------------
+        public static void TreeLoader(SubMissionHierachy SMH, out SubMissionTree Tree)
         {
             try
             {
-                string output = LoadMissionTreeFromFile(TreeName, TreeDirectory, out Dictionary<int, Texture> album, out Dictionary<int, Mesh> models);
+                string output = SMH.LoadMissionTreeTrunkFromFile();
                 Tree = JsonConvert.DeserializeObject<SubMissionTree>(output, new MissionTypeEnumConverter());
-                Tree.MissionTextures = album;
-                Tree.MissionMeshes = models;
-                Tree.TreeDirectory = TreeDirectory;
-                return true;
+                Tree.TreeHierachy = SMH;
+                SMH.LoadMissionTreeDataFromFile(ref Tree.MissionTextures,
+                    ref Tree.MissionMeshes, ref Tree.TreeTechs);
             }
-            catch
+            catch (DirectoryNotFoundException e)
             {
-                SMUtil.Assert(false, "SubMissions: Check your Tree file names, cases where you referenced the names and make sure they match!!!");
-                Tree = null;
-                return false;
+                throw new DirectoryNotFoundException("SubMissions: Check your Tree file names, " +
+                    "cases where you referenced the names and make sure they match!!!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
             }
         }
         public static SubMission MissionLoader(SubMissionTree tree, string MissionName)
         {
             try
             {
-                string output = LoadMissionTreeMissionFromFile(tree, MissionName);
+                string output = tree.TreeHierachy.LoadMissionTreeMissionFromFile(MissionName);
                 SubMission mission = JsonConvert.DeserializeObject<SubMission>(output, JSONSaverMission);
                 mission.Tree = tree;
                 return mission;
             }
-            catch
+            catch (DirectoryNotFoundException e)
             {
-                SMUtil.Assert(false, "SubMissions: Check your Mission file names, cases where you referenced the names and make sure they match!!!  Tree: " + tree.TreeName + ", Mission: " + MissionName);
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, "SubMissions: Check your Mission file names, cases where you referenced " +
+                    "the names and make sure they match!!!  Tree: " +
+                    tree.TreeName + ", Mission: " + MissionName, e);
                 return null;
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
             }
         }
         // Tech loading is handled elsewhere - either PopulationInjector or TACtical_AIs.
 
-
-        // WorldObjects
-        public static void BuildAllWorldObjects(List<SubMissionTree> SMTs)
-        {
-            try
-            {
-                ManModularMonuments.WorldObjects.Clear();
-                Dictionary<int, GameObject> iGO = ManModularMonuments.WorldObjects;
-                bool foundAny = false;
-                foreach (SubMissionTree tree in SMTs)
-                {
-                    List<string> outputs = tree.WorldObjectFileNames;
-                    foreach (string str in outputs)
-                    {
-                        if (BuildWorldObject(tree, str, out int hash, out GameObject GO))
-                        {
-                            iGO.Add(hash, GO);
-                            foundAny = true;
-                        }
-                    }
-                }
-                if (foundAny)
-                {
-                    Debug_SMissions.Log("SubMissions: BuildAllWorldObjects - Loaded " + iGO.Count + " WorldObj.json files from all trees successfully.");
-                }
-                else
-                    Debug_SMissions.Log("SubMissions: BuildAllWorldObjects - There were no WorldObj.json files to load.");
-                ManModularMonuments.WorldObjects = iGO;
-            }
-            catch
-            {
-                SMUtil.Assert(false, "SubMissions: BuildAllWorldObjects - CRITICAL ERROR NOTIFY LEGIONITE");
-            }
-        }
         /// <summary>
         /// Returns true if it should be added to the list
         /// </summary>
@@ -1139,361 +1237,129 @@ namespace Sub_Missions
         /// <param name="hash"></param>
         /// <param name="GO"></param>
         /// <returns></returns>
-        private static bool BuildWorldObject(SubMissionTree SMT, string name, out int hash, out GameObject GO)
-        {
-            try
-            {
-                hash = name.GetHashCode();
-                if (ManModularMonuments.WorldObjects.TryGetValue(hash, out GameObject GO2))
-                {
-                    GO = GO2;
-                    return false;
-                }
-                else
-                    GO = BuildNewWorldObjectPrefab(SMT, name);
-                return true;
-            }
-            catch
-            {
-                hash = 0;
-                GO = null;
-                SMUtil.Assert(false, "SubMissions: BuildWorldObject - Could not build for " + name + " of tree " + SMT.TreeName + "!");
-            }
-            return false;
-        }
-
-        public static GameObject BuildNewWorldObjectPrefab(SubMissionTree SMT, string ObjectName)
-        {
-            try
-            {
-                string output = LoadMissionTreeWorldObjectFromFile(SMT, ObjectName);
-                GameObject gameObj = Instantiate(new GameObject("Unset"), null);
-                SMWorldObject worldObj = gameObj.AddComponent<SMWorldObject>();
-                worldObj.SetFromJSON(JsonConvert.DeserializeObject<SMWorldObjectJSON>(output));
-                gameObj.name = worldObj.Name;
-                var mod = ManMods.inst.FindMod(SMT.ModID);
-                WorldObjInfo WOI = new WorldObjInfo
-                {
-                    MC = mod,
-                    SMT = SMT,
-                    worldObj = worldObj,
-                };
-                AssignMaterialBase(ref WOI);
-                AssignMeshBase(ref WOI);
-                AssignColliderBase(ref WOI);
-                Damageable dmg = gameObj.AddComponent<Damageable>();
-                dmg.SetInvulnerable(true, true);
-                if (worldObj.WorldObjectJSON != null)
-                {
-                    RecursiveGameObjectBuilder(ref WOI, gameObj, worldObj.WorldObjectJSON);
-                }
-                int layerSet = Globals.inst.layerTerrain;
-                if (worldObj.aboveGround) 
-                    layerSet = Globals.inst.layerLandmark;  // no longer accepts anchors but does not mess with anchors.
-                foreach (Collider Col in gameObj.GetComponentsInChildren<Collider>())
-                {
-                    Col.gameObject.layer = layerSet;
-                    switch (worldObj.TerrainType)
-                    {
-                        case SMWOTerrain.Rubber:
-                            Col.sharedMaterial = PMR;
-                            break;
-                        case SMWOTerrain.Ice:
-                            Col.sharedMaterial = PMI;
-                            break;
-                        case SMWOTerrain.Frictionless:
-                            Col.sharedMaterial = PMN;
-                            break;
-                        default:
-                            Col.sharedMaterial = PM;
-                            break;
-                    }
-                }
-                gameObj.transform.position = Vector3.down * 50;
-                gameObj.SetActive(false);
-                return gameObj;
-            }
-            catch (Exception e)
-            {
-                SMUtil.Assert(false, "SubMissions: BuildNewWorldObject - Check your WorldObject.json for errors!  Tree: " + SMT.TreeName + "\n" + e);
-                return null;
-            }
-        }
-
-        private static void AssignMaterialBase(ref WorldObjInfo info)
-        {
-            var MRender = info.baseGO.AddComponent<MeshRenderer>();
-            MRender.sharedMaterial = GetMaterial(info, info.worldObj.GameMaterialName, info.worldObj.TextureName);
-            info.baseMat = MRender.sharedMaterial;
-        }
-        private static void AssignMeshBase(ref WorldObjInfo info)
-        {
-            var MFilter = info.baseGO.AddComponent<MeshFilter>();
-            if (info.worldObj.VisualMeshName != null)
-            {
-                MFilter.sharedMesh = GetMesh(info, info.worldObj.VisualMeshName);
-            }
-            else
-            {
-                SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + info.worldObj.Name + " for a mesh!  " +
-                    "It MUST have a valid VisualMeshName (with .obj included) provided in it's base SubMission folder or " +
-                            "a valid in-game mesh to use!  Tree: " + info.SMT.TreeName);
-                //info.worldObj.Remove(true);
-            }
-            info.baseMesh = MFilter.sharedMesh;
-        }
-        private static void AssignColliderBase(ref WorldObjInfo info)
-        {
-            if (info.worldObj.ColliderMeshName != null)
-            {
-                var meshCol = info.baseGO.AddComponent<MeshCollider>();
-                meshCol.sharedMesh = GetMesh(info, info.worldObj.ColliderMeshName);
-            }
-            else
-            {
-                var boxCol = info.baseGO.AddComponent<BoxCollider>();
-                boxCol.size = info.baseMesh.bounds.size;
-                boxCol.center = info.baseMesh.bounds.center;
-                //SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + worldObj.Name + " for a mesh!  It MUST have a valid ColliderMeshName (with .obj included) provided in it's base SubMission folder!  Tree: " + SMT.TreeName);
-                //return null;
-            }
-        }
-
-        private static int depth = 0;
-        private const int MaxDepth = 10;
-        private static void RecursiveGameObjectBuilder(ref WorldObjInfo info, GameObject parent, Dictionary<string, object> WorldObject)
-        {
-            depth++;
-            try
-            {
-                foreach (KeyValuePair<string, object> entry in WorldObject)
-                {
-                    try
-                    {
-                        if (entry.Key.Where(delegate (char cCase) { return cCase != ' '; }).ToString().StartsWith("GameObject|"))
-                        {
-                            if (depth > MaxDepth)
-                            {
-                                SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " + 
-                                    info.SMT.TreeName + "\n You have exceeded the maximum safe GameObject depth of " + MaxDepth + "!");
-                                continue;
-                            }
-                            GameObject nextLevel = Instantiate(new GameObject(entry.Key.Skip(11).ToString()), parent.transform);
-
-                            RecursiveGameObjectBuilder(ref info, nextLevel, (Dictionary<string, object>)entry.Value);
-                        }
-                        else
-                        {
-                            try
-                            {
-                                Type type = KickStart.LookForType(entry.Key);
-                                if (type == null)
-                                    continue;
-                                if (!type.IsClass)
-                                    continue;
-                                var comp = parent.GetComponent(type);
-                                if (!comp)
-                                    comp = parent.AddComponent(type);
-
-                                foreach (KeyValuePair<string, object> pair in (Dictionary<string, object>)entry.Value)
-                                {
-                                    PropertyInfo PI = type.GetProperty(pair.Key, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-                                    if (PI != null)
-                                    {
-                                        Construct(ref info, comp, PI, pair.Value);
-                                    }
-                                    else
-                                        SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + 
-                                            " WorldObjectJSON Tree: " + info.SMT.TreeName + "\n No such variable exists: " + 
-                                            (pair.Key.NullOrEmpty() ? pair.Key : "ENTRY IS NULL OR EMPTY"));
-                                }
-                            }
-                            catch
-                            {   // report missing component 
-                                SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " + 
-                                    info.SMT.TreeName + "\n No such type exists: " + (entry.Key.NullOrEmpty() ? entry.Key : 
-                                    "ENTRY IS NULL OR EMPTY"));
-                            }
-                        }
-                    }
-                    catch (Exception e)
-                    {
-                        SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
-                            info.SMT.TreeName + "\n" + e);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                SMUtil.Assert(false, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " + 
-                    info.SMT.TreeName + "\n GameObject case: " + e);
-            }
-            depth--;
-        }
-        private static void Construct(ref WorldObjInfo info, Component comp, PropertyInfo PI, object obj)
-        {
-            if (PI.PropertyType == typeof(Mesh))
-            {
-                PI.SetValue(comp, GetMesh(info, obj.ToString()));
-            }
-            else if (PI.PropertyType == typeof(Material))
-            {
-                PI.SetValue(comp, info.baseMat);
-            }
-            else
-                PI.SetValue(comp, obj);
-        }
-        private static Material GetMaterial(WorldObjInfo info, string GameMaterialName, string nameWithExt)
-        {
-            Material Mat = null;
-            if (GameMaterialName != null)
-            {
-                Material[] mats = Resources.FindObjectsOfTypeAll<Material>();
-                mats = mats.Where(cases => cases.name == GameMaterialName).ToArray();
-                if (mats != null && mats.Count() > 0)
-                    Mat = mats.First();
-                if (!Mat)
-                {
-                    SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + info.baseGO.name + 
-                        "'s GameMaterialName is not a valid material!  Tree: " + info.SMT.TreeName);
-                    Mat = (Material)Resources.Load("GSO_Scenery");
-                }
-            }
-            else
-                Mat = (Material)Resources.Load("GSO_Scenery");
-            Texture tex;
-            if (info.MC != null && nameWithExt != null)
-            {
-                tex = ResourcesHelper.GetTextureFromModAssetBundle(info.MC, nameWithExt.Replace(".png", ""), false);
-                if (tex != null)
-                {
-                    Material newMat = new Material(Mat);
-                    newMat.mainTexture = tex;
-                    return newMat;
-                }
-            }
-            if (nameWithExt != null && info.SMT.MissionTextures.TryGetValue(nameWithExt.GetHashCode(), out tex))
-            {
-                Material newMat = new Material(Mat);
-                newMat.mainTexture = tex;
-                return newMat;
-            }
-            else
-            {
-                return Mat;
-            }
-        }
-        private static Mesh GetMesh(WorldObjInfo info, string nameWithExt)
-        {
-            //Debug_SMissions.Log("1");
-            if (nameWithExt != null)
-            {
-                //Debug_SMissions.Log("2");
-                if (info.MC != null)
-                {
-                    //Debug_SMissions.Log("3");
-                    var mesh = ResourcesHelper.GetMeshFromModAssetBundle(info.MC, nameWithExt.Replace(".obj", ""), false);
-                    if (mesh != null)
-                        return mesh;
-                }
-                //Debug_SMissions.Log("4");
-                if (info.SMT.MissionMeshes.TryGetValue(nameWithExt.GetHashCode(), out Mesh obj))
-                    return obj;
-                else
-                {
-                    //Debug_SMissions.Log("5");
-                    var mes = Resources.FindObjectsOfTypeAll<Mesh>().First(x => !x.name.NullOrEmpty() && nameWithExt.CompareTo(x.name) == 0);
-                    if (mes != null)
-                        return mes;
-                }
-            }
-            //Debug_SMissions.Log("6");
-            SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + info.baseGO.name + " for the mesh!  " +
-                "It MUST have a valid VisualMeshName (with .obj included) provided in it's base SubMission folder or " +
-                "a valid in-game mesh to use!  Tree: " + info.SMT.TreeName);
-            return null;
-        }
 
         private static Dictionary<string, object> MakeCompat<T>(T convert)
         {
-            List<PropertyInfo> PI = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance).ToList();
+            IEnumerable<PropertyInfo> PI = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
             Debug_SMissions.Log("SubMissions: MakeCompat - Compiling " + typeof(T) + " which has " + PI.Count() + " properties");
             Dictionary<string, object> converted = new Dictionary<string, object>();
             foreach (PropertyInfo PIC in PI)
             {
                 //if (FI.IsPublic)
-                    converted.Add(PIC.Name, PIC.GetValue(convert));
+                converted.Add(PIC.Name, PIC.GetValue(convert));
             }
             return converted;
         }
 
+        /*
+        public static void TreeLoaderLEGACY(string TreeName, string TreeDirectory, out SubMissionTree Tree)
+        {
+            try
+            {
+                string output = LoadMissionTreeTrunkFromFile(TreeName, TreeDirectory);
+                Tree = JsonConvert.DeserializeObject<SubMissionTree>(output, new MissionTypeEnumConverter());
+                //Tree.TreeHierachy = TreeDirectory;
+                LoadMissionTreeDataFromFile(TreeName, TreeDirectory, ref Tree.MissionTextures,
+                    ref Tree.MissionMeshes, ref Tree.TreeTechs);
+            }
+            catch (DirectoryNotFoundException e)
+            {
+                throw new DirectoryNotFoundException("SubMissions: Check your Tree file names, " +
+                    "cases where you referenced the names and make sure they match!!!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
+            }
+        }
 
 
         // Loaders
-        private static string LoadMissionTreeFromFile(string TreeName, string TreeDirectory, out Dictionary<int, Texture> album, out Dictionary<int, Mesh> models)
+        private static string LoadMissionTreeTrunkFromFile(string TreeName, string TreeDirectory)
         {
-            album = new Dictionary<int, Texture>();
-            models = new Dictionary<int, Mesh>();
             ValidateDirectory(TreeDirectory);
             try
             {
-                string output = File.ReadAllText(TreeDirectory + up + "MissionTree.json");
-#if !STEAM
-                album = LoadTreePNGs(TreeName, TreeDirectory);
-                models = LoadTreeMeshes(TreeName, TreeDirectory);
-#else
-                Debug_SMissions.Log("SubMissions: Skipped loading in PNGS and Meshes from file for OFFICIAL.");
-#endif
+                string output = File.ReadAllText(Path.Combine(TreeDirectory, "MissionTree.json"));
+
+                Debug_SMissions.Log("SubMissions: Loaded MissionTree.json trunk for " + TreeName + " successfully.");
+                return output;
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+            }
+            catch (PathTooLongException e)
+            {
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                    " for the OS to navigate correctly", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - File MissionTree.json is not at destination", e);
+                //Debug_SMissions.Log(e);
+            }
+            catch (IOException e)
+            {
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
+            }
+            return null;
+        }
+        private static void LoadMissionTreeDataFromFile(string TreeName, string TreeDirectory,
+            ref Dictionary<int, Texture> album, ref Dictionary<int, Mesh> models,
+            ref Dictionary<string, SpawnableTech> techs)
+        {
+            ValidateDirectory(TreeDirectory);
+            try
+            {
+                LoadTreePNGs(TreeName, TreeDirectory, ref album);
+                LoadTreeMeshes(TreeName, TreeDirectory, ref models);
+                LoadTreeTechs(TreeName, TreeDirectory, ref techs);
+
                 Debug_SMissions.Log("SubMissions: Loaded MissionTree.json for " + TreeName + " successfully.");
-                return output;
             }
-            catch
+            catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not read MissionTree.json for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
-                return null;
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+            }
+            catch (PathTooLongException e)
+            {
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                    " for the OS to navigate correctly", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - File MissionTree.json is not at destination", e);
+                //Debug_SMissions.Log(e);
+            }
+            catch (IOException e)
+            {
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
             }
         }
-        private static string LoadMissionTreeMissionFromFile(SubMissionTree tree, string MissionName)
-        {
-            string destination = tree.TreeDirectory + up + "Missions";
-
-            ValidateDirectory(destination);
-            try
-            {
-                string output = File.ReadAllText(destination + up + MissionName + ".json");
-                Debug_SMissions.Log("SubMissions: Loaded Mission.json for " + MissionName + " successfully.");
-                return output;
-            }
-            catch
-            {
-                SMUtil.Assert(false, "SubMissions: Could not read Mission.json for " + MissionName + ".  \n   This could be due to a bug with this mod or file permissions.");
-                return null;
-            }
-        }
-        private static string LoadMissionTreeWorldObjectFromFile(SubMissionTree tree, string ObjectName)
-        {
-            string destination = tree.TreeDirectory + up + "Pieces";
-
-            ValidateDirectory(destination);
-            try
-            {
-                string output = File.ReadAllText(destination + up + ObjectName + ".json");
-                Debug_SMissions.Log("SubMissions: Loaded WorldObject.json for " + ObjectName + " successfully.");
-                return output;
-            }
-            catch
-            {
-                SMUtil.Assert(false, "SubMissions: Could not read WorldObject.json for " + ObjectName + ".  \n   This could be due to a bug with this mod or file permissions.");
-                return null;
-            }
-        }
-
-
+       
 
         // ETC
-        private static Dictionary<int, Texture> LoadTreePNGs(string TreeName, string TreeDirectory)
+        private static void LoadTreePNGs(string TreeName, string TreeDirectory, 
+            ref Dictionary<int, Texture> dictionary)
         {
-            Dictionary<int, Texture> dictionary = new Dictionary<int, Texture>();
+            dictionary.Clear();
             try
             {
                 string[] outputs = Directory.GetFiles(TreeDirectory);
@@ -1502,8 +1368,42 @@ namespace Sub_Missions
                 {
                     if (GetName(str, out string name) && str.EndsWith(".png"))
                     {
-                        dictionary.Add(name.GetHashCode(), FileUtils.LoadTexture(str));
-                        foundAny = true;
+                        try
+                        {
+                            dictionary.Add(name.GetHashCode(), FileUtils.LoadTexture(str));
+                            foundAny = true;
+                        }
+                        catch (UnauthorizedAccessException e)
+                        {
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                                "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+                        }
+                        catch (PathTooLongException e)
+                        {
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                                "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                                " for the OS to navigate correctly", e);
+                        }
+                        catch (DirectoryNotFoundException e)
+                        {
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                                "\n - Path to place Folder \"" + name + "\" is incomplete (there are missing folders in" +
+                                " the target folder hierachy)", e);
+                        }
+                        catch (FileNotFoundException e)
+                        {
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                                "\n - File MissionTree.json is not at destination", e);
+                        }
+                        catch (IOException e)
+                        {
+                            SMUtil.Assert(false, "Mission Tree Textures (Loading) ~ " + TreeName, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                                "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+                        }
+                        catch (Exception e)
+                        {
+                            throw new MandatoryException("Encountered exception not properly handled", e);
+                        }
                     }
                 }
                 if (foundAny)
@@ -1512,17 +1412,17 @@ namespace Sub_Missions
                 }
                 else
                     Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any PNG files to load.");
-                return dictionary;
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not load PNG files for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions.");
-                return null;
+                SMUtil.Assert(false, "Mission Tree Textures (Loading) ~ " + TreeName, "SubMissions: CASCADE FAILIURE ~ Could not load PNG files for " + TreeName + 
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
-        private static Dictionary<int, Mesh> LoadTreeMeshes(string TreeName, string TreeDirectory)
+        private static void LoadTreeMeshes(string TreeName, string TreeDirectory, 
+            ref Dictionary<int, Mesh> dictionary)
         {
-            Dictionary<int, Mesh> dictionary = new Dictionary<int, Mesh>();
+            dictionary.Clear();
             try
             {
                 string[] outputs = Directory.GetFiles(TreeDirectory);
@@ -1541,15 +1441,73 @@ namespace Sub_Missions
                 }
                 else
                     Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any .obj files to load.");
-                return dictionary;
+            }
+            catch (NotImplementedException e)
+            {
+                SMUtil.Assert(false, "Mission Tree Meshes (Loading) ~ " + TreeName, "SubMissions: Could not load .obj files for " + TreeName +
+                    ".  \n   You need the mod \"LegacyBlockLoader\" to import non-AssetBundle models.", e);
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not load .obj files for " + TreeName + ".  \n   This could be due to a bug with this mod or file permissions. " + e);
-                return null;
+                SMUtil.Assert(false, "Mission Tree Meshes (Loading) ~ " + TreeName, "SubMissions: Could not load .obj files for " + TreeName + 
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
-        internal static Mesh LoadMesh(string TreeDirectory)
+        private static void LoadTreeTechs(string TreeName, string TreeDirectory, 
+            ref Dictionary<string, SpawnableTech> dictionary)
+        {
+            dictionary.Clear();
+            try
+            {
+                string[] outputs = Directory.GetFiles(TreeDirectory + "Techs");
+                bool foundAny = false;
+                foreach (string str in outputs)
+                {
+                    if (GetName(str, out string name) && str.EndsWith(".png"))
+                    {
+                        if (dictionary.ContainsKey(name))
+                        {
+                            SMUtil.Error(false, "Mission Tree SnapTechs (Loading) ~ " + TreeName + ", tech " + name,
+                                "Tech of name " + name + " already is assigned to the tree.  Cannot add " +
+                                "multiple Techs of same name!");
+                        }
+                        else
+                            dictionary.Add(name, new SpawnableTechSnapshot(name));
+                        foundAny = true;
+                    }
+                }
+                outputs = Directory.GetFiles(TreeDirectory + "Raw Techs");
+                foreach (string str in outputs)
+                {
+                    if (GetName(str, out string name) && (str.EndsWith(".json") || str.EndsWith(".RAWTECH")))
+                    {
+                        if (dictionary.ContainsKey(name))
+                        {
+                            SMUtil.Error(false, "Mission Tree RawTechs (Loading) ~ " + TreeName + ", tech " + name,
+                                "Tech of name " + name + " already is assigned to the tree.  Cannot add " +
+                                "multiple Techs of same name!");
+                        }
+                        else
+                            dictionary.Add(name, new SpawnableTechRAW(name));
+                        foundAny = true;
+                    }
+                }
+                if (foundAny)
+                {
+                    Debug_SMissions.Log("SubMissions: Loaded " + dictionary.Count + " Techs for " + TreeName + " successfully.");
+                }
+                else
+                    Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any Techs to load.");
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(false, "Mission Tree Techs (Loading) ~ " + TreeName, "SubMissions: Could not load Techs for " + TreeName +
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
+            }
+        }
+        */
+
+        internal static Mesh LoadMesh(string MeshDirectory)
         {
 #if !STEAM
             Mesh mesh = ObjImporter.ImportFileFromPath(TreeDirectory);
@@ -1559,18 +1517,104 @@ namespace Sub_Missions
             }
             return mesh;
 #else
-            throw new NotImplementedException("SMissionJSONLoader.LoadMesh is not currently supported in Official.");
+            try
+            {
+                Mesh mesh = LoadMesh_Encapsulated(MeshDirectory);
+                if (!mesh)
+                {
+                    throw new NullReferenceException("The object could not be imported at all");
+                }
+                return mesh;
+            }
+            catch
+            {
+                throw new NotImplementedException("SMissionJSONLoader.LoadMesh requires the mod " +
+                    "\"LegacyBlockLoader\" to load models.");
+            }
+            //throw new NotImplementedException("SMissionJSONLoader.LoadMesh is not currently supported in Official.");
+
 #endif
         }
-
-        private struct WorldObjInfo
+        private static Mesh LoadMesh_Encapsulated(string MeshDirectory)
         {
-            public SubMissionTree SMT;
-            public ModContainer MC;
-            public SMWorldObject worldObj;
-            public GameObject baseGO => worldObj.gameObject;
-            public Material baseMat;
-            public Mesh baseMesh;
+            return LegacyBlockLoader.FastObjImporter.Instance.ImportFileFromPath(MeshDirectory);
+        }
+
+
+
+        // Savers
+        public static void SaveTree(SubMissionTree tree)
+        {
+            string RawTreeJSON = JsonConvert.SerializeObject(tree, Formatting.Indented, JSONSaver);
+            try
+            {
+                if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName)))
+                    Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName));
+                File.WriteAllText(Path.Combine(MissionsDirectory, tree.TreeName, "MissionTree.json"), RawTreeJSON);
+
+                string assetBundleable = JsonConvert.SerializeObject(tree.TreeHierachy.CreateAssetBundleable(), Formatting.Indented, JSONSaver);
+                File.WriteAllText(Path.Combine(MissionsDirectory, tree.TreeName, tree.TreeName+"_Hierarchy.json"), assetBundleable);
+                Debug_SMissions.Log("SubMissions: Saved MissionTree.json for " + tree.TreeName + " successfully.");
+            }
+            catch (UnauthorizedAccessException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + tree.TreeName +
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+            }
+            catch (PathTooLongException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + tree.TreeName +
+                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                    " for the OS to navigate correctly", e);
+            }
+            catch (FileNotFoundException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + tree.TreeName +
+                    "\n - File MissionTree.json is not at destination", e);
+                //Debug_SMissions.Log(e);
+            }
+            catch (IOException e)
+            {
+                SMUtil.Assert(false, "Export Mission Prefabs", "SubMissions: Could not edit MissionTree.json for " + tree.TreeName +
+                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException("Encountered exception not properly handled", e);
+            }
+        }
+        public static void SaveNewMission(SubMissionTree tree, SubMission mission)
+        {
+            if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Missions")))
+                Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Missions"));
+            var missionJSON = JsonConvert.SerializeObject(mission, Formatting.Indented, JSONSaverMission);
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, tree.TreeName, "Missions", mission.Name), missionJSON);
+            tree.ActiveMissions.Add(mission);
+            ManSubMissions.Selected = mission;
+        }
+        public static void SaveNewTechSnapshot(SubMissionTree tree, string name, Texture2D Tech)
+        {
+            if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Techs")))
+                Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Techs"));
+            FileUtils.SaveTexture(Tech, Path.Combine(MissionsDirectory, tree.TreeName, "Techs", name + ".png"));
+            tree.TreeTechs.Add(name, new SpawnableTechSnapshot(name));
+        }
+        public static void SaveNewTechRaw(SubMissionTree tree, string name, string blueprint)
+        {
+            if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Raw Techs")))
+                Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Raw Techs"));
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, tree.TreeName, "Raw Techs", name), blueprint);
+            tree.TreeTechs.Add(name, new SpawnableTechRAW(name));
+        }
+        internal static void SaveNewSMWorldObject(SubMissionTree tree, SMWorldObjectJSON SMWO)
+        {
+            if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Pieces")))
+                Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Pieces"));
+            string SMWorldObjectJSON = JsonConvert.SerializeObject(SMWO, Formatting.Indented, JSONSafe);
+            SMWO.Tree = tree.TreeName;
+            TryWriteToJSONFile(Path.Combine(MissionsDirectory, tree.TreeName, "Pieces", SMWO.Name), SMWorldObjectJSON);
+            var prefab = MM_JSONLoader.BuildNewWorldObjectPrefabJSON(tree, SMWO);
+            tree.WorldObjects.Add(SMWO.Name, prefab);
         }
     }
 }

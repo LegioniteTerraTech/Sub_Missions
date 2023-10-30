@@ -34,16 +34,31 @@ namespace Sub_Missions.Steps
         [DefaultValue(SMStepType.NULL)]
         public SMStepType StepType = SMStepType.NULL;           // The type this is
 
+        /// <summary> Progress ID this runs on. Set to <code>SubMission.alwaysRunValue</code> to always run. </summary>
         [DefaultValue(SubMission.alwaysRunValue)]
-        public int ProgressID = SubMission.alwaysRunValue;       // Progress ID this runs on. Set to SubMission.alwaysRunValue to always run.
-        public int SuccessProgressID = 0;   // transfer to this when successful
+        public int ProgressID = SubMission.alwaysRunValue;
+        /// <summary> transfer to this ProgressID when successful </summary>
+        public int SuccessProgressID = 0;
 
-        public Vector3 Position = Vector3.zero;     // Offset from Mission Origin
-        public Vector3 EulerAngles = Vector3.zero;  // Used for MMs
-        public Vector3 Forwards = Vector3.zero;  // Used for matters that self-right
+        /// <summary> Active Mission Processed Position </summary>
+        public Vector3 Position = Vector3.zero;     // Processed Position
+        /// <summary> The Offset from Mission Origin </summary>
+        [JsonIgnore]
+        public Vector3 InitPosition = Vector3.zero;
+        /// <summary> Used for finely rotating MMs </summary>
+        public Vector3 EulerAngles = Vector3.zero;
+        /// <summary> Used for matters that self-right </summary>
+        public Vector3 Forwards = Vector3.zero;
+        /// <summary>
+        /// <list type="number">Position relative to Mission Origin
+        /// <item>Snap to Terrain if Position Lower</item>
+        /// <item>Align with terrain + offset by position</item>
+        /// <item>Snap to Terrain</item>
+        /// </list>
+        /// </summary>
         [DefaultValue(2)]
         public int TerrainHandling = 2;
-        // 0 = Align with Mission Origin
+        // 0 = Position relative to Mission Origin
         // 1 = Snap to Terrain if Position Lower
         // 2 = Align with terrain + offset by position
         // 3 = Snap to Terrain
@@ -79,6 +94,9 @@ namespace Sub_Missions.Steps
         [JsonIgnore] // the saving
         public int SavedInt = 0;
 
+        [JsonIgnore]
+        public string LogName => (Mission.Name.NullOrEmpty() ? "[NULL MISSION]" : Mission.Name) + " ~ " + StepType + " - " + ProgressID;
+
         /// <summary>
         /// Upkeeps this Step's position in Scene when the Worldtreadmill does it's treadmill
         /// </summary>
@@ -93,6 +111,7 @@ namespace Sub_Missions.Steps
             {
                 if (Forwards == Vector3.zero)
                     Forwards = Vector3.forward;
+                Position = InitPosition;
                 SMUtil.SetPosTerrain(ref Position, Mission.ScenePosition, TerrainHandling);
                 TrySetupOnType();
                 stepGenerated.Mission = Mission;
@@ -102,8 +121,11 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a TrySetup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
-                Debug_SMissions.Log(e);
+                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + 
+                    " Has a TrySetup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + 
+                    ", and will not be able to execute. \nCheck your referenced Techs as there may be errors " +
+                    "or inconsistancies in there.", e);
+                //Debug_SMissions.Log(e);
             }
         }
         internal void LoadStep()
@@ -112,7 +134,8 @@ namespace Sub_Missions.Steps
             {
                 if (Forwards == Vector3.zero)
                     Forwards = Vector3.forward;
-                SMUtil.RealignWithTerrain(ref Position, TerrainHandling);
+                Position = InitPosition;
+                SMUtil.RealignWithTerrain(ref Position, Mission.ScenePosition, TerrainHandling);
                 TrySetupOnType();
                 stepGenerated.Mission = Mission;
                 stepGenerated.SMission = this;
@@ -120,7 +143,9 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a LoadStep error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
+                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + " Has a LoadStep error at ProgressID " +
+                    "" + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. " +
+                    "\nCheck your referenced Techs as there may be errors or inconsistancies in there.", e);
                 Debug_SMissions.Log(e);
             }
         }
@@ -132,8 +157,9 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
-                Debug_SMissions.Log(e);
+                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + 
+                    ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. " +
+                    "\nCheck your referenced Techs as there may be errors or inconsistancies in there.", e);
             }
         }
         internal void ClearStep()
@@ -168,8 +194,9 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. \nCheck your referenced Techs as there may be errors or inconsistancies in there.");
-                Debug_SMissions.Log(e);
+                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + 
+                    ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. " +
+                    "\nCheck your referenced Techs as there may be errors or inconsistancies in there.", e);
             }
         }
         internal void Trigger() 
@@ -180,8 +207,8 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(true, "SubMissions: Mission " + Mission.Name + " Has invalid syntax at ProgressID " + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute."); 
-                Debug_SMissions.Log(e);
+                SMUtil.Assert(true, LogName, "SubMissions: Mission " + Mission.Name + " Has invalid syntax at ProgressID " + 
+                    ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute.", e); 
             }
         }
         internal void TrySetupOnType()

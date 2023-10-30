@@ -38,6 +38,13 @@ namespace Sub_Missions.Steps
                 "\n},";
         }
 
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Active Condition");
+            AddField(ESMSFields.RevProgressIDOffset, "Negative Shift");
+        }
 
         public override void OnInit() { }
 

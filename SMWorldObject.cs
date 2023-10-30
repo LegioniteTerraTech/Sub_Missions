@@ -17,8 +17,10 @@ namespace Sub_Missions
         public bool animateUp = true;
         [JsonIgnore]
         public float distDiff = -9999;
+        [JsonIgnore]
+        public SubMissionTree tree;
 
-
+        public string name => Name;
         public string Name = "Unset";
         public string TextureName;
         public string GameMaterialName;
@@ -30,6 +32,7 @@ namespace Sub_Missions
         public float aimedHeight;
         public IntVector2 tilePos;
         public Vector3 offsetFromTile;
+
 
         public Dictionary<string, object> WorldObjectJSON;
 
@@ -102,8 +105,9 @@ namespace Sub_Missions
             return distDiff;
         }
 
-        public void SetFromJSON(SMWorldObjectJSON toSetFrom)
+        public void SetFromJSON(SubMissionTree tree, SMWorldObjectJSON toSetFrom)
         {
+            this.tree = tree;
             WorldObjectJSON = toSetFrom.WorldObjectJSON;
             Name = toSetFrom.Name;
             TextureName = toSetFrom.TextureName;
@@ -117,6 +121,7 @@ namespace Sub_Missions
         {
             SMWorldObjectJSON final = new SMWorldObjectJSON
             {
+                Tree = tree.TreeName,
                 WorldObjectJSON = WorldObjectJSON,
                 Name = Name,
                 TextureName = TextureName,
@@ -125,7 +130,6 @@ namespace Sub_Missions
                 ColliderMeshName = ColliderMeshName,
                 aboveGround = aboveGround,
                 TerrainType = TerrainType,
-
             };
             return final;
         }
@@ -146,6 +150,7 @@ namespace Sub_Missions
     public class SMWorldObjectJSON
     {
         public string Name = "Unset";
+        public string Tree = "Unset";
         public string TextureName;
         public string GameMaterialName;
         public string VisualMeshName;

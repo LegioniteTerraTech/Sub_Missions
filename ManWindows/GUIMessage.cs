@@ -12,6 +12,7 @@ namespace Sub_Missions.ManWindows
     {
         public GUIPopupDisplay Display { get; set; }
         public string Message;
+        private Vector2 scroll = Vector2.zero;
 
 
         public void Setup(GUIPopupDisplay display, string message)
@@ -26,14 +27,17 @@ namespace Sub_Missions.ManWindows
 
         public void RunGUI(int ID)
         {
+            scroll = GUILayout.BeginScrollView(scroll, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            GUILayout.Label(Message, WindowManager.styleLabelLargerFont, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            GUILayout.EndScrollView();
 
-            GUI.Label(new Rect(20, 40, Display.Window.width - 40, Display.Window.height - 80), Message, WindowManager.styleLargeFont);
-            if (GUI.Button(new Rect((Display.Window.width / 2) - 70, Display.Window.height - 60, 140, 40), "<b>CONTINUE</b>", WindowManager.styleHugeFont))
+            if (GUILayout.Button("<b>CONTINUE</b>", WindowManager.styleButtonHugeFont, GUILayout.Width(140) ,GUILayout.Height(40)))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Enter);
                 WindowManager.HidePopup(Display);
                 WindowManager.RemovePopup(Display);
             }
+
             GUI.DragWindow();
             WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }

@@ -56,7 +56,7 @@ namespace Sub_Missions
                     Window.x = Display.main.renderingWidth - Window.width;
                     Window.y = Display.main.renderingHeight - Window.height;
 
-                    if (GUI.Button(new Rect(0, 0, 65, 45), "Show", WindowManager.styleHugeFont))
+                    if (GUI.Button(new Rect(0, 0, 65, 45), "Show", WindowManager.styleButtonHugeFont))
                     {
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
                         isOpen = true;
@@ -70,17 +70,17 @@ namespace Sub_Missions
                     Window.y = Display.main.renderingHeight - Window.height;
                     int lerpMax = (int)((Window.width - buttonSideSpacing - 100) / picScale.x);
 
-                    if (GUI.Button(new Rect(Window.width - 40, 0, 40, Window.height), "<b>H\ni\nd\ne</b>", WindowManager.styleHugeFont))
+                    if (GUI.Button(new Rect(Window.width - 40, 0, 40, Window.height), "<b>H\ni\nd\ne</b>", WindowManager.styleButtonHugeFont))
                     {
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
                         isOpen = false;
                     }
                     int posLerp = 0;
                     scrolll = GUI.BeginScrollView(new Rect(20, 20, Window.width - buttonSideSpacing - 40, Window.height - 40), scrolll, new Rect(0, 0, Window.width - buttonSideSpacing - 40, scrolllSize));
-                    List<SMCCorpLicense> licenses = ManSMCCorps.GetAllSMCCorps();
+                    IEnumerable<SMCCorpLicense> licenses = ManSMCCorps.GetAllSMCCorps();
                     int posXLerp = 10;
                     int posYLerp = 10;
-                    if (licenses.Count > 0)
+                    if (licenses.Count() > 0)
                     {
                         foreach (SMCCorpLicense CL in licenses)
                         {

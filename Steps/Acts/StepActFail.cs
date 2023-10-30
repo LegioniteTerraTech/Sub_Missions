@@ -21,6 +21,12 @@ namespace Sub_Missions.Steps
                   "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Fail Condition");
+        }
 
         public override void OnInit() { }
 

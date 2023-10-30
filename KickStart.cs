@@ -48,7 +48,7 @@ namespace Sub_Missions
 
         public static void Main()
         {
-            Debug_SMissions.Log("Sub_Missions: MAIN (TTMM Version) startup");
+            Debug_SMissions.Log("SubMissions: MAIN (TTMM Version) startup");
             if (!VALIDATE_MODS())
                 return;
             if (isSteamManaged)
@@ -71,8 +71,7 @@ namespace Sub_Missions
                         Debug_SMissions.Log("SubMissions: Error on mass patch");
                         Debug_SMissions.Log(e);
                     }
-                    List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
-                    foreach (MethodBase MB in MP)
+                    foreach (MethodBase MB in harmonyInstance.GetPatchedMethods())
                     {
                         if (MB.Name == "PatchCCModding")
                         {
@@ -138,8 +137,7 @@ namespace Sub_Missions
                         Debug_SMissions.Log("SubMissions: Error on mass patch");
                         Debug_SMissions.Log(e);
                     }
-                    List<MethodBase> MP = harmonyInstance.GetPatchedMethods().ToList();
-                    foreach (MethodBase MB in MP)
+                    foreach (MethodBase MB in harmonyInstance.GetPatchedMethods())
                     {
                         if (MB.Name == "PatchCCModding")
                         {
@@ -166,6 +164,15 @@ namespace Sub_Missions
             catch (Exception e)
             {
                 Debug_SMissions.Log("SubMissions: Error on patch");
+                Debug_SMissions.Log(e);
+            }
+            try
+            {
+                SafeSaves.ManSafeSaves.RegisterSaveSystem(Assembly.GetExecutingAssembly(), OnSaveManagers, OnLoadManagers);
+            }
+            catch (Exception e)
+            {
+                Debug_SMissions.Log("SubMissions: Error on RegisterSaveSystem");
                 Debug_SMissions.Log(e);
             }
             WindowManager.Initiate();
@@ -197,6 +204,15 @@ namespace Sub_Missions
             WindowManager.DeInit();
             BlockIndexer.ResetBlockLookupList();
 
+            try
+            {
+                SafeSaves.ManSafeSaves.UnregisterSaveSystem(Assembly.GetExecutingAssembly(), OnSaveManagers, OnLoadManagers);
+            }
+            catch (Exception e)
+            {
+                Debug_SMissions.Log("SubMissions: Error on UnregisterSaveSystem");
+                Debug_SMissions.Log(e);
+            }
             if (patched)
             {
                 try
@@ -268,7 +284,7 @@ namespace Sub_Missions
         }
         public static void TACAIRequiredWarning()
         {
-            SMUtil.Assert(false, "SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
+            SMUtil.Log(false, "SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
         }
         public static bool LookForMod(string name)
         {
@@ -308,6 +324,30 @@ namespace Sub_Missions
             }
             return null;
         }
+
+
+        public static void OnSaveManagers(bool Doing)
+        {
+            if (Doing)
+            {
+                WorldTerraformer.PrepareForSaving();
+                SaveManSubMissions.PrepareForSaving();
+            }
+            else
+            {
+                SaveManSubMissions.FinishedSaving();
+                WorldTerraformer.FinishedSaving();
+            }
+        }
+        public static void OnLoadManagers(bool Doing)
+        {
+            if (!Doing)
+            {
+                WorldTerraformer.FinishedLoading();
+                SaveManSubMissions.FinishedLoading();
+            }
+        }
+
     }
 
     public class KickStartOptions
@@ -393,7 +433,12 @@ namespace Sub_Missions
             if (oInst == null)
                 oInst = this;
 
-            KickStart.MainOfficialInit();
+            try
+            {
+                TerraTechETCUtil.ModStatusChecker.EncapsulateSafeInit("Mod Missions",
+                    KickStart.MainOfficialInit, KickStart.MainOfficialDeInit);
+            }
+            catch { }
             isInit = true;
         }
         public override void DeInit()

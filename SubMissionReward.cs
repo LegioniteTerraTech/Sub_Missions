@@ -20,15 +20,16 @@ namespace Sub_Missions
 
         public int RandomBlocksToSpawn = 0;
         public List<string> BlocksToSpawn = new List<string>();
-        public List<BlockTypes> BlockTypesToSpawn {
+        private static List<BlockTypes> BTsCache = new List<BlockTypes>();
+        public List<BlockTypes> BlockTypesToSpawnIterate {
             get {
-                List<BlockTypes> BTs = new List<BlockTypes>();
+                BTsCache.Clear();
                 foreach (var item in BlocksToSpawn)
                 {
                     _ = BlockIndexer.StringToBlockType(item, out BlockTypes BT);
-                    BTs.Add(BT);
+                    BTsCache.Add(BT);
                 }
-                return BTs;
+                return BTsCache;
             }
         }
 
@@ -41,6 +42,7 @@ namespace Sub_Missions
             else
                 input += toChangeBy;
         }
+        private static List<BlockTypes> itemsCached = new List<BlockTypes>();
         public void Reward(SubMissionTree tree, SubMission mission)
         {
             TryChange(ref tree.ProgressX, AddProgressX);
@@ -91,15 +93,16 @@ namespace Sub_Missions
                 }
                 catch (Exception e)
                 {
-                    SMUtil.Assert(false, "SubMissions: Tried to add EXP to a faction " + tree.Faction + " that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + mission.Name);
-
-                    Debug_SMissions.Log(e);
+                    SMUtil.Assert(false, "Mission (Reward) ~ " + mission.Name, "SubMissions: Tried to add EXP to a faction " + tree.Faction + 
+                        " that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + 
+                        mission.Name, e);
                     try
                     {
-                        Debug_SMissions.Log("instance? " + Singleton.Manager<ManLicenses>.inst.GetLicense(FST));
-                        Debug_SMissions.Log("instance? " + Singleton.Manager<ManLicenses>.inst.GetLicense(FST).Corporation);
-                        Debug_SMissions.Log("instance? " + Singleton.Manager<ManLicenses>.inst.GetLicense(FST).IsDiscovered);
-                        Debug_SMissions.Log("instance? " + Singleton.Manager<ManLicenses>.inst.GetLicense(FST).CurrentAbsoluteXP);
+                        FactionLicense FL = Singleton.Manager<ManLicenses>.inst.GetLicense(FST);
+                        Debug_SMissions.Log("instance? " + FL);
+                        Debug_SMissions.Log("instance? " + FL.Corporation);
+                        Debug_SMissions.Log("instance? " + FL.IsDiscovered);
+                        Debug_SMissions.Log("instance? " + FL.CurrentAbsoluteXP);
                     }
                     catch { }
                 }
@@ -107,12 +110,12 @@ namespace Sub_Missions
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)
             {
                 SMCCorpLicense CL;
-                List<BlockTypes> items = new List<BlockTypes>(BlockTypesToSpawn);
+                itemsCached.AddRange(BlockTypesToSpawnIterate);
                 //if (ManSMCCorps.IsUnofficialSMCCorpLicense(FST))
                 //{
                 if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))
                 {
-                    items.AddRange(CL.GetRandomBlocks(Singleton.Manager<ManLicenses>.inst.GetCurrentLevel((FactionSubTypes)CL.ID), RandomBlocksToSpawn));
+                    itemsCached.AddRange(CL.GetRandomBlocks(Singleton.Manager<ManLicenses>.inst.GetCurrentLevel((FactionSubTypes)CL.ID), RandomBlocksToSpawn));
                 }
                     /*
                 }
@@ -137,13 +140,13 @@ namespace Sub_Missions
                 {
                     landingPos = Singleton.cameraTrans.position;
                 }
-                int fireCount = items.Count;
+                int fireCount = itemsCached.Count;
 
                 for (int step = 0; step < fireCount; step++)
                 {   // filter and remove broken blocks
-                    if (!Singleton.Manager<ManSpawn>.inst.IsValidBlockToSpawn(items.ElementAt(step)))
+                    if (!ManSpawn.inst.IsBlockAllowedInCurrentGameMode(itemsCached.ElementAt(step)))
                     {
-                        items.RemoveAt(step);
+                        itemsCached.RemoveAt(step);
                         fireCount--;
                         step--;
                     }
@@ -153,17 +156,18 @@ namespace Sub_Missions
                     if (CL.HasCratePrefab)
                     {
                         Debug_SMissions.Log("Spawning Set Crate");
-                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FST);
+                        ManSpawn.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, FST);
                     }
                     else
                     {
                         Debug_SMissions.Log("Spawning " + CL.CrateReferenceFaction + " Crate");
-                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, CL.CrateReferenceFaction);
+                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, CL.CrateReferenceFaction);
                     }
                     return;
                 }
                 Debug_SMissions.Log("Spawning Default Crate");
-                Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(items.ToArray(), landingPos, FactionSubTypes.GSO);
+                Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, FactionSubTypes.GSO);
+                itemsCached.Clear();
             }
         }
     }

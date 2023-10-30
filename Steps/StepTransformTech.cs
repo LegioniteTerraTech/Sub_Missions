@@ -14,19 +14,6 @@ namespace Sub_Missions.Steps
     {
         public override string GetDocumentation()
         {
-            return
-                "{  // Changes/Edits the entire form of a TrackedTech" +
-                  "\n  \"StepType\": \"TransformTech\"," +
-                  "\n  \"ProgressID\": 0,             // " + StepDesc + 
-                  "\n  // Conditions TO CHECK before executing" +
-                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
-                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
-                  "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
-                  "\n  // Input Parameters" +
-                  "\n  \"InputNum\": 0.0,             // The Team to set the Tech to if \"InputStringAux\" is set to team" +
-                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to change." +
-                  "\n  \"InputStringAux\": null,      // What to change on the Tracked Tech, or the Tech to swap to." +
-                "\n},";
             /*
             return
                 "{  // Changes/Edits the entire form of a TrackedTech" +
@@ -60,9 +47,41 @@ namespace Sub_Missions.Steps
                   "\n  \"InputStringAux\": null,      // What to change on the Tracked Tech, or the Tech to swap to." +
                 "\n},";
             */
+            return
+                "{  // Changes/Edits the entire form of a TrackedTech" +
+                  "\n  \"StepType\": \"TransformTech\"," +
+                  "\n  \"ProgressID\": 0,             // " + StepDesc +
+                  "\n  // Conditions TO CHECK before executing" +
+                  "\n  \"VaribleType\": \"True\",       // See the top of this file." +
+                  "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
+                  "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should execute." +
+                  "\n  // Input Parameters" +
+                  "\n  \"InputNum\": 0.0,             // The Team to set the Tech to if \"InputStringAux\" is set to team" +
+                  "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to change." +
+                  "\n  \"InputStringAux\": null,      // What to change on the Tracked Tech, or the Tech to swap to." +
+                "\n},";
+        }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Active Condition");
+            AddField(ESMSFields.InputString_Tracked_Tech, "Tracked Tech");
+            AddField(ESMSFields.InputNum_int, "Team"); 
+            AddOptions(ESMSFields.InputStringAux, "Change: ", new string[] 
+                { 
+                    "Team",
+                    "Tech",
+                },
+                new Dictionary<int, KeyValuePair<string, ESMSFields>>()
+                {
+                    {1, new KeyValuePair<string, ESMSFields>("Tech Name", ESMSFields.InputStringAux_Tech) },
+                }
+            );
         }
 
         public override void OnInit() { }
+
         public override void OnDeInit() { }
 
         public override void FirstSetup()
@@ -82,29 +101,30 @@ namespace Sub_Missions.Steps
                         {
                             if (SMission.SavedInt < 1)
                             {
-                                tTech.Tech.SetTeam((int)SMission.InputNum);
-                                Debug_SMissions.Log("SubMissions: Changed team of tech " + tTech.Tech.name + " to " + tTech.Tech.Team);
+                                tTech.TechAuto.SetTeam((int)SMission.InputNum);
+                                Debug_SMissions.Log("SubMissions: Changed team of tech " + tTech.TechAuto.name + " to " + tTech.TechAuto.Team);
                             }
                         }
                         else if (SMission.InputStringAux != null && SMission.InputStringAux != "")
                         {   // allow the AI to change it's form on demand
                             if (SMission.SavedInt < SMission.InputNum)
                             {
-                                Tank techCur = tTech.Tech;
+                                Tank techCur = tTech.TechAuto;
                                 Debug_SMissions.Log("SubMissions: More than meets the eye");
-                                tTech.Tech = RawTechLoader.TechTransformer(techCur, SMission.InputStringAux);
+                                tTech.TechAuto = RawTechLoader.TechTransformer(techCur, SMission.InputStringAux);
                             }
                         }
                         else
                         {
-                            SMUtil.Assert(true, "SubMissions: TransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
+                            SMUtil.Error(true, SMission.LogName,
+                                "SubMissions: TransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
                         }
                     }
                     catch (Exception e)
                     {   // Cannot work without TACtical_AI
                         if (KickStart.isTACAIPresent)
                         {
-                            SMUtil.Assert(true, "SubMissions: TransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!");
+                            SMUtil.Assert(true, SMission.LogName, "SubMissions: TransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!", e);
                             Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
                             Debug_SMissions.Log("SubMissions: Error - " + e);
                         }

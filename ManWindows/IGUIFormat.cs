@@ -1,11 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
+    public static class IGUIFormatExtenions
+    {
+        public static void UpdateTransparency(this IGUIFormat inst, float lowerLimit)
+        {
+            if (UIHelpersExt.MouseIsOverSubMenu(inst.Display.Window))
+                inst.Display.alpha = Mathf.Min(0.95f, inst.Display.alpha + Time.deltaTime * 1.85f);
+            else
+                inst.Display.alpha = Mathf.Max(lowerLimit, inst.Display.alpha - Time.deltaTime * 0.475f);
+        }
+    }
+
     public interface IGUIFormat
     {
         GUIPopupDisplay Display { get; set; }

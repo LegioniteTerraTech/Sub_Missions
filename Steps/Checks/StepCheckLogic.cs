@@ -25,6 +25,14 @@ namespace Sub_Missions.Steps
                   "\n  \"SetMissionVarIndex3\": -1,        // An Index to check (-1 means always true)" +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Condition 1");
+            AddField(ESMSFields.SetMissionVarIndex2, "Condition 2");
+            AddField(ESMSFields.SetMissionVarIndex3, "Condition 3");
+        }
 
         public override void OnInit() { }
 
@@ -40,9 +48,25 @@ namespace Sub_Missions.Steps
                     SMUtil.ProceedID(ref SMission);
                 }
             }
-            catch
+            catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(true, "SubMissions: Error in output [SetMissionVarIndex1-3] in mission " + SMission.Mission.Name + " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                    "[SetMissionVarIndex3] in mission " + Mission.Name +
+                    " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                    "on the list, 1 counts as the second entry, and so on.", e);
+            }
+            catch (NullReferenceException e)
+            {
+                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                    "[SetMissionVarIndex3] in mission " + Mission.Name +
+                    " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                    " on the step's set VaribleType.", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
             }
         }
         public override void OnDeInit()

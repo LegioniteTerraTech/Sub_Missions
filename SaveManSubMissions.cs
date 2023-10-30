@@ -1,20 +1,46 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using UnityEngine;
-using System.IO;
-using TAC_AI.Templates;
+﻿using Ionic.Zlib;
+using Newtonsoft.Json;
 using Sub_Missions.ManWindows;
 using Sub_Missions.Steps;
-using Ionic.Zlib;
-using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using UnityEngine;
+using SafeSaves;
 
 namespace Sub_Missions
 {
+    [AutoSaveManager]
     public class SaveManSubMissions
     {
+        [SSManagerInst]
+        public static SaveManSubMissions inst;
+        [SSaveField]
+        public ManSubMissionSave saveInstance;
+
+        public static void PrepareForSaving()
+        {
+            if (inst == null)
+                return;
+            inst.saveInstance = SaveToFileFormatting(false);
+        }
+        public static void FinishedSaving()
+        {
+            if (inst == null)
+                return;
+            inst.saveInstance = null;
+        }
+        public static void FinishedLoading()
+        {
+            if (inst == null)
+                return;
+            if (inst.saveInstance != null)
+                LoadFromFileFormatting(inst.saveInstance);
+        }
+
+
 #if DEBUG
         private static bool UseCompressor = true;
 #else
@@ -29,37 +55,62 @@ namespace Sub_Missions
             TypeNameHandling = TypeNameHandling.Auto,
         };
 
-        public static void LoadDataAutomatic()
+        public static void LoadDataAutomaticLegacy()
         {
+            return;
             try
             {
                 string saveName = Singleton.Manager<ManSaveGame>.inst.GetCurrentSaveName(false);
-                LoadData(saveName);
-                //Debug_SMissions.Log("SubMissions: SaveManSubMissions - LoadDataAutomatic: Loaded save " + saveName + " successfully");
+                try
+                {
+                    LoadDataLegacy(saveName);
+                    //Debug_SMissions.Log("SubMissions: SaveManSubMissions - LoadDataAutomatic: Loaded save " + saveName + " successfully");
+                }
+                catch (Exception e)
+                {
+                    SMUtil.Assert(false, "World Saving", "SubMissions: SaveManSubMissions ~ Failed to load save data for " + saveName + "!" +
+
+                        "\n - LoadDataAutomatic: CASCADE FAILIURE IN MAJOR OPERATION!", e);
+                    SMUtil.PushErrors();
+                }
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: SaveManSubMissions - LoadDataAutomatic: FAILIURE IN MAJOR OPERATION!");
+                SMUtil.Assert(false, "World Saving", "SubMissions: SaveManSubMissions ~ Failed to load save data for NULL_NAME_SAVE!" +
+                    "\n - LoadDataAutomatic: CASCADE FAILIURE IN MAJOR OPERATION!", e);
+                SMUtil.PushErrors();
             }
         }
-        public static void SaveDataAutomatic()
+        public static void SaveDataAutomaticLegacy()
         {
+            return;
             try
             {
                 string saveName = Singleton.Manager<ManSaveGame>.inst.GetCurrentSaveName(false);
-                SaveData(saveName);
-                //Debug_SMissions.Log("SubMissions: SaveManSubMissions - SaveDataAutomatic: Saved save " + saveName + " successfully");
+                try
+                {
+                    SaveDataLegacy(saveName);
+                    //Debug_SMissions.Log("SubMissions: SaveManSubMissions - SaveDataAutomatic: Saved save " + saveName + " successfully");
+                }
+                catch (Exception e)
+                {
+                    SMUtil.Assert(false, "World Saving", "SubMissions: SaveManSubMissions ~ Failed to SAVE save data for " + saveName + "!" +
+                        "\n - SaveDataAutomatic: CASCADE FAILIURE IN MAJOR OPERATION!", e);
+                    SMUtil.PushErrors();
+                }
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: SaveManSubMissions - SaveDataAutomatic: FAILIURE IN MAJOR OPERATION!");
+                SMUtil.Assert(false, "World Saving", "SubMissions: SaveManSubMissions ~ Failed to SAVE save data for NULL_NAME_SAVE!" +
+                    "\n - SaveDataAutomatic: CASCADE FAILIURE IN MAJOR OPERATION!", e);
+                SMUtil.PushErrors();
             }
         }
 
 
-        public static void LoadData(string saveName)
+        public static void LoadDataLegacy(string saveName)
         {
-            string destination = SMissionJSONLoader.MissionSavesDirectory + SMissionJSONLoader.up + saveName;
+            string destination = Path.Combine(SMissionJSONLoader.MissionSavesDirectory, saveName);
             SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionSavesDirectory);
             try
             {
@@ -122,9 +173,8 @@ namespace Sub_Missions
                 }
                 catch (Exception e)
                 {
-                    SMUtil.Assert(false, "SubMissions: Could not load contents of MissionSave.json/.SMSAV for " + saveName + "!");
-                    Debug_SMissions.Log(e);
-                    return;
+                    SMUtil.Assert(false, "World Loading", "SubMissions: Could not load contents of MissionSave.json/.SMSAV for " + 
+                        saveName + "!", e);
                 }
                 return;
             }
@@ -143,10 +193,10 @@ namespace Sub_Missions
                 }
             }
         }
-        public static void SaveData(string saveName)
+        public static void SaveDataLegacy(string saveName)
         {
             Debug_SMissions.Log("SubMissions: Setting up template reference...");
-            string destination = SMissionJSONLoader.MissionSavesDirectory + SMissionJSONLoader.up + saveName;
+            string destination = Path.Combine(SMissionJSONLoader.MissionSavesDirectory, saveName);
             SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionSavesDirectory);
             try
             {
@@ -173,10 +223,10 @@ namespace Sub_Missions
                     Debug_SMissions.Log("SubMissions: Saved MissionSave.json for " + saveName + " successfully.");
                 }
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not save MissionSave.json/.SMSAV for " + saveName + ".  \n   This could be due to a bug with this mod or file permissions.");
-                return;
+                SMUtil.Assert(false, "World Saving", "SubMissions: Could not save MissionSave.json/.SMSAV for " + saveName + 
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
 
@@ -194,6 +244,7 @@ namespace Sub_Missions
             stepsSaved = new List<SubMissionStepSave>();
             actMissions = new List<SubMissionSave>();
             treesSaved = new List<ManSubMissionTreeSave>();
+            GC.Collect();
         }
 
 

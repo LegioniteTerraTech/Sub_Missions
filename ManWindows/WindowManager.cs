@@ -17,8 +17,9 @@ namespace Sub_Missions.ManWindows
         private const int MaxPopups = 48;
         private const int MaxPopupsActive = 32;
 
+        internal const int LargeWindowWidth = 1000;
         public static Rect DefaultWindow = new Rect(0, 0, 300, 300);   // the "window"
-        public static Rect LargeWindow = new Rect(0, 0, 1000, 600);
+        public static Rect LargeWindow = new Rect(0, 0, LargeWindowWidth, 600);
         public static Rect WideWindow = new Rect(0, 0, 700, 180);
         public static Rect SmallWideWindow = new Rect(0, 0, 600, 140);
         public static Rect SmallHalfWideWindow = new Rect(0, 0, 350, 140);
@@ -29,12 +30,62 @@ namespace Sub_Missions.ManWindows
         public static Rect SmallWindow = new Rect(0, 0, 160, 120);
 
         //public static GUIStyle styleSmallFont;
-        public static GUIStyle styleDescFont;
-        public static GUIStyle styleDescLargeFont;
-        public static GUIStyle styleDescLargeFontScroll;
-        public static GUIStyle styleLargeFont;
-        public static GUIStyle styleHugeFont;
-        public static GUIStyle styleGinormusFont;
+        public static GUIStyle styleBlueFont { get; private set; } = null;
+        public static GUIStyle styleBorderedFont { get; private set; } = null;
+        public static GUIStyle styledFont { get; private set; } = null;
+        public static GUIStyle styleLargeFont { get; private set; } = null;
+        public static GUIStyle styleBlackLargeFont { get; private set; } = null;
+        public static GUIStyle styleScrollFont { get; private set; } = null;
+        public static GUIStyle styleLabelLargerFont { get; private set; } = null;
+        public static GUIStyle styleButtonHugeFont { get; private set; } = null;
+        public static GUIStyle styleButtonGinormusFont { get; private set; } = null;
+
+        public static void GUICreate()
+        {
+            if (!SetupAltWins)
+            {
+                styleBlueFont = new GUIStyle(AltUI.TextfieldBlue);
+                styleBlueFont.fontSize = 12;
+                styleBlueFont.alignment = TextAnchor.UpperLeft;
+                styleBlueFont.wordWrap = true;
+
+                styleBorderedFont = new GUIStyle(AltUI.TextfieldBordered);
+                styleBorderedFont.fontSize = 12;
+                styleBorderedFont.wordWrap = true;
+                styleBorderedFont.alignment = TextAnchor.UpperLeft;
+
+                styledFont = new GUIStyle(AltUI.MenuGUI.label);
+                styledFont.fontSize = 12;
+                styledFont.wordWrap = true;
+                styledFont.alignment = TextAnchor.UpperLeft;
+
+                styleLargeFont = new GUIStyle(AltUI.MenuGUI.label);
+                styleLargeFont.fontSize = 16;
+                styleLargeFont.wordWrap = true;
+                styleLargeFont.alignment = TextAnchor.MiddleCenter;
+
+                styleBlackLargeFont = new GUIStyle(AltUI.TextfieldBlackHuge);
+                styleBlackLargeFont.fontSize = 16;
+                styleBlackLargeFont.wordWrap = true;
+                styleBlackLargeFont.alignment = TextAnchor.MiddleLeft;
+
+                styleScrollFont = new GUIStyle(AltUI.MenuGUI.label);
+                styleScrollFont.fontSize = 16;
+                styleScrollFont.wordWrap = true;
+                styleScrollFont.alignment = TextAnchor.UpperLeft;
+
+                styleLabelLargerFont = new GUIStyle(AltUI.MenuGUI.label);
+                styleLabelLargerFont.fontSize = 16;
+
+                styleButtonHugeFont = new GUIStyle(AltUI.MenuGUI.button);
+                styleButtonHugeFont.fontSize = 20;
+
+                styleButtonGinormusFont = new GUIStyle(AltUI.ButtonBlueLarge);
+                styleButtonGinormusFont.fontSize = 38;
+                SetupAltWins = true;
+                Debug_SMissions.Log("SubMissions: WindowManager performed first setup");
+            }
+        }
 
 
         public static List<GUIPopupDisplay> AllPopups = new List<GUIPopupDisplay>();
@@ -168,9 +219,18 @@ namespace Sub_Missions.ManWindows
             return AddPopupStackable(GUISetTypes.ButtonDual, title, buttonLabel, removeOnPress, options, windowOverride: windowOverride);
         }
 
+
+        public static bool AddPopupMissionsDEVControl()
+        {
+            return AddPopupSingle(GUISetTypes.DevToolbar, "");
+        }
         public static bool AddPopupMissionsList()
         {
             return AddPopupSingle(GUISetTypes.List, "<b>-- Sub Missions DEBUG --</b>");
+        }
+        public static bool AddPopupMissionEditor()
+        {
+            return AddPopupSingle(GUISetTypes.Editor, "<b>-- Sub Mission Editor --</b>");
         }
         public static bool AddPopupMessageScroll(string title, string message, float scrollSpeed = 0.02f, bool Dual = false, SMissionStep missionStep = null, object windowOverride = null)
         {
@@ -183,6 +243,10 @@ namespace Sub_Missions.ManWindows
         public static bool AddPopupMessage(string title, string message)
         {
             return AddPopupSingle(GUISetTypes.Message, title, message);
+        }
+        internal static bool AddPopupMessageError(string title, SMUtil.ErrorQueue errors)
+        {
+            return AddPopupSingle(GUISetTypes.MessageError, title, errors);
         }
 
         private static bool AddPopupStackable(GUISetTypes type, string context, object val1 = null, object val2 = null, object val3 = null, object val4 = null, object windowOverride = null)
@@ -325,7 +389,7 @@ namespace Sub_Missions.ManWindows
         {
             if (MaxPopupsActive <= numActivePopups)
             {
-                SMUtil.Assert(false, "Too many popups active!!!  Limit is " + MaxPopupsActive + ".  Aborting ShowPopup!");
+                SMUtil.Error(false, "Ingame HUD ~ " + disp.context, "Too many popups active!!!  Limit is " + MaxPopupsActive + ".  Aborting ShowPopup!");
                 return false;
             }
             if (disp.isOpen)
@@ -333,7 +397,7 @@ namespace Sub_Missions.ManWindows
                 //Debug_SMissions.Log("SubMissions: ShowPopup - Window is already open");
                 return false;
             }
-            Debug_SMissions.Log("SubMissions: Popup " + disp.context + " active");
+            SMUtil.Log(false, "SubMissions: Popup " + disp.context + " active");
             disp.GUIFormat.OnOpen();
             disp.obj.SetActive(true);
             disp.isOpen = true;
@@ -348,7 +412,7 @@ namespace Sub_Missions.ManWindows
         {
             if (MaxPopupsActive <= numActivePopups)
             {
-                SMUtil.Assert(false, "Too many popups active!!!  Limit is " + MaxPopupsActive + ".  Aborting ShowPopup!");
+                SMUtil.Error(false, "Ingame HUD ~ " + currentGUIWindow.context, "Too many popups active!!!  Limit is " + MaxPopupsActive + ".  Aborting ShowPopup!");
                 return false;
             }
             if (currentGUIWindow.isOpen)
@@ -424,7 +488,6 @@ namespace Sub_Missions.ManWindows
             }
         }
 
-
         private void Update()
         {
             UpdateAllFast();
@@ -470,130 +533,166 @@ namespace Sub_Missions.ManWindows
         public GameObject obj;
         public string context = "error";
         public bool isOpen = false;
-        public bool isOpaque = false;
+        public float alpha = 0.65f;
         public Rect Window = new Rect(WindowManager.DefaultWindow);   // the "window"
         public GUISetTypes type = GUISetTypes.Default;
         public IGUIFormat GUIFormat;
+        public bool CursorWithinWindow => UIHelpersExt.MouseIsOverSubMenu(Window);
 
         private void OnGUI()
         {
             if (isOpen)
             {
-                if (isOpaque)
-                    AltUI.StartUIOpaque();
-                else
-                    AltUI.StartUI();
-                if (!WindowManager.SetupAltWins)
+                try
                 {
-                    WindowManager.styleDescLargeFont = new GUIStyle(GUI.skin.textField);
-                    WindowManager.styleDescLargeFont.fontSize = 16;
-                    WindowManager.styleDescLargeFont.alignment = TextAnchor.MiddleLeft;
-                    WindowManager.styleDescLargeFont.wordWrap = true;
-                    WindowManager.styleDescLargeFontScroll = new GUIStyle(WindowManager.styleDescLargeFont);
-                    WindowManager.styleDescLargeFontScroll.alignment = TextAnchor.UpperLeft;
-                    WindowManager.styleDescFont = new GUIStyle(GUI.skin.textField);
-                    WindowManager.styleDescFont.fontSize = 12;
-                    WindowManager.styleDescFont.alignment = TextAnchor.UpperLeft;
-                    WindowManager.styleDescFont.wordWrap = true;
-                    WindowManager.styleLargeFont = new GUIStyle(GUI.skin.label);
-                    WindowManager.styleLargeFont.fontSize = 16;
-                    WindowManager.styleHugeFont = new GUIStyle(GUI.skin.button);
-                    WindowManager.styleHugeFont.fontSize = 20;
-                    WindowManager.styleGinormusFont = new GUIStyle(GUI.skin.button);
-                    WindowManager.styleGinormusFont.fontSize = 38;
-                    WindowManager.SetupAltWins = true;
-                    Debug_SMissions.Log("SubMissions: WindowManager performed first setup");
+                    AltUI.StartUI(alpha, alpha);
+                    WindowManager.GUICreate();
+                    Window = GUI.Window(ID, Window, GUIFormat.RunGUI, context);
+                    AltUI.EndUI();
                 }
-                Window = GUI.Window(ID, Window, GUIFormat.RunGUI, context);
-                AltUI.EndUI();
+                catch (MandatoryException e)
+                {
+                    enabled = false;
+                    throw new MandatoryException("SubMissions: Critical Error within GUI hierachy for WindowID " + ID
+                        + ", type " + type.ToString() + "!  Turning off the Display to halt memory leak...", e);
+                }
+                catch (Exception e)
+                {
+                    isOpen = false;
+                    Debug_SMissions.Log("SubMissions: Minor Error within GUI hierachy for ID " + ID
+                        + ", type " + type.ToString() + "! \n This is the mod developer's issue, please report it! \n" + e.StackTrace);
+                }
             }
         }
 
         public void SetupGUI(GUISetTypes newType, object val1 = null, object val2 = null, object val3 = null, object val4 = null, object windowOverride = null)
         {
-            IGUIFormat gui;
-            if (GUIFormat != null)
+            try
             {
-                if (type != newType)
+                IGUIFormat gui;
+                if (GUIFormat != null)
                 {
-                    Debug_SMissions.Assert("SubMissions: SetupGUI - Illegal type change on inited GUIPopupDisplay!");
-                    GUIFormat.OnRemoval();
-                    GUIFormat = null;
+                    if (type != newType)
+                    {
+                        Debug_SMissions.Assert("SubMissions: SetupGUI - Illegal type change on inited GUIPopupDisplay!");
+                        GUIFormat.OnRemoval();
+                        GUIFormat = null;
+                    }
                 }
+                type = newType;
+                switch (newType)
+                {
+                    case GUISetTypes.Button:
+                        GUIButtonWindow guiSet2;
+                        if (GUIFormat != null)
+                            guiSet2 = (GUIButtonWindow)GUIFormat;
+                        else
+                            guiSet2 = new GUIButtonWindow();
+                        guiSet2.Setup(this, (string)val1, (bool)val2, (string)val3);
+                        Window = WindowManager.TinyWindow;
+                        if (windowOverride != null)
+                            Window = (Rect)windowOverride;
+                        gui = guiSet2;
+                        break;
+                    case GUISetTypes.ButtonDual:
+                        GUIDualButton guiSet3;
+                        if (GUIFormat != null)
+                            guiSet3 = (GUIDualButton)GUIFormat;
+                        else
+                            guiSet3 = new GUIDualButton();
+                        guiSet3.Setup(this, (string)val1, (bool)val2, val3);
+                        Window = WindowManager.TinyWideWindow;
+                        if (windowOverride != null)
+                            Window = (Rect)windowOverride;
+                        gui = guiSet3;
+                        break;
+                    case GUISetTypes.List:
+                        GUISMissionsList guiSet4;
+                        if (GUIFormat != null)
+                            guiSet4 = (GUISMissionsList)GUIFormat;
+                        else
+                            guiSet4 = new GUISMissionsList();
+                        guiSet4.Setup(this);
+                        Window = WindowManager.LargeWindow;
+                        gui = guiSet4;
+                        break;
+                    case GUISetTypes.MessageScroll:
+                        GUIScrollMessage guiSet5;
+                        if (GUIFormat != null)
+                            guiSet5 = (GUIScrollMessage)GUIFormat;
+                        else
+                            guiSet5 = new GUIScrollMessage();
+                        guiSet5.Setup(this, (string)val1, (float)val2, (bool)val3, (SMissionStep)val4);
+                        Window = WindowManager.WideWindow;
+                        if (windowOverride != null)
+                            Window = (Rect)windowOverride;
+                        gui = guiSet5;
+                        break;
+                    case GUISetTypes.MessageSide:
+                        GUIMissionInfo guiSet6;
+                        if (GUIFormat != null)
+                            guiSet6 = (GUIMissionInfo)GUIFormat;
+                        else
+                            guiSet6 = new GUIMissionInfo();
+                        guiSet6.Setup(this);
+                        Window = WindowManager.SideWindow;
+                        gui = guiSet6;
+                        break;
+                    case GUISetTypes.Editor:
+                        GUISMissionEditor guiSet7;
+                        if (GUIFormat != null)
+                            guiSet7 = (GUISMissionEditor)GUIFormat;
+                        else
+                            guiSet7 = new GUISMissionEditor();
+                        guiSet7.Setup(this);
+                        Window = WindowManager.LargeWindow;
+                        gui = guiSet7;
+                        break;
+                    case GUISetTypes.DevToolbar:
+                        GUIDevControl guiSet8;
+                        if (GUIFormat != null)
+                            guiSet8 = (GUIDevControl)GUIFormat;
+                        else
+                            guiSet8 = new GUIDevControl();
+                        guiSet8.Setup(this);
+                        Window = WindowManager.TinyWideWindow;
+                        gui = guiSet8;
+                        break;
+                    case GUISetTypes.MessageError:
+                        GUIMessageError guiSet9;
+                        if (GUIFormat != null)
+                            guiSet9 = (GUIMessageError)GUIFormat;
+                        else
+                            guiSet9 = new GUIMessageError();
+                        guiSet9.Setup(this, (SMUtil.ErrorQueue)val1);
+                        Window = WindowManager.LargeWindow;
+                        gui = guiSet9;
+                        break;
+                    case GUISetTypes.Message:
+                    default:
+                        GUIMessage guiSet19;
+                        if (GUIFormat != null)
+                            guiSet19 = (GUIMessage)GUIFormat;
+                        else
+                            guiSet19 = new GUIMessage();
+                        guiSet19.Setup(this, (string)val1);
+                        Window = WindowManager.LargeWindow;
+                        gui = guiSet19;
+                        break;
+                }
+                GUIFormat = gui;
             }
-            type = newType;
-            switch (newType)
+            catch (MandatoryException e)
             {
-                case GUISetTypes.Button:
-                    GUIButtonWindow guiSet2;
-                    if (GUIFormat != null)
-                        guiSet2 = (GUIButtonWindow)GUIFormat;
-                    else
-                        guiSet2 = new GUIButtonWindow();
-                    guiSet2.Setup(this, (string)val1, (bool)val2, (string)val3);
-                    Window = WindowManager.TinyWindow;
-                    if (windowOverride != null)
-                        Window = (Rect)windowOverride;
-                    gui = guiSet2;
-                    break;
-                case GUISetTypes.ButtonDual:
-                    GUIDualButton guiSet3;
-                    if (GUIFormat != null)
-                        guiSet3 = (GUIDualButton)GUIFormat;
-                    else
-                        guiSet3 = new GUIDualButton();
-                    guiSet3.Setup(this, (string)val1, (bool)val2, val3);
-                    Window = WindowManager.TinyWideWindow;
-                    if (windowOverride != null)
-                        Window = (Rect)windowOverride;
-                    gui = guiSet3;
-                    break;
-                case GUISetTypes.List:
-                    GUISMissionsList guiSet4;
-                    if (GUIFormat != null)
-                        guiSet4 = (GUISMissionsList)GUIFormat;
-                    else
-                        guiSet4 = new GUISMissionsList();
-                    guiSet4.Setup(this);
-                    Window = WindowManager.LargeWindow;
-                    gui = guiSet4;
-                    break;
-                case GUISetTypes.MessageScroll:
-                    GUIScrollMessage guiSet5;
-                    if (GUIFormat != null)
-                        guiSet5 = (GUIScrollMessage)GUIFormat;
-                    else
-                        guiSet5 = new GUIScrollMessage();
-                    isOpaque = true;
-                    guiSet5.Setup(this, (string)val1, (float)val2, (bool)val3, (SMissionStep)val4);
-                    Window = WindowManager.WideWindow;
-                    if (windowOverride != null)
-                        Window = (Rect)windowOverride;
-                    gui = guiSet5;
-                    break;
-                case GUISetTypes.MessageSide:
-                    GUIMissionInfo guiSet6;
-                    if (GUIFormat != null)
-                        guiSet6 = (GUIMissionInfo)GUIFormat;
-                    else
-                        guiSet6 = new GUIMissionInfo();
-                    guiSet6.Setup(this);
-                    Window = WindowManager.SideWindow;
-                    gui = guiSet6;
-                    break;
-                case GUISetTypes.Message:
-                default:
-                    GUIMessage guiSet9 = new GUIMessage();
-                    if (GUIFormat != null)
-                        guiSet9 = (GUIMessage)GUIFormat;
-                    else
-                        guiSet9 = new GUIMessage();
-                    guiSet9.Setup(this, (string)val1);
-                    Window = WindowManager.LargeWindow;
-                    gui = guiSet9;
-                    break;
+                enabled = false;
+                throw new MandatoryException("SubMissions: Critical Error within SetupGUI for WindowID " + ID
+                    + ", type " + type.ToString() + "!  Turning off the Display to halt memory leak...", e);
             }
-            GUIFormat = gui;
+            catch (Exception e)
+            {
+                Debug_SMissions.Log("SubMissions: Minor Error within SetupGUI hierachy for ID " + ID
+                    + ", type " + type.ToString() + "! \n This is the mod developer's issue, please report it! \n" + e.StackTrace);
+            }
         }
     }
     public enum GUISetTypes
@@ -604,8 +703,13 @@ namespace Sub_Missions.ManWindows
         Message,    // 
         MessageScroll,// like the normal terratech NPC chat boxes
         MessageSide,
-        List,       // 
         ButtonDual,
-        Button      // 
+        Button,      // 
+
+        // Main Windows
+        List,       // 
+        Editor,
+        DevToolbar,
+        MessageError
     }
 }

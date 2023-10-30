@@ -26,6 +26,23 @@ namespace Sub_Missions.Steps
                 "\n},";
         }
 
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.InputNum, "Techs to Destroy");
+            AddField(ESMSFields.SetMissionVarIndex1, "Output Condition");
+            AddOptions(ESMSFields.InputStringAux, "Mode", new string[]
+                {
+                    "Tracked Tech",
+                    "Corp",
+                },
+                new Dictionary<int, KeyValuePair<string, ESMSFields>>()
+                {
+                    {0, new KeyValuePair<string, ESMSFields>("Tracked Tech", ESMSFields.InputString) },
+                    {1, new KeyValuePair<string, ESMSFields>("Corporation", ESMSFields.InputString) },
+                }
+             );
+        }
+
         public override void OnInit() { }
 
         public override void FirstSetup()

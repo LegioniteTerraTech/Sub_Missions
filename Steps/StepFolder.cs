@@ -24,6 +24,25 @@ namespace Sub_Missions.Steps
                   "\n  \"FolderEventList\": {},        // Insert your events here" +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Condition");
+            AddField(ESMSFields.InputStringAux_Tracked_Tech, "Tracked Tech");
+            AddField(ESMSFields.InputString, "Folder Name");
+            AddOptions(ESMSFields.InputStringAux, "Trigger Case", new string[]
+                {
+                    "Team",
+                    "Tech",
+                },
+                new Dictionary<int, KeyValuePair<string, ESMSFields>>()
+                {
+                    {1, new KeyValuePair<string, ESMSFields>("Tech Name", ESMSFields.InputStringAux_Tech) },
+                }
+            );
+            AddField(ESMSFields.FolderEventList, "Contents");
+        }
         public override void OnInit() {
             SMission.ProgressID = SubMission.alwaysRunValue;
             if (SMission.FolderEventList == null)
@@ -41,9 +60,9 @@ namespace Sub_Missions.Steps
         }
         public override void Trigger()
         {
+            int position = 0;
             foreach (SubMissionStep step in SMission.FolderEventList)
             {
-                int position = 0;
                 if (Mission.CanRunStep(step.ProgressID))
                 {
                     try

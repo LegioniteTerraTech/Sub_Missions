@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Reflection;
+using UnityEngine;
+using Sub_Missions.Editor;
 
 namespace Sub_Missions.Steps
 {
@@ -32,10 +34,26 @@ namespace Sub_Missions.Steps
 
         public abstract string GetDocumentation();
 
+        public abstract void InitGUI();
+
         public abstract void OnInit();
         public abstract void FirstSetup();
         public abstract void Trigger();
 
         public abstract void OnDeInit();
+
+        protected void AddField(ESMSFields type, string name)
+        {
+            SMStepEditorGUI.AddField(this, type, name);
+        }
+        protected void AddGlobal(ESMSFields type, string name, EVaribleType varType)
+        {
+            SMStepEditorGUI.AddGlobal(this, type, name, varType);
+        }
+        protected void AddOptions(ESMSFields type, string name, string[] options,
+            Dictionary<int, KeyValuePair<string, ESMSFields>> ext = null)
+        {
+            SMStepEditorGUI.AddOptions(this, type, name, options, ext);
+        }
     }
 }

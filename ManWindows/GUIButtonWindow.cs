@@ -30,7 +30,7 @@ namespace Sub_Missions.ManWindows
         public void RunGUI(int ID)
         {
 
-            if (GUI.Button(new Rect(0, 10, Display.Window.width, Display.Window.height - 10), buttonMessage, WindowManager.styleHugeFont))
+            if (GUI.Button(new Rect(0, 10, Display.Window.width, Display.Window.height - 10), buttonMessage, WindowManager.styleButtonHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 ButtonAct.Invoke(InvokeAction);// has frame delay

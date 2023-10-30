@@ -25,6 +25,18 @@ namespace Sub_Missions.Steps
                   "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to remove." +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Condition");
+            AddField(ESMSFields.InputString_Tracked_Tech, "Tracked Tech");
+            AddOptions(ESMSFields.InputNum, "Mode", new string[] { 
+                "Remove",
+                "Dismantle",
+                "Destroy",
+            });
+        }
 
         public override void OnInit() { }
 
@@ -48,7 +60,7 @@ namespace Sub_Missions.Steps
                     { // two = disintegrate to smithereens
                         foreach (TankBlock block in target.blockman.IterateBlocks())
                         {
-                            block.visible.SetInteractionTimeout(0.5f);
+                            block.visible.SetLockTimout(Visible.LockTimerTypes.Interactible, 0.5f);
                             block.damage.SelfDestruct(0.1f);
                         }
 

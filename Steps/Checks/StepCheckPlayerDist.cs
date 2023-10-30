@@ -31,6 +31,25 @@ namespace Sub_Missions.Steps
                   "\n  \"SetMissionVarIndex1\": -1,       // The index that is to be affected by this triggering" +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.Position, "Position");
+            AddField(ESMSFields.TerrainHandling, "Placement");
+            AddField(ESMSFields.VaribleType_Action, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Success Output");
+            AddField(ESMSFields.InputNum, "Radius ([-] for invert)");
+            AddOptions(ESMSFields.InputString, "Tracking: ", new string[]
+                {
+                    "Player",
+                    "Tracked Tech",
+                },
+                new Dictionary<int, KeyValuePair<string, ESMSFields>>()
+                {
+                    {1, new KeyValuePair<string, ESMSFields>("Tech Name", ESMSFields.InputString_Tracked_Tech) },
+                }
+            );
+        }
         public override void OnInit() { }
 
         public override void FirstSetup()

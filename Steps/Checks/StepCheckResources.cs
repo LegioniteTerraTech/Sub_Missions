@@ -27,6 +27,16 @@ namespace Sub_Missions.Steps
                   "\n  \"InputNum\": 0,             // The ChunkType to use (in number format)" +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddGlobal(ESMSFields.SetMissionVarIndex1, "Harvested Count", EVaribleType.Int);
+            AddGlobal(ESMSFields.SetMissionVarIndex2, "Success Threshold", EVaribleType.Int);
+            AddField(ESMSFields.SetMissionVarIndex3, "Output Success");
+            AddField(ESMSFields.InputString, "Tracked Tech");
+            AddOptions(ESMSFields.InputNum, "Resource Type", Enum.GetNames(typeof(ChunkTypes)));
+        }
         public override void OnInit() { }
 
         public override void FirstSetup()
@@ -35,12 +45,13 @@ namespace Sub_Missions.Steps
             {
                 if (SMission.SavedInt == 0)
                     SMission.SavedInt = Singleton.Manager<ManStats>.inst.GetNumResourcesHarvested((ChunkTypes)SMission.InputNum);
-                Debug_SMissions.Log("SubMissions: StepCheckResources - ChunkType assigned is " + ((ChunkTypes)SMission.InputNum).ToString());
-                Debug_SMissions.Log("SubMissions: StepCheckResources - current count is " + Singleton.Manager<ManStats>.inst.GetNumResourcesHarvested((ChunkTypes)SMission.InputNum) + ".");
+                //Debug_SMissions.Log("SubMissions: StepCheckResources - ChunkType assigned is " + ((ChunkTypes)SMission.InputNum).ToString());
+                //Debug_SMissions.Log("SubMissions: StepCheckResources - current count is " + Singleton.Manager<ManStats>.inst.GetNumResourcesHarvested((ChunkTypes)SMission.InputNum) + ".");
             }
-            catch
+            catch (Exception e)
             {   // not assigned correctly
-                SMUtil.Assert(true, "SubMissions: Error in input (ChunkTypes) InputNum in mission " + SMission.Mission.Name + " | Step type " + SMission.StepType.ToString());
+                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in input (ChunkTypes) InputNum in mission " + 
+                    SMission.Mission.Name + " | Step type " + SMission.StepType.ToString(), e);
                 SMission.SavedInt = 0;
             }
         }
@@ -61,9 +72,23 @@ namespace Sub_Missions.Steps
                     if (Mission.VarInts[SMission.SetMissionVarIndex2] <= Mission.VarInts[SMission.SetMissionVarIndex1])
                         SMUtil.ConcludeGlobal3(ref SMission);
                 }
-                catch
+                catch (IndexOutOfRangeException e)
                 {
-                    SMUtil.Assert(true, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] in mission " + SMission.Mission.Name + " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                    SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] in mission " + Mission.Name +
+                        " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                        "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                        "on the list, 1 counts as the second entry, and so on.", e);
+                }
+                catch (NullReferenceException e)
+                {
+                    SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] in mission " + Mission.Name +
+                        " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                        "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                        " on the step's set VaribleType.", e);
+                }
+                catch (Exception e)
+                {
+                    throw new MandatoryException(e);
                 }
             }
         }

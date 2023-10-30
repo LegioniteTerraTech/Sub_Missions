@@ -9,34 +9,96 @@ using Sub_Missions.Steps;
 using Sub_Missions.ManWindows;
 using System.IO;
 using Snapshots;
+using TerraTechETCUtil;
 
 namespace Sub_Missions
 {
     public static class SMUtil
     {
-        public static Tank PlayerTank
-        { 
-            get => Singleton.playerTank;
+        internal class ErrorQueue : Queue<ErrorElement>
+        {
+            private const int MaxLimit = 64;
+
+            private static StringBuilder SB = new StringBuilder();
+            public static ErrorQueue operator +(ErrorQueue a, string b)
+            {
+                a.Enqueue(new ErrorElementString(b));
+                return a;
+            }
+            public static ErrorQueue operator +(ErrorQueue a, ErrorElement b)
+            {
+                a.Enqueue(b);
+                return a;
+            }
+            public static ErrorQueue operator -(ErrorQueue a, string b)
+            {
+                a.Clear();
+                a.Enqueue(new ErrorElementString(b));
+                return a;
+            }
+
+            private new void Enqueue(ErrorElement ele)
+            {
+                base.Enqueue(ele);
+                if (Count > MaxLimit)
+                    Dequeue();
+            }
+
+            public void DispenseGUI()
+            {
+                foreach (var item in this)
+                {
+                    item.GUICall();
+                }
+            }
+
+            public override string ToString()
+            {
+                SB.Clear();
+                foreach (var item in this)
+                {
+                    SB.AppendLine(item.ToString());
+                }
+                return SB.ToString();
+            }
         }
 
+        public static Tank PlayerTank => Singleton.playerTank;
+
+        private static bool spamLog = true;
+
         public static bool errorQueued = false;
-        public static string errorList = "";
+        private static ErrorQueue errorList = new ErrorQueue();
+        internal static ErrorQueue Errors => errorList;
         public static int countError = 0;
-        public static bool repeatingErrored = false;
+        private static bool repeatingInfo = false;
+        private static bool repeatingLog = false;
+        private static bool repeatingErrored = false;
+        private static bool repeatingAssert = false;
 
         // DEBUG
+        public static void ClearErrors()
+        {
+            errorList.Clear();
+            errorQueued = false;
+            countError = 0;
+            repeatingInfo = false;
+            repeatingLog = false;
+            repeatingErrored = false;
+            repeatingAssert = false;
+        }
         public static void PushErrors()
         {
             if (KickStart.Debugger)
             {
                 if (errorQueued)
                 {
-                    WindowManager.AddPopupMessage("SubMissions Error", errorList);
+                    WindowManager.AddPopupMessageError("SubMissions Error", Errors);
                     WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
-                    errorList = "";
-                    errorQueued = false;
-                    countError = 0;
+                    repeatingInfo = false;
+                    repeatingLog = false;
                     repeatingErrored = false;
+                    repeatingAssert = false;
                 }
                 else
                 {
@@ -45,9 +107,123 @@ namespace Sub_Missions
                 }
             }
         }
-        public static void Assert(bool logSpammer, string input)
+        public static void Info(bool logSpammer, string name, string input)
+        {
+            if (KickStart.Debugger && !repeatingInfo)
+            {
+                try
+                {
+                    if (input.NullOrEmpty())
+                    {
+                        input = "Sub_Missions.SMUtil.Info has no information set for this edge case error, please notify Legionite (or some SubMissions maintainer) to add an assert. " +
+                                "\n Thanks!" +
+                                "\n Unresolvable error! - No automatic debugging context was thrown in for this edge case!" +
+                                "\n At " + StackTraceUtility.ExtractStackTrace();
+                        logSpammer = true;
+                    }
+                    else
+                    {
+                        if (input.Contains("SubMissions: "))
+                        {
+                            countError++;
+                            input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                        }
+                    }
+                    if (logSpammer)
+                    {
+                        errorList += new ErrorElementInfo(name, "<b>------ REPEATING ------<b>\n" + input);
+                        repeatingInfo = true;
+                    }
+                    else
+                        errorList += new ErrorElementInfo(name, input);
+                    if (spamLog)
+                        Debug_SMissions.Log(input);
+                }
+                catch (Exception e)
+                {
+                    errorList -= "SMUtil.Info - Error collector failed, please contact Legionite (or some SubMissions maintainer).";
+                    Debug_SMissions.Log(errorList.ToString() + e);
+                }
+                errorQueued = true;
+            }
+        }
+        public static void Log(bool logSpammer, string input)
+        {
+            if (KickStart.Debugger && !repeatingLog)
+            {
+                try
+                {
+                    if (input.NullOrEmpty())
+                    {
+                        input = "Sub_Missions.SMUtil.Log has no information set for this edge case error, please notify Legionite (or some SubMissions maintainer) to add an assert. " +
+                                "\n Thanks!" +
+                                "\n Unresolvable error! - No automatic debugging context was thrown in for this edge case!" +
+                                "\n At " + StackTraceUtility.ExtractStackTrace();
+                        logSpammer = true;
+                    }
+                    if (logSpammer)
+                    {
+                        errorList += "<b>------ REPEATING LOG ------<b>\n" + input;
+                        repeatingLog = true;
+                    }
+                    else
+                        errorList += input;
+                    if (spamLog) 
+                        Debug_SMissions.Log(input);
+                }
+                catch (Exception e)
+                {
+                    errorList -= "SMUtil.Log - Error collector failed, please contact Legionite (or some SubMissions maintainer).";
+                    Debug_SMissions.Log(errorList.ToString() + e);
+                }
+                errorQueued = true;
+            }
+        }
+        public static void Error(bool logSpammer, string name, string input)
         {
             if (KickStart.Debugger && !repeatingErrored)
+            {
+                try
+                {
+                    if (input.NullOrEmpty())
+                    {
+                        input = "Sub_Missions.SMUtil.Error has no information set for this edge case error, please notify Legionite (or some SubMissions maintainer) to add an assert. " +
+                                "\n Thanks!" +
+                                "\n Unresolvable error! - No automatic debugging context was thrown in for this edge case!" +
+                                "\n At " + StackTraceUtility.ExtractStackTrace();
+                        logSpammer = true;
+                    }
+                    else
+                    {
+                        if (input.Contains("SubMissions: "))
+                        {
+                            countError++;
+                            input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                        }
+                    }
+                    if (logSpammer)
+                    {
+                        errorList += new ErrorElementError(name, "<b>------ REPEATING ERROR ------<b>\n" + input);
+                        repeatingErrored = true;
+                    }
+                    else
+                        errorList += new ErrorElementError(name, input);
+                    if (spamLog) 
+                        Debug_SMissions.Log(input);
+                }
+                catch (Exception e)
+                {
+                    errorList -= "SMUtil.Error - Error collector failed, please contact Legionite (or some SubMissions maintainer).";
+                    Debug_SMissions.Log(errorList.ToString() + e);
+                }
+                errorQueued = true;
+            }
+        }
+        
+        private static StringBuilder SB = new StringBuilder();
+        public static void Assert(bool logSpammer, string name, string input, Exception ex)
+        {
+            if (KickStart.Debugger && !repeatingAssert)
             {
                 try
                 {
@@ -69,16 +245,19 @@ namespace Sub_Missions
                     }
                     if (logSpammer)
                     {
-                        errorList += "<b>------ MAJOR ERROR ------<b> ";
-                        repeatingErrored = true;
+                        SB.AppendLine("<b>------ CASCADE FAILIURE ------<b> ");
+                        repeatingAssert = true;
                     }
-                    errorList += input + "\n";
-                    Debug_SMissions.Log(input);
+                    SB.AppendLine(input);
+                    if (spamLog)
+                        Debug_SMissions.Log(input);
+                    errorList += new ErrorElementAssert(name, SB.ToString(), ex);
+                    SB.Clear();
                 }
                 catch (Exception e)
                 {
-                    errorList = "Error collector failed, please contact Legionite (or some SubMissions maintainer).";
-                    Debug_SMissions.Log(errorList + e);
+                    errorList -= "SMUtil.Assert - Error collector failed, please contact Legionite (or some SubMissions maintainer).";
+                    Debug_SMissions.Log(errorList.ToString() + e);
                 }
                 errorQueued = true;
             }
@@ -126,11 +305,12 @@ namespace Sub_Missions
 
             return input;
         }
-        public static Vector3 RealignWithTerrain(ref Vector3 input, int terrainHanding)
+        public static Vector3 RealignWithTerrain(ref Vector3 input, Vector3 missionOriginScene, int terrainHanding)
         {
             switch (terrainHanding)
             {
                 case 1:
+                    input += missionOriginScene;
                     if (Singleton.Manager<ManWorld>.inst.GetTerrainHeight(input, out float height))
                     {
                         if (height > input.y)
@@ -138,9 +318,11 @@ namespace Sub_Missions
                     }
                     break;
                 case 2:
+                    input += missionOriginScene;
                     input = VectorOnTerrain(input, input.y);
                     break;
                 case 3:
+                    input += missionOriginScene;
                     input = VectorOnTerrain(input, 0);
                     break;
                 default:
@@ -231,9 +413,23 @@ namespace Sub_Missions
                 int setVal = Step.SetMissionVarIndex1;
                 HandleVariables(ref Step, setVal);
             }
-            catch
+            catch (IndexOutOfRangeException e)
             {
-                Assert(true, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                    "on the list, 1 counts as the second entry, and so on.", e);
+            }
+            catch (NullReferenceException e)
+            {
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                    " on the step's set VaribleType.", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
             }
         }
         public static void ConcludeGlobal2(ref SubMissionStep Step)
@@ -245,9 +441,23 @@ namespace Sub_Missions
                 int setVal = Step.SetMissionVarIndex2;
                 HandleVariables(ref Step, setVal);
             }
-            catch
+            catch (IndexOutOfRangeException e)
             {
-                Assert(true, "SubMissions: Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                    "on the list, 1 counts as the second entry, and so on.", e);
+            }
+            catch (NullReferenceException e)
+            {
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                    " on the step's set VaribleType.", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
             }
         }
         public static void ConcludeGlobal3(ref SubMissionStep Step)
@@ -259,9 +469,23 @@ namespace Sub_Missions
                 int setVal = Step.SetMissionVarIndex3;
                 HandleVariables(ref Step, setVal);
             }
-            catch
+            catch (IndexOutOfRangeException e)
             {
-                Assert(true, "SubMissions: Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                    "on the list, 1 counts as the second entry, and so on.", e);
+            }
+            catch (NullReferenceException e)
+            {
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                    " on the step's set VaribleType.", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
             }
         }
         public static void HandleVariables(ref SubMissionStep Step, int setVal)
@@ -324,11 +548,27 @@ namespace Sub_Missions
                         return true;
                 }
             }
-            catch
+            catch (IndexOutOfRangeException e)
             {
-                Assert(true, "SubMissions: Error in output in mission " + Step.Mission.Name + " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
-                return false;
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                    "[SetMissionVarIndex3] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                    "on the list, 1 counts as the second entry, and so on.", e);
             }
+            catch (NullReferenceException e)
+            {
+                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                    "[SetMissionVarIndex3] in mission " + Step.Mission.Name +
+                    " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                    " on the step's set VaribleType.", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
+            }
+            return false;
         }
 
         /// <summary>
@@ -345,34 +585,12 @@ namespace Sub_Missions
         public static Tank SpawnTechAuto(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
         {
             // Load from folder
-            Tank tech;
-            string dest = "Custom SMissions" + SMissionJSONLoader.up +  mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-            //Debug_SMissions.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);if ("__Airstrike".Equals(TechName))
-            if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
-            {
-                tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
-
+            if (mission.Tree.TreeTechs.TryGetValue(TechName, out SpawnableTech val))
+            {   // Supports normal snapshots
+                Tank tech = val.Spawn(mission, pos, facingDirect, Team);
                 if (Team == ManSpawn.NeutralTeam)
                     tech.SetInvulnerable(true, true);
                 return tech;
-            }
-            else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
-            {   // Supports normal snapshots
-                if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)value, out TechData.SerializedSnapshotData data))
-                {
-                    ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
-                    {
-                        isInvulnerable = Team == ManSpawn.NeutralTeam,
-                        teamID = Team,
-                        blockIDs = null,
-                        isPopulation = Team == -1,
-                        techData = data.CreateTechData(),
-                        position = pos,
-                        rotation = Quaternion.LookRotation(facingDirect),
-                    };
-                    tech = ManSpawn.inst.SpawnTank(spawn, true);
-                    return tech;
-                }
             }
 
             return null;
@@ -384,35 +602,13 @@ namespace Sub_Missions
             Tank tech;
             if (instant)
             {
-                string dest = "Custom SMissions" + SMissionJSONLoader.up + mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-                //Debug_SMissions.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
-                if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
-                {
-                    tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
+                if (mission.Tree.TreeTechs.TryGetValue(TechName, out SpawnableTech val))
+                {   // Supports normal snapshots
+                    tech = val.Spawn(mission, pos, facingDirect, Team);
                     SetTrackedTech(ref mission, tech);
                     if (Team == ManSpawn.NeutralTeam)
                         tech.SetInvulnerable(true, true);
-                }
-                else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
-                {   // Supports normal snapshots
-                    if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)value, out TechData.SerializedSnapshotData data))
-                    {
-                        ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
-                        {
-                            isInvulnerable = Team == 0,
-                            teamID = Team,
-                            blockIDs = null,
-                            isPopulation = Team == -1,
-                            techData = data.CreateTechData(),
-                            position = pos,
-                            rotation = Quaternion.LookRotation(facingDirect),
-                        };
-                        tech = ManSpawn.inst.SpawnTank(spawn, true);
-                        SetTrackedTech(ref mission, tech);
-                        if (Team == ManSpawn.NeutralTeam)
-                            tech.SetInvulnerable(true, true);
-                        return TechName;
-                    }
+                    return TechName;
                 }
             }
             else
@@ -439,28 +635,9 @@ namespace Sub_Missions
             tech.mission = mission;
             if (instant)
             {
-                string dest = "Custom SMissions" + SMissionJSONLoader.up + mission.Tree.TreeName + SMissionJSONLoader.up + "Raw Techs";
-                //Debug_SMissions.Log("SubMissions: SpawnTechAuto path is " + SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName);
-                if (KickStart.isTACAIPresent && File.Exists(SMissionJSONLoader.BaseDirectory + SMissionJSONLoader.up + dest + SMissionJSONLoader.up + TechName + ".json"))
-                {
-                    tech.Tech = RawTechLoader.SpawnTechExternal(pos, Team, facingDirect, RawTechExporter.LoadTechFromRawJSON(TechName, dest));
-                }
-                else if (TechName.Length > 4 && mission.Tree.MissionTextures.TryGetValue((TechName + ".png").GetHashCode(), out Texture value))
+                if (mission.Tree.TreeTechs.TryGetValue(TechName, out SpawnableTech val))
                 {   // Supports normal snapshots
-                    if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)value, out TechData.SerializedSnapshotData data))
-                    {
-                        ManSpawn.TankSpawnParams spawn = new ManSpawn.TankSpawnParams
-                        {
-                            isInvulnerable = Team == ManSpawn.NeutralTeam,
-                            teamID = Team,
-                            blockIDs = null,
-                            isPopulation = Team == -1,
-                            techData = data.CreateTechData(),
-                            position = pos,
-                            rotation = Quaternion.LookRotation(facingDirect),
-                        };
-                        tech.Tech = ManSpawn.inst.SpawnTank(spawn, true);
-                    }
+                    tech.TechAuto = val.Spawn(mission, pos, facingDirect, Team);
                 }
             }
             else
@@ -489,7 +666,7 @@ namespace Sub_Missions
                 tech = Singleton.playerTank;
                 return Singleton.playerTank;
             }
-            tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;
+            tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).TechAuto;
             if (tech == null)
                 return false;
             return true;
@@ -498,9 +675,15 @@ namespace Sub_Missions
         {
             if (TechName == "Player Tech")
             {
-                Assert(true, "SubMissions: GetTrackedTechBase - Called for \"Player Tech\", but the player tech is not trackable!");
+                Error(true, "Mission(TrackedTech) ~ " + mission.Mission.Name + ", Step " + mission.StepType + " ~ " + 
+                    mission.ProgressID,  "SubMissions: GetTrackedTechBase - Called for \"Player Tech\", but the player tech is not trackable!");
             }
             return mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; });
+        }
+        public static bool GetTrackedTechBase(ref SubMissionStep mission, string TechName, out TrackedTech tech)
+        {
+            tech = GetTrackedTechBase(ref mission, TechName);
+            return tech != null;
         }
         public static TrackedTech GetTrackedTechBase(ref SubMission mission, string TechName)
         {
@@ -508,13 +691,54 @@ namespace Sub_Missions
         }
         public static Tank GetTrackedTech(ref SubMission mission, string TechName)
         {
-            return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).Tech;
+            return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).TechAuto;
         }
         public static void SetTrackedTech(ref SubMission mission, Tank tech)
         {
-            mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == tech.name; }).Tech = tech;
+            mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == tech.name; }).TechAuto = tech;
         }
 
 
+
+        // ETC
+        private static TechData cachedTechInfo = null;
+        public static TechData DisplaySelectTechInfo => cachedTechInfo;
+        private static Texture2D cachedTechPicture = Texture2D.whiteTexture;
+        public static Texture2D DisplaySelectTechImage => cachedTechPicture;
+        private static string cachedTechName = "";
+        public static string DisplaySelectTechName => cachedTechName;
+        private static UIScreenTechLoader loader;
+        public static string GUIDisplaySelectTech()
+        {
+            if (cachedTechPicture != null)
+                GUILayout.Label(cachedTechPicture);
+            GUILayout.Label(cachedTechName == null ? "<color=red>Not Set</color>" : cachedTechName);
+            if (GUILayout.Button("Select"))
+            {
+                if (loader == null)
+                {
+                    loader = (UIScreenTechLoader)ManUI.inst.GetScreen(ManUI.ScreenType.TechLoaderScreen);
+                    if (loader.SelectorCallback != null)
+                        throw new Exception("SMSFieldTechSelectGUI called while UIScreenTechLoader was already busy in an operation");
+
+                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Button);
+                    loader.SelectorCallback = OnTechSet;
+                    loader.Show(true);
+                }
+            }
+            return cachedTechName;
+        }
+        private static void OnTechSet(Snapshot set)
+        {
+            if (loader.SelectorCallback != OnTechSet)
+                throw new Exception("UIScreenTechLoader was altered while SMUtil.GUIDisplaySelectTech() was busy using it");
+            cachedTechPicture = set.image;
+            cachedTechName = set.techData.Name;
+            cachedTechInfo = set.techData.GetShallowClonedCopy();
+            loader.SelectorCallback = null;
+            loader.Hide();
+            loader = null;
+            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.LevelUp);
+        }
     }
 }

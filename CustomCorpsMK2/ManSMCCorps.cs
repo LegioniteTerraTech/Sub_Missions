@@ -20,6 +20,28 @@ namespace Sub_Missions
 
         internal const int AdvisedCorpSkinIDStartRef = 128;
 
+        /// <summary> SHORT names </summary>
+        public static List<string> AllCorpNames = new List<string>(Enum.GetNames(typeof(FactionSubTypes)));
+        private static bool AllCorpNamesDirty = true;
+        private static void CheckShouldRefreshAllCorpNames()
+        {
+            if (AllCorpNamesDirty)
+            {
+                AllCorpNamesDirty = false;
+                AllCorpNames.Clear();
+                AllCorpNames.AddRange(Enum.GetNames(typeof(FactionSubTypes)));
+                foreach (var item in corpsStoredOfficial)
+                {
+                    AllCorpNames.Add(item.Value.Faction);
+                }
+                foreach (var item in corpsStoredUnofficial)
+                {
+                    AllCorpNames.Add(item.Value.Faction);
+                }
+            }
+        }
+
+
         private static Dictionary<int, SMCCorpLicense> corpsStoredUnofficial = new Dictionary<int, SMCCorpLicense>();
         private static Dictionary<int, SMCCorpLicense> corpsStoredOfficial = new Dictionary<int, SMCCorpLicense>();
         private static Dictionary<int, SMCCorpLicense> corpsStored
@@ -38,11 +60,11 @@ namespace Sub_Missions
 
         internal static bool hasScanned = false;
 
-        public static List<SMCCorpLicense> GetAllSMCCorps()
+        public static IEnumerable<SMCCorpLicense> GetAllSMCCorps()
         {   //
             try
             {
-                return corpsStored.Values.ToList();
+                return corpsStored.Values;
             }
             catch
             {
@@ -50,11 +72,11 @@ namespace Sub_Missions
             }
             return new List<SMCCorpLicense>();
         }
-        public static List<FactionSubTypes> GetAllSMCCorpFactionTypes()
+        public static IEnumerable<FactionSubTypes> GetAllSMCCorpFactionTypes()
         {   //
             try
             {
-                return corpsStored.Select(x => (FactionSubTypes)x.Key).ToList();
+                return corpsStored.Select(x => (FactionSubTypes)x.Key);
             }
             catch
             {
@@ -93,7 +115,7 @@ namespace Sub_Missions
             try
             {
                 int hash = corpName.GetHashCode();
-                return corpsStored.Values.ToList().Find(delegate (SMCCorpLicense cand) { return cand.Faction.GetHashCode() == hash; });
+                return corpsStored.Values.FirstOrDefault(delegate (SMCCorpLicense cand) { return cand.Faction.GetHashCode() == hash; });
             }
             catch
             {
@@ -106,7 +128,7 @@ namespace Sub_Missions
             try
             {
                 int hash = corpName.GetHashCode();
-                return corpsStoredUnofficial.Values.ToList().Find(delegate (SMCCorpLicense cand) { return cand.Faction.GetHashCode() == hash; });
+                return corpsStoredUnofficial.Values.FirstOrDefault(delegate (SMCCorpLicense cand) { return cand.Faction.GetHashCode() == hash; });
             }
             catch
             {
@@ -119,7 +141,7 @@ namespace Sub_Missions
             try
             {
                 int hash = corpName.GetHashCode();
-                return corpsStored.Values.ToList().Find(delegate (SMCCorpLicense cand) { return cand.GetNameHashForBlocks() == hash; });
+                return corpsStored.Values.FirstOrDefault(delegate (SMCCorpLicense cand) { return cand.GetNameHashForBlocks() == hash; });
             }
             catch
             {
@@ -190,8 +212,8 @@ namespace Sub_Missions
                 if (!ManMods.inst.HasPendingLoads())
                 {
                     corpsStoredOfficial.Clear();
-                    List<int> corps = ManMods.inst.GetCustomCorpIDs().ToList();
-                    foreach (int corpID in corps)
+                    AllCorpNamesDirty = true;
+                    foreach (int corpID in ManMods.inst.GetCustomCorpIDs())
                     {
                         FactionSubTypes FST = (FactionSubTypes)corpID;
                         string sName = ManMods.inst.FindCorpShortName(FST);
@@ -243,6 +265,7 @@ namespace Sub_Missions
                     if (!corpsStoredUnofficial.TryGetValue(CL.ID, out _))
                     {
                         corpsStoredUnofficial.Add(CL.ID, CL);
+                        AllCorpNamesDirty = true;
                         CL.TryInitFactionEXPSys();
                     }
                     return true;
@@ -265,6 +288,7 @@ namespace Sub_Missions
                 RCC++;
                 SMCCorpLicense CLn = new SMCCorpLicense(corpName, RCC, new int[5] { 100,200,300,400,500});
                 corpsStoredUnofficial.Add(RCC, CLn);
+                AllCorpNamesDirty = true;
             }
             catch (Exception e)
             {
@@ -317,17 +341,18 @@ namespace Sub_Missions
                     try
                     {
                         STs = ManCustomSkins.inst.GetCorpSkinTextureInfos((FactionSubTypes)corpEntry.Key);
+                        if (skinCount == 0)
+                            throw new Exception("There are no skins registered.  How?");
                         worked = true;
                     }
-                    catch { }
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 1");
-                    if (skinCount == 0 || !worked)
+                    catch (Exception e)
                     {
                         criticalerror = true;
-                        SMUtil.Assert(false, "SubMissions: BuildUnofficialCustomCorpArrayTextures - COULD NOT COMPILE FOR " + corpEntry.Value.Faction);
+                        SMUtil.Assert(false, corpEntry.Value.GetLogName("Skins"), "SubMissions: BuildUnofficialCustomCorpArrayTextures - COULD NOT " +
+                            "COMPILE FOR " + corpEntry.Value.Faction, e);
                         continue;
                     }
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 2");
+                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 1");
                     ManTechMaterialSwap.MatReplacePairs MPP = new ManTechMaterialSwap.MatReplacePairs();
                     List<ManTechMaterialSwap.MatReplacePairs> stuff = (List<ManTechMaterialSwap.MatReplacePairs>)skinSwapInsts.GetValue(ManTechMaterialSwap.inst);
                     List<Material> mats = new List<Material>();
@@ -356,13 +381,14 @@ namespace Sub_Missions
                         + " Size Emissive: " + 
                         newMat.GetTexture("_EmissionMap").width);
                     */
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - skin count " + skinCount);
+                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - skin count " + skinCount);
                     if (skinCount < 2)
                     {
                         criticalerror = true;
-                        SMUtil.Assert(false, "Minimum allowed skins for any Unofficial corp is 2. Unofficial faction " + corpEntry.Value.Faction + " does NOT have enough skins for this operation!");
+                        SMUtil.Error(false, corpEntry.Value.GetLogName("Skins"), "Minimum allowed skins for any Unofficial corp is 2. Unofficial faction " + 
+                            corpEntry.Value.Faction + " does NOT have enough skins for this operation!");
                     }
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 3");
+                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 2");
                     MPP.m_Materials = mats.ToArray();
                     List<bool> bools = new List<bool>();
                     for (int step = 0; step < skinCount; step++)
@@ -378,7 +404,7 @@ namespace Sub_Missions
                     for (int step = 0; step < skinCount; step++)
                         MSIL.Add(MSI);
                     MSG.m_Materials = MSIL.ToArray();
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 4");
+                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 3");
 
                     skinSwapInsts.SetValue(ManTechMaterialSwap.inst, stuff);
                     ManTechMaterialSwap.inst.m_MaterialsToSwap.Add(MSG);
@@ -387,8 +413,8 @@ namespace Sub_Missions
                         // pending...
                     }
 
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - Compiled for " + corpEntry.Value.Faction);
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - new " + stuff.Count + " | " + ManTechMaterialSwap.inst.m_MaterialsToSwap.Count);
+                    SMUtil.Info(false, corpEntry.Value.GetLogName("Skins"), "SubMissions: BuildUnofficialCustomCorpArrayTextures - Compiled for " + corpEntry.Value.Faction);
+                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - new " + stuff.Count + " | " + ManTechMaterialSwap.inst.m_MaterialsToSwap.Count);
                 }
                 if (criticalerror)
                 {
@@ -423,29 +449,31 @@ namespace Sub_Missions
         }
         internal static void ReloadAllUnofficialCorps(bool isReloading = false)
         {
-            List<string> names = GetNameListUnofficial();
             List<int> hashSetExisting = new List<int>();
             List<int> hashSetAlready = new List<int>();
             foreach (string name in Enum.GetNames(typeof(FactionSubTypes)))
             {
                 hashSetExisting.Add(name.GetHashCode());
             }
-            foreach (string name in names)
+            foreach (string name in GetNameListUnofficial())
             {
                 if (name.Length > 3)
                 {
-                    SMUtil.Assert(false, name + " corp abbrivation exceeds the supported 3 letters.  \n  Cannot add this corp to the UI.");
+                    SMUtil.Error(false, "Corp (Unofficial) ~ " + name, name + " corp abbrivation exceeds(???) the supported 3 letters.  " +
+                        "\n  Cannot add this corp to the UI.");
                     continue;
                 }
                 int hash = name.ToUpper().GetHashCode();
                 if (hashSetExisting.Contains(hash))
                 {
-                    SMUtil.Assert(false, name + " is a Vanilla Corp!  \n  SubMissions cannot overwrite or edit existing faction licenses.");
+                    SMUtil.Error(false, "Corp (Unofficial) ~ " + name, name + " is a Vanilla Corp!  \n  SubMissions cannot overwrite or edit " +
+                        "existing faction licenses.");
                     continue;
                 }
                 else if (!isReloading && hashSetAlready.Contains(hash))
                 {
-                    SMUtil.Assert(false, "Custom Corp " + name + " already exists!  \n  Make sure there's only one corp with the same Faction name! \n   Lowercase letters are treated the same as uppercase.");
+                    SMUtil.Error(false, "Corp (Unofficial) ~ " + name, "Custom Corp " + name + " already exists!  \n  Make sure there's only one " +
+                        "corp with the same Faction name! \n   Lowercase letters are treated the same as uppercase.");
                     continue;
                 }
                 else
@@ -455,38 +483,41 @@ namespace Sub_Missions
                     if (corpsStoredUnofficial.ContainsKey(CL.ID))
                     {
                         corpsStoredUnofficial.Remove(CL.ID);
-                        Debug_SMissions.Log("SubMissions: Reloaded Corp " + name);
+                        SMUtil.Log(false, "SubMissions: Reloaded Unofficial Corp " + name);
                     }
                     else
-                        Debug_SMissions.Log("SubMissions: Added Corp " + name);
+                        SMUtil.Log(false, "SubMissions: Added Unofficial Corp " + name);
                     corpsStoredUnofficial.Add(CL.ID, CL);
+                    AllCorpNamesDirty = true;
                 }
                 else
-                    SMUtil.Assert(false, "Could not load Corp " + name);
+                    SMUtil.Error(false, "Corp (Unofficial) ~ " + name, "Could not load Unofficial Corp " + name);
 
             }
             BuildUnofficialCustomCorpCrates();
             if (isReloading)
             {
-                SMUtil.Assert(false, "Note: You will have to reload your save to get all of the changes to apply");
+                SMUtil.Log(false, "Note: You will have to reload your save to get all of the changes to apply");
                 SMUtil.PushErrors();
             }
             hasScanned = true;
         }
+
+        private static List<string> Cleaned = new List<string>();
         private static List<string> GetNameListUnofficial(string directoryFromMissionCorpsDirectory = "", bool doJSON = false)
         {
             string search;
             if (directoryFromMissionCorpsDirectory == "")
                 search = SMissionJSONLoader.MissionCorpsDirectory;
             else
-                search = SMissionJSONLoader.MissionCorpsDirectory + SMissionJSONLoader.up + directoryFromMissionCorpsDirectory;
-            List<string> toClean;
+                search = Path.Combine(SMissionJSONLoader.MissionCorpsDirectory, directoryFromMissionCorpsDirectory);
+            IEnumerable<string> toClean;
             if (doJSON)
-                toClean = Directory.GetFiles(search).ToList();
+                toClean = Directory.GetFiles(search);
             else
-                toClean = Directory.GetDirectories(search).ToList();
+                toClean = Directory.GetDirectories(search);
             //Debug_SMissions.Log("SubMissions: Cleaning " + toClean.Count);
-            List<string> Cleaned = new List<string>();
+            Cleaned.Clear();
             foreach (string cleaning in toClean)
             {
                 if (SMissionJSONLoader.GetName(cleaning, out string cleanName, doJSON))
@@ -508,7 +539,9 @@ namespace Sub_Missions
                 {
                     if (CorpName != License.Faction)
                     {
-                        SMUtil.Assert(false, "Custom Corp " + License.FullName + "'s folder name " + CorpName + " does not match it's \"Faction\": variable in it's respective MissionCorp.json" + License.Faction + ".");
+                        SMUtil.Error(false, "Corp (Unofficial) ~ " + License.Faction, "Custom Corp " + License.FullName + "'s folder name " + CorpName + 
+                            " does not match it's \"Faction\": variable in it's respective MissionCorp.json" + 
+                            License.Faction + ".");
                         return false;
                     }
                     if (Init)
@@ -525,13 +558,15 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    SMUtil.Assert(false, "Custom Corp " + License.FullName + "'s ID is not within the valid Unofficial Custom Corps range (" + UCorpRange + " - " + int.MaxValue + ").");
+                    SMUtil.Error(false, "Corp (Unofficial) ~ " + License.Faction, "Custom Corp " + License.FullName + "'s ID is not within the valid " +
+                        "Unofficial Custom Corps range (" + UCorpRange + " - " + int.MaxValue + ").");
                     return false;
                 }
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Check your Corp file for errors in syntax, cases where you referenced the names and make sure they match!!! " + e);
+                SMUtil.Assert(false, "Corp (Unofficial) ~ " + CorpName, "SubMissions: Check your Corp file for errors in syntax, cases where you " +
+                    "referenced the names and make sure they match!", e);
                 License = null;
                 return false;
             }
@@ -540,7 +575,7 @@ namespace Sub_Missions
         {
             try
             {
-                if (SMissionJSONLoader.TryGetCorpInfoDirectory(CorpShortName, out string directEnd))
+                if (SMissionJSONLoader.TryGetCorpInfoData(CorpShortName, out string directEnd))
                 {
                     License = JsonConvert.DeserializeObject<SMCCorpLicenseJSON>(directEnd).ConvertToActive();
                     License.Faction.ToString();
@@ -556,7 +591,9 @@ namespace Sub_Missions
                     }
                     else
                     {
-                        SMUtil.Assert(false, "Custom Corp " + License.FullName + "'s ID is not within the valid Official Custom Corps range (" + CustCorpStartID + " - " + (UCorpRange - 1) + ").");
+                        SMUtil.Error(false, License.GetLogName("Startup"), "Custom Corp " + License.FullName + 
+                            "'s ID is not within the valid Official Custom Corps range (" + 
+                            CustCorpStartID + " - " + (UCorpRange - 1) + ").");
                         return false;
                     }
                 }
@@ -565,25 +602,27 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Check your Corp file for errors in syntax, cases where you referenced the names and make sure they match!!! " + e);
+                SMUtil.Assert(false, "Corp (Unofficial) ~ " + CorpShortName, "SubMissions: Check your Corp file for errors in syntax, cases where you " +
+                    "referenced the names and make sure they match!", e);
                 License = null;
                 return false;
             }
         }
         private static string LoadMissionCorpFromFile(string corpName)
         {
-            string destination = SMissionJSONLoader.MissionCorpsDirectory + SMissionJSONLoader.up + corpName;
+            string destination = Path.Combine(SMissionJSONLoader.MissionCorpsDirectory, corpName);
             SMissionJSONLoader.ValidateDirectory(SMissionJSONLoader.MissionCorpsDirectory);
             SMissionJSONLoader.ValidateDirectory(destination);
             try
             {
-                string output = File.ReadAllText(destination + SMissionJSONLoader.up + "MissionCorp.json");
+                string output = File.ReadAllText(Path.Combine(destination, "MissionCorp.json"));
                 Debug_SMissions.Log("SubMissions: Loaded MissionCorp.json for " + corpName + " successfully.");
                 return output;
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not read MissionCorp.json for " + corpName + ".  \n   This could be due to a bug with this mod or file permissions.");
+                SMUtil.Assert(false, "Corp ~ " + corpName, "SubMissions: Could not read MissionCorp.json for " + corpName + 
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
                 return null;
             }
         }
@@ -607,47 +646,47 @@ namespace Sub_Missions
                 Debug_SMissions.Log("SubMissions: Searching Custom Corp " + CL.Faction + " Folder for skins...");
                 if (CL.GetDirectory(out string directory))
                 {
-                    string directorySkins = directory + SMissionJSONLoader.up + "Skins";
+                    string directorySkins = Path.Combine(directory, "Skins");
                     SMissionJSONLoader.ValidateDirectory(directorySkins);
-                    List<string> names = GetNameListUnofficial(CL.Faction + SMissionJSONLoader.up + "Skins");
+                    List<string> names = GetNameListUnofficial(Path.Combine(CL.Faction, "Skins"));
                     Debug_SMissions.Log("SubMissions: Found " + names.Count + " skins...");
                     CL.TexturesCache.Clear();
                     List<CorporationSkinInfo> CSISort = new List<CorporationSkinInfo>();
                     foreach (string name in names)
                     {
                         CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
-                        if (LoadSkinForCorp(CL, name, directorySkins + SMissionJSONLoader.up + name, ref CSI))
+                        if (LoadSkinForCorp(CL, name, Path.Combine(directorySkins, name), ref CSI))
                         {
                             Debug_SMissions.Log("SubMissions: Added Skin " + name);
                             CL.importedSkins.Add(CSI.m_SkinUniqueID);
                             CSISort.Add(CSI);
                         }
                         else
-                            SMUtil.Assert(false, "Could not load Skin " + name);
+                            SMUtil.Error(false, CL.GetLogName("Skins"), "Could not load Skin " + name + " for corp " + CL.Faction);
                     }
                     if (CL.SkinReferenceFaction == FactionSubTypes.NULL && CL.importedSkins.Count() == 1)
                     {
                         string name = names.First();
                         CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
-                        if (LoadSkinForCorp(CL, name, directorySkins + SMissionJSONLoader.up + name, ref CSI, true))
+                        if (LoadSkinForCorp(CL, name, Path.Combine(directorySkins, name), ref CSI, true))
                         {
                             Debug_SMissions.Log("SubMissions: Added Skin " + name);
                             CL.importedSkins.Add(CSI.m_SkinUniqueID);
                             CSISort.Add(CSI);
                         }
                         else
-                            SMUtil.Assert(false, "Could not load Skin " + name);
+                            SMUtil.Error(false, CL.GetLogName("Skins"), "Could not load Skin (Reference) " + name + " for corp " + CL.Faction);
                     }
-                    CSISort = CSISort.OrderBy(x => x.m_SkinUniqueID).ToList();
-                    foreach (var CSIC in CSISort)
+                    foreach (var CSIC in CSISort.OrderBy(x => x.m_SkinUniqueID))
                         ManCustomSkins.inst.AddSkinToCorp(CSIC, true);
                     return true;
                 }
                 return false;
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Check your Skins file names!  Some may be invalid!");
+                SMUtil.Assert(false, CL.GetLogName("Skins"), "SubMissions: Check your Skins file names for corp " + CL.Faction + 
+                    "!  Some may be invalid!", e);
                 return false;
             }
         }
@@ -658,7 +697,7 @@ namespace Sub_Missions
                 if (Directory.Exists(destination))
                 {
                     SMCSkinID SID; 
-                    string skinJSON = destination + SMissionJSONLoader.up + "Skin.json";
+                    string skinJSON = Path.Combine(destination, "Skin.json");
                     if (File.Exists(skinJSON))
                     {
                         SID = JsonConvert.DeserializeObject<SMCSkinID>(File.ReadAllText(skinJSON));
@@ -673,7 +712,10 @@ namespace Sub_Missions
                             IDFind++;
                         SID.UniqueID = IDFind;
                         File.WriteAllText(skinJSON, JsonConvert.SerializeObject(SID, Formatting.Indented));
-                        SMUtil.Assert(false, "SubMissions: \nMade a new Skin.json for " + folderName + " with ID " + IDFind + " - use this to set your skin information \n Only change UniqueID if ABSOLUETLY NESSEARY (There can only be one skin to one UniqueID)");
+                        SMUtil.Info(false, "Official Corp (Skins) ~ " + CL.Faction, "SubMissions: \nMade a new Skin.json for " + folderName + 
+                            " with ID " + IDFind + " - use this to set your skin information " +
+                            "\n Only change UniqueID if ABSOLUETLY NESSEARY " +
+                            "(There can only be one skin to one UniqueID)");
                         SMUtil.PushErrors();
                     }
                     if (stackTemp && CL.importedSkins.Contains(SID.UniqueID))
@@ -682,21 +724,21 @@ namespace Sub_Missions
                     }
                     if (SID.UniqueID < 0)
                     {
-                        SMUtil.Assert(false, "SubMissions: Skin UniqueID for skin " + folderName + " (is below 1) is out of range!!");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: Skin UniqueID for skin " + folderName + " (is below 1) is out of range!!");
                         return false;
                     }
                     else if (CL.registeredSkins.Contains(SID.UniqueID))
                     {
-                        Debug_SMissions.Log("SubMissions: Skin " + folderName + "'s UniqueID was already registered at a referenced skin.  Overwriting the reference!");
+                        SMUtil.Log(false, "SubMissions: Skin " + folderName + "'s UniqueID was already registered at a referenced skin.  Overwriting the reference!");
                     }
                     if (CL.importedSkins.Contains(SID.UniqueID) )// FindAll(delegate (CorporationSkinInfo cand) { return cand.m_SkinUniqueID == SID.UniqueID; }).Count > 1)
                     {
-                        SMUtil.Assert(false, "SubMissions: Skin " + folderName + "'s UniqueID was already registered before by another respective Skin.json corp skin!  Unable to import!");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: Skin " + folderName + "'s UniqueID was already registered before by another respective Skin.json corp skin!  Unable to import!");
                         return false;
                     }
                     if (SID.UniqueID < AdvisedCorpSkinIDStartRef && CL.SkinReferenceFaction != FactionSubTypes.NULL)
                     {
-                        SMUtil.Assert(false, "SubMissions: Skin UniqueID for skin " + folderName + ".  is below 128, the advised start range for Unofficial Custom Corps with a Skin reference corp. \n  This can cause compatability issues later on with Official and Unofficial mods.");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: Skin UniqueID for skin " + folderName + ".  is below 128, the advised start range for Unofficial Custom Corps with a Skin reference corp. \n  This can cause compatability issues later on with Official and Unofficial mods.");
                     }
 
                     CorporationSkinUIInfo UII = new CorporationSkinUIInfo();
@@ -731,11 +773,11 @@ namespace Sub_Missions
                     UII.m_AlwaysEmissive = SID.AlwaysEmissive;
                     UII.m_FallbackString = folderName;
                     Texture2D T2D;
-                    if (!File.Exists(destination + SMissionJSONLoader.up + SID.Preview))
+                    if (!File.Exists(Path.Combine(destination,SID.Preview)))
                     {
                         if (CL.CSIRenderCache.TryGetValue(SID.UniqueID, out Sprite val))
                         {
-                            FileUtils.SaveTexture(val.texture, destination + SMissionJSONLoader.up + SID.Preview);
+                            FileUtils.SaveTexture(val.texture, Path.Combine(destination, SID.Preview));
                             UII.m_PreviewImage = val;
                         }
                         else
@@ -766,26 +808,36 @@ namespace Sub_Missions
                     CSI.m_Corporation = (FactionSubTypes)CL.ID;
                     CSI.m_SkinUniqueID = SID.UniqueID;
 
-                    if (ST.m_Emissive == null || ST.m_Metal == null || ST.m_Albedo == null)
+                    if (ST.m_Emissive == null)
                     {
-                        SMUtil.Assert(false, "SubMissions: Elements of the skin ARE NULL");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: skin " + SID.Name + " Emissive IS NULL");
+                    }
+                    if (ST.m_Metal == null)
+                    {
+                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: skin " + SID.Name + " Metal IS NULL");
+                    }
+                    if (ST.m_Albedo == null)
+                    {
+                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: skin " + SID.Name + " Albedo IS NULL");
                     }
                 }
                 return true;
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not read Skin.  \n   This could be due to a bug with this mod or file permissions. " + e);
+                SMUtil.Assert(false, CL.GetLogName("Skins"), "SubMissions: Could not read Skin.  \n   This could be due to a bug with " +
+                    "this mod or file permissions.", e);
                 return false;
             }
         }
         private static Texture2D TryGetPNG(string destination, string FileName)
         {
-            if (File.Exists(destination + SMissionJSONLoader.up + FileName))
+            if (File.Exists(Path.Combine(destination, FileName)))
             {
-                return (Texture2D)FileUtils.LoadTexture(destination + SMissionJSONLoader.up + FileName);
+                return (Texture2D)FileUtils.LoadTexture(Path.Combine(destination, FileName));
             }
-            SMUtil.Assert(false, "SubMissions: Could not read Skin texture " + FileName + ".  \n   This could be due to a bug with this mod or file permissions.");
+            SMUtil.Error(false, "Load PNG ~ " + FileName, "SubMissions: Could not read Skin texture " + FileName + ".  " +
+                "\n   This could be due to a bug with this mod or file permissions.");
             return ManUI.inst.GetModernCorpIcon(FactionSubTypes.GSO).texture;
         }
 
@@ -794,7 +846,7 @@ namespace Sub_Missions
             foreach (var SMCCL in corpsStoredUnofficial)
             {
                 if (ManLicenses.inst.GetAllCorpIDs().Contains(SMCCL.Key))
-                    SMCCL.Value.BuildSkins();
+                    SMCCL.Value.BuildUnofficialSkins();
             }
         }
 
@@ -982,6 +1034,7 @@ namespace Sub_Missions
         private void Update()
         {
             RunAudio();
+            CheckShouldRefreshAllCorpNames();
             if (inst.justAssignedTime < 1f)
             {
                 if (currentVolPercent > 0)

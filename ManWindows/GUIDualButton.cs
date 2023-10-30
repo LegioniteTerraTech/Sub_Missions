@@ -42,7 +42,7 @@ namespace Sub_Missions.ManWindows
 
         public void RunGUI(int ID)
         {
-            if (GUI.Button(new Rect(15, 30, (Display.Window.width / 2) - 30, Display.Window.height - 45), "<b>" + buttonMessage + "</b>", ConnectedToMission ? WindowManager.styleGinormusFont : WindowManager.styleHugeFont))
+            if (GUI.Button(new Rect(15, 30, (Display.Window.width / 2) - 30, Display.Window.height - 45), "<b>" + buttonMessage + "</b>", ConnectedToMission ? WindowManager.styleButtonGinormusFont : WindowManager.styleButtonHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 if (ConnectedToMission)
@@ -58,7 +58,7 @@ namespace Sub_Missions.ManWindows
                     WindowManager.RemovePopup(Display);
                 }
             }
-            if (GUI.Button(new Rect((Display.Window.width / 2) + 15, 30, (Display.Window.width / 2) - 30, Display.Window.height - 45), "<b>No</b>", ConnectedToMission ? WindowManager.styleGinormusFont : WindowManager.styleHugeFont))
+            if (GUI.Button(new Rect((Display.Window.width / 2) + 15, 30, (Display.Window.width / 2) - 30, Display.Window.height - 45), "<b>No</b>", ConnectedToMission ? WindowManager.styleButtonGinormusFont : WindowManager.styleButtonHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
 

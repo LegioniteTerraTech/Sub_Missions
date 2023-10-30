@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using TAC_AI.Templates;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.Steps
 {
@@ -23,9 +24,17 @@ namespace Sub_Missions.Steps
                   "\n  }," +
                   "\n  \"TerrainHandling\": 2,      // " + TerrainHandlingDesc +
                   "\n  // Input Parameters" +
-                  "\n  \"InputString\": \"TechName\",   // The name of the Resource Node to spawn." +
+                  "\n  \"InputString\": \"Resource_Name\",   // The name of the Resource Node to spawn." +
                   "\n  \"InputNum\": 0,               // How many of the nodes to spawn" +
                 "\n},";
+        }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.SpawnOnly, "On Mission Startup");
+            AddField(ESMSFields.Position, "Position");
+            AddField(ESMSFields.TerrainHandling, "Placement");
+            //AddField(ESMSFields.InputNum_int, "Num to Spawn");
+            AddOptions(ESMSFields.InputString, "Resource Type", Enum.GetNames(typeof(SceneryTypes)));
         }
 
         public override void OnInit() { }
@@ -35,12 +44,15 @@ namespace Sub_Missions.Steps
         {   // Spawn a single resource
             if (Enum.TryParse(SMission.InputString, out SceneryTypes result) && SMission.InputNum >= 1)
             {
-                ItemTypeInfo info = new ItemTypeInfo(ObjectTypes.Scenery, (int)result);
-                SMission.AssignedTracked = ManSpawn.inst.SpawnDispenser(SMission.Position, Quaternion.identity, info, (int)SMission.InputNum);
+                ResourceDispenser RD = SpawnHelper.SpawnResourceNode(SMission.Position, Quaternion.identity, 
+                    result, ManWorld.inst.GetBiomeWeightsAtScenePosition(SMission.Position).Biome(0).BiomeType);
+                SMission.AssignedTracked = new TrackedVisible(RD.visible.ID, RD.visible, ObjectTypes.Scenery, RadarTypes.Hidden);
             }
             else
             {
-                SMUtil.Assert(false, "SubMissions: StepSetupResources - Failed: Input SceneryType not valid or InputNum below 1.  Mission " + Mission.Name);
+                SMUtil.Error(false, SMission.LogName, 
+                    "SubMissions: StepSetupResources - Failed: Input SceneryType not valid or " +
+                    "InputNum below 1.  Mission " + Mission.Name);
             }
         }
         public override void Trigger()

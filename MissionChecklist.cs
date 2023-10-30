@@ -11,16 +11,13 @@ namespace Sub_Missions
     public class MissionChecklist
     {
         [JsonIgnore]
-        internal SubMission mission;
+        internal SubMission mission { get; set; } = null;
 
         public string ListArticle = "unset";
         public VarType ValueType = VarType.Bool;
         public int BoolToEnable = -1; // pop up when the global bool for this is true - -1 to enable at all times
         public int GlobalIndex = 0;
         public int GlobalIndex2 = 0;
-
-        [JsonIgnore]
-        private StringBuilder builder = new StringBuilder();
 
         [JsonIgnore]
         private float tickdown = 2;
@@ -57,59 +54,100 @@ namespace Sub_Missions
                     tickdown -= Time.deltaTime;
                 }
             }
-            catch 
+            catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(false, "SubMissions: MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
+                SMUtil.Error(false, "Mission (Checklist) ~" + mission.Name, "SubMissions: MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
 
                 switch (ValueType)
                 {
                     case VarType.Bool:
-                        SMUtil.Assert(true, "SubMissions: Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
+                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, "SubMissions: Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
                         break;
                     case VarType.IntOverInt:
-                        SMUtil.Assert(true, "SubMissions: Make sure both GlobalIndexes are set properly and exist in VarInts!");
+                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, "SubMissions: Make sure both GlobalIndexes are set properly and exist in VarInts!");
                         break;
-                    case VarType.Unset:
-                        SMUtil.Assert(true, "SubMissions: Internal issue!  Contact Legionite!");
-                        break;
+                    default:
+                        throw new MandatoryException(e);
                 }
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
+                //SMUtil.Assert(true, "SubMissions: Internal issue!  Contact Legionite!", e);
             }
             return triggerCountdownRemoval;
         }
-        public bool GetStatus(out string output)
+        public bool GetStatusGUI()
         {
-            if (BoolToEnable > 0)
+            if (mission == null)
             {
-                if (!mission.VarTrueFalse[BoolToEnable])
+                //throw new NullReferenceException("mission is null somehow - this should not be possible");
+                //GUILayout.Label("<b>!! MISSION NULL !!</b>");
+                GUILayout.Label("<b>Too Far From \nMission</b>");
+                GUILayout.FlexibleSpace();
+                return false;
+            }
+            else
+            {
+                if (BoolToEnable != -1 && BoolToEnable < mission.VarTrueFalse.Count)
                 {
-                    output = "";
-                    return false;
+                    if (!mission.VarTrueFalse[BoolToEnable])
+                    {
+                        return false;
+                    }
                 }
             }
-            builder.Clear();
-            builder.Append(ListArticle + "| ");
+            GUILayout.BeginHorizontal(GUILayout.Height(38));
+            GUILayout.Label(ListArticle == null ? "" : ListArticle);
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("|");
+            ShowEntryData();
+            GUILayout.EndHorizontal();
+            return true;
+        }
+
+        public void ShowEntryData()
+        {
             switch (ValueType)
             {
                 case VarType.Bool:
-                    if (mission.VarTrueFalse[GlobalIndex])
-                        builder.Append("<b>✓</b>");
+                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarTrueFalse.Count)
+                    {
+                        GUILayout.Label("<b>ER</b>");
+                    }
                     else
-                        builder.Append("<b>!</b>");
+                    {
+                        if (mission.VarTrueFalse[GlobalIndex])
+                            GUILayout.Label("<b>✓</b>");
+                        else
+                            GUILayout.Label("<b>!</b>");
+                    }
                     break;
                 case VarType.IntOverInt:
-                    if (mission.VarInts[GlobalIndex] >= mission.VarInts[GlobalIndex2])
-                        builder.Append("<b>✓</b>");
+                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarInts.Count ||
+                        GlobalIndex2 == -1 || GlobalIndex2 >= mission.VarInts.Count)
+                    {
+                        GUILayout.Label("<b>ER</b>");
+                    }
                     else
-                        builder.Append("<b>"+ mission.VarInts[GlobalIndex] + "/" + mission.VarInts[GlobalIndex2] + "</b>");
+                    {
+                        if (mission.VarInts[GlobalIndex] >= mission.VarInts[GlobalIndex2])
+                            GUILayout.Label("<b>✓</b>");
+                        else
+                        {
+                            GUILayout.Label(mission.VarInts[GlobalIndex].ToString());
+                            GUILayout.Label(" / ");
+                            GUILayout.Label(mission.VarInts[GlobalIndex2].ToString());
+                        }
+                    }
                     break;
                 default:
-                    builder.Append("<b>O</b>");
+                    GUILayout.Label("<b>O</b>");
                     break;
 
             }
-            output = builder.ToString();
-            return true;
         }
+
 
         public bool GetNumber(out int output)
         {

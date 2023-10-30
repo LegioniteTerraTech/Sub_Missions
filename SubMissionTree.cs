@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 using UnityEngine;
 using TAC_AI.Templates;
 using Sub_Missions.Steps;
@@ -18,12 +19,11 @@ namespace Sub_Missions
     [Serializable]
     public class SubMissionTree
     {   //  Build the mission tree!
-
         public string TreeName = "unset";
         public string Faction = "GSO";
         public string ModID = "Unset";
 
-        // Cache
+        // Cache 
         [JsonIgnore]
         internal readonly List<SubMissionStandby> Missions = new List<SubMissionStandby>();          //MUST BE SET VIA JSON
         [JsonIgnore]
@@ -60,9 +60,12 @@ namespace Sub_Missions
         [JsonIgnore]
         internal Dictionary<int, Mesh> MissionMeshes = new Dictionary<int, Mesh>();// Compiled on tree building.
         [JsonIgnore]
-        internal Dictionary<int, GameObject> MissionPieces = new Dictionary<int, GameObject>();// Compiled on tree building.
+        internal Dictionary<string, SMWorldObject> WorldObjects = new Dictionary<string, SMWorldObject>();// Compiled on tree building.
         [JsonIgnore]
-        internal string TreeDirectory = "error";// Compiled on tree building.
+        internal Dictionary<string, SpawnableTech> TreeTechs = new Dictionary<string, SpawnableTech>();// Compiled on tree building.
+        
+        [JsonIgnore]
+        internal SubMissionHierachy TreeHierachy = null;// Compiled on tree building.
 
         // Documentation
         public static string GetDocumentation()
@@ -92,78 +95,83 @@ namespace Sub_Missions
         }
 
         // Initialization
-        internal bool CompileMissionTree(out SubMissionTree newTree)
+        internal void CompileMissionTree(out SubMissionTree newTree)
         {   // Reduce memory loads
-            if (!SMissionJSONLoader.TreeLoader(TreeName, TreeDirectory, out SubMissionTree tree))
+            try
             {
-                newTree = null;
-                return false;
-            }
-            if (tree.TreeName == null)
-                tree.TreeName = "NULL_INVALID";
-            SetupTreeCorp();
-            List<SubMission> MissionsLoaded = SMissionJSONLoader.LoadAllMissions(tree);
-            List<SubMissionStandby> compiled = CompileToStandby(MissionsLoaded);
+                SMissionJSONLoader.TreeLoader(TreeHierachy, out SubMissionTree tree);
+                if (tree.TreeName == null)
+                    tree.TreeName = "NULL_INVALID";
+                SetupTreeCorp();
+                List<SubMission> MissionsLoaded = SMissionJSONLoader.LoadAllMissions(tree);
+                List<SubMissionStandby> compiled = CompileToStandby(MissionsLoaded);
 
-            // Now we sort them based on input strings
-            foreach (SubMissionStandby sort in compiled)
+                // Now we sort them based on input strings
+                foreach (SubMissionStandby sort in compiled)
+                {
+                    sort.Tree = tree;
+                    bool doNow = tree.ImmedeateMissionNames.Contains(sort.Name);
+                    bool repeat = tree.RepeatMissionNames.Contains(sort.Name);
+                    if (repeat && doNow)
+                    {
+                        SMUtil.Error(false, "Mission Tree (Startup) ~ " + tree.TreeName, 
+                            "SubMissions: Tree " + TreeName + " contains mission " + sort.Name + 
+                            " that's specified in both ImmedeateMissionNames and RepeatMissionNames. \n" +
+                            "  Make sure to assign it to ImmedeateMissionNames or RepeatMissionNames. \n" +
+                            "  Defaulting " + sort.Name + " to MissionNames.");
+                        sort.Type = SubMissionType.Basic;
+                        tree.Missions.Add(sort);
+                        continue;
+                    }
+                    else if (doNow)
+                    {
+                        Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a Immedeate mission that will be auto-assigned as soon as it's criteria is met.");
+                        sort.Type = SubMissionType.Immedeate;
+                        tree.RepeatMissions.Add(sort);
+                        continue;
+                    }
+                    bool main = tree.MissionNames.Contains(sort.Name);
+                    if (repeat && main)
+                    {
+                        SMUtil.Error(false, "Mission Tree (Startup) ~ " + tree.TreeName, 
+                            "SubMissions: Tree " + TreeName + " contains mission " + sort.Name + 
+                            " that's specified in both MissionNames and RepeatMissionNames.\n" +
+                            "  Make sure to assign it to MissionNames or RepeatMissionNames.\n" +
+                            "  Defaulting " + sort.Name + " to MissionNames.");
+                        sort.Type = SubMissionType.Basic;
+                        tree.Missions.Add(sort);
+                    }
+                    else if (repeat)
+                    {
+                        Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + 
+                            TreeName + " as a repeatable mission.");
+                        sort.Type = SubMissionType.Repeating;
+                        tree.RepeatMissions.Add(sort);
+                    }
+                    else if (main)
+                    {
+                        Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + 
+                            TreeName + " as a main mission.");
+                        sort.Type = SubMissionType.Basic;
+                        tree.Missions.Add(sort);
+                    }
+                    else
+                    {
+                        SMUtil.Error(false, "Mission Tree (Startup) ~ " + tree.TreeName,
+                            "SubMissions: Tree " + TreeName + " contains unspecified mission " + 
+                            sort.Name + ".\n Make sure to assign it to MissionNames or RepeatMissionNames." +
+                            "\n Defaulting " + sort.Name + " to MissionNames.");
+                        sort.Type = SubMissionType.Basic;
+                        tree.Missions.Add(sort);
+                    }
+                }
+                SMUtil.Log(false, "SubMissions: Compiled tree for " + TreeName + ".");
+                newTree = tree;
+            }
+            catch (MandatoryException e)
             {
-                sort.Tree = tree;
-                bool doNow = tree.ImmedeateMissionNames.Contains(sort.Name);
-                bool repeat = tree.RepeatMissionNames.Contains(sort.Name);
-                if (repeat && doNow)
-                {
-                    SMUtil.Assert(false, "SubMissions: Tree " + TreeName + " contains mission " + sort.Name + " that's specified in both ImmedeateMissionNames and RepeatMissionNames.");
-                    SMUtil.Assert(false, "  Make sure to assign it to ImmedeateMissionNames or RepeatMissionNames.");
-                    SMUtil.Assert(false, "  Defaulting " + sort.Name + " to MissionNames.");
-                    sort.Type = SubMissionType.Basic;
-                    tree.Missions.Add(sort);
-                    continue;
-                }
-                else if (doNow)
-                {
-                    Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a Immedeate mission that will be auto-assigned as soon as it's criteria is met.");
-                    sort.Type = SubMissionType.Immedeate;
-                    tree.RepeatMissions.Add(sort);
-                    continue;
-                }
-                bool main = tree.MissionNames.Contains(sort.Name);
-                if (repeat && main)
-                {
-                    SMUtil.Assert(false, "SubMissions: Tree " + TreeName + " contains mission " + sort.Name + " that's specified in both MissionNames and RepeatMissionNames.");
-                    SMUtil.Assert(false, "  Make sure to assign it to MissionNames or RepeatMissionNames.");
-                    SMUtil.Assert(false, "  Defaulting " + sort.Name + " to MissionNames.");
-                    sort.Type = SubMissionType.Basic;
-                    tree.Missions.Add(sort);
-                }
-                else if (repeat)
-                {
-                    Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a repeatable mission.");
-                    sort.Type = SubMissionType.Repeating;
-                    tree.RepeatMissions.Add(sort);
-                }
-                else if (main)
-                {
-                    Debug_SMissions.Log("SubMissions: Mission " + sort.Name + " has been assigned to " + TreeName + " as a main mission.");
-                    sort.Type = SubMissionType.Basic;
-                    tree.Missions.Add(sort);
-                }
-                else
-                {
-                    SMUtil.Assert(false, "SubMissions: Tree " + TreeName + " contains unspecified mission " + sort.Name + ".");
-                    SMUtil.Assert(false, "  Make sure to assign it to MissionNames or RepeatMissionNames.");
-                    SMUtil.Assert(false, "  Defaulting " + sort.Name + " to MissionNames.");
-                    sort.Type = SubMissionType.Basic;
-                    tree.Missions.Add(sort);
-                }
-
+                throw e;
             }
-            Debug_SMissions.Log("SubMissions: Compiled tree for " + TreeName + ".");
-            newTree = tree;
-
-
-
-            return true;
         }
 
         // Accessing
@@ -308,6 +316,27 @@ namespace Sub_Missions
             return FactionSubTypes.GSO;
         }
 
+        // Techs
+        public static Tank SpawnMissionTech(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName, bool instant = false)
+        {   // We pull these from MissionTechs.json
+            Tank tech = null;
+            if (instant)
+            {
+                if (mission.Tree.TreeTechs.TryGetValue(TechName, out SpawnableTech val))
+                {
+                    val.Spawn(mission, pos, facingDirect, Team);
+                }
+            }
+            else
+            {
+                TrackedTech techCase = SMUtil.GetTrackedTechBase(ref mission, TechName);
+                techCase.delayedSpawn = ManSpawn.inst.SpawnDeliveryBombNew(pos, DeliveryBombSpawner.ImpactMarkerType.Tech);
+                techCase.delayedSpawn.BombDeliveredEvent.Subscribe(techCase.SpawnTech);
+                techCase.DeliQueued = true;
+            }
+            return tech;
+        }
+
 
         // Actions
         internal bool AcceptTreeMission(SubMissionStandby Anon, Encounter Enc = null)
@@ -324,7 +353,8 @@ namespace Sub_Missions
                 return true;
             }
             else
-                SMUtil.Assert(false, "<b> Could not deploy mission! </b>");
+                SMUtil.Assert(false, "Mission (Startup) ~ " + Anon.Name, "<b> Could not deploy mission! </b>",  
+                    new MandatoryException("Mission " + TreeName + " failed to deploy"));
             return false;
         }
         internal void CancelTreeMission(SubMission Active)
@@ -364,10 +394,11 @@ namespace Sub_Missions
             ResetALLTreeMissions();
         }
 
+        private static List<SubMissionStandby> initMissionsCache = new List<SubMissionStandby>();
         public List<SubMissionStandby> GetImmediateMissions()
         {   //
             //Debug_SMissions.Log("SubMissions: " + TreeName + " is fetching missions");
-            List<SubMissionStandby> initMissions = new List<SubMissionStandby>();
+            initMissionsCache.Clear();
             Debug_SMissions.Info("SubMissions: Immediate Missions count " + ImmedeateMissions.Count);
             if (!KickStart.OverrideRestrictions)
             {
@@ -402,7 +433,7 @@ namespace Sub_Missions
                         {
                             mission.GetAndSetDisplayName();
                             Debug_SMissions.Log("SubMissions: Pushing mission " + mission.Name + " now - the player has no option to deny this");
-                            initMissions.Add(mission);
+                            initMissionsCache.Add(mission);
                         }
                     }
                     catch
@@ -412,7 +443,7 @@ namespace Sub_Missions
                     }
                 }
             }
-            return initMissions;
+            return initMissionsCache;
         }
 
         public List<SubMissionStandby> GetReachableMissions()
@@ -420,7 +451,7 @@ namespace Sub_Missions
             //Debug_SMissions.Log("SubMissions: " + TreeName + " is fetching missions");
             //if (ManSMCCorps.GetSMCCorp(Faction, out SMCCorpLicense CL))
             //   CL.RefreshCorpUISP();
-            List<SubMissionStandby> initMissions = new List<SubMissionStandby>();
+            initMissionsCache.Clear();
             //Debug_SMissions.Log("SubMissions: Tree " + TreeName + " Missions count " + Missions.Count + " | " + RepeatMissions.Count);
             foreach (SubMissionStandby mission in Missions)
             {
@@ -435,7 +466,7 @@ namespace Sub_Missions
                 {
                     //Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
                     mission.GetAndSetDisplayName();
-                    initMissions.Add(mission);
+                    initMissionsCache.Add(mission);
                     continue;
                 }
                 if (CompletedMissions.Exists(delegate (SubMissionStandby cand) { return cand.Name.GetHashCode() == hashName; }))
@@ -471,7 +502,10 @@ namespace Sub_Missions
                             break;
                     }
                 }
-                catch { Debug_SMissions.Log("Player does not exist yet"); }
+                catch
+                {
+                    Debug_SMissions.Log("Player does not exist yet");
+                }
                 try
                 {
                     FactionLicense licence = Singleton.Manager<ManLicenses>.inst.GetLicense(GetTreeCorp(mission.Faction));
@@ -479,8 +513,8 @@ namespace Sub_Missions
                     if (licence.IsDiscovered && licence.CurrentLevel >= mission.GradeRequired)
                     {
                         mission.GetAndSetDisplayName();
-                       // Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
-                        initMissions.Add(mission);
+                        // Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
+                        initMissionsCache.Add(mission);
                     }
                 }
                 catch
@@ -502,7 +536,7 @@ namespace Sub_Missions
                 {
                     //Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
                     mission.GetAndSetDisplayName();
-                    initMissions.Add(mission);
+                    initMissionsCache.Add(mission);
                     continue;
                 }
                 if (mission.MinProgressX > ProgressX)
@@ -522,7 +556,7 @@ namespace Sub_Missions
                     {
                         mission.GetAndSetDisplayName();
                         Debug_SMissions.Log("SubMissions: Presenting mission " + mission.AltName);
-                        initMissions.Add(mission);
+                        initMissionsCache.Add(mission);
                     }
                 }
                 catch
@@ -544,15 +578,15 @@ namespace Sub_Missions
                     }
                     Debug_SMissions.Log("SubMissions: Presenting mission " + mission.Name);
                     mission.GetAndSetDisplayName();
-                    initMissions.Add(mission);
+                    initMissionsCache.Add(mission);
                 }
             }
-            return initMissions;
+            return initMissionsCache;
         }
 
 
         // COMPILER
-        private List<SubMission> DeployMissions(string treeName, List<SubMissionStandby> toDeploy)
+        private List<SubMission> DeployAllMissions(string treeName, List<SubMissionStandby> toDeploy)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
             List<SubMission> missionsLoaded = new List<SubMission>();
@@ -569,7 +603,8 @@ namespace Sub_Missions
             Deployed = SMissionJSONLoader.MissionLoader(this, toDeploy.Name);
             if (Deployed == null)
             {
-                SMUtil.Assert(false, "<b> CRITICAL ERROR IN HANDLING " + toDeploy.Name + " of tree " + treeName + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
+                SMUtil.Error(false, "Mission (Startup) ~ " + toDeploy.Name, "<b> CRITICAL ERROR IN HANDLING " + 
+                    toDeploy.Name + " of tree " + treeName + " - UNABLE TO IMPORT ANY INFORMATION! </b>");
                 return false;
             }
             Deployed.SelectedAltName = toDeploy.AltName;

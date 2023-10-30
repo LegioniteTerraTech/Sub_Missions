@@ -46,6 +46,15 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'SteamDebug|AnyCPU'">
+    <OutputPath>bin\SteamDebug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE;STEAM</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <ErrorReport>prompt</ErrorReport>
+  </PropertyGroup>
   <ItemGroup>
     <!--> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzz </!-->
     <!--> THE MATTERS BELOW ARE FOR BOTH </!-->
@@ -66,8 +75,16 @@
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Ionic.Zlib.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="LegacyBlockLoader">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\workshop\content\285920\2683636116\LegacyBlockLoader.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
     <Reference Include="Newtonsoft.Json">
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\Newtonsoft.Json.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="NuterraSteam">
+      <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\workshop\content\285920\2790966966\NuterraSteam.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="QModInstaller">
@@ -82,6 +99,9 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Xml" />
+    <Reference Include="TerraTechETCUtil">
+      <HintPath>..\..\TTETCUtil\TerraTechETCUtil\TerraTechETCUtil\obj\Steam\TerraTechETCUtil.dll</HintPath>
+    </Reference>
     <Reference Include="TimeOfDay">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\TimeOfDay.dll</HintPath>
       <Private>False</Private>
@@ -199,9 +219,6 @@
       <HintPath>..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\workshop\content\285920\2758915184\ConfigHelper.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="TerraTechETCUtil">
-      <HintPath>..\..\TTETCUtil\TerraTechETCUtil\TerraTechETCUtil\obj\Steam\TerraTechETCUtil.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'OR'$(Configuration)'=='Debug'">
     <!--> zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz </!-->
@@ -258,7 +275,23 @@
   <ItemGroup>
     <Compile Include="ButtonAct.cs" />
     <Compile Include="Debug_SMissions.cs" />
+    <Compile Include="Editor\ESMFields.cs" />
+    <Compile Include="Editor\ESMTFields.cs" />
+    <Compile Include="Editor\SMAutoFill.cs" />
+    <Compile Include="Editor\SMMissionGUI.cs" />
+    <Compile Include="Editor\SMStepEditorGUI.cs" />
+    <Compile Include="Editor\SMStepGUI.cs" />
+    <Compile Include="Editor\SMFieldGUI.cs" />
+    <Compile Include="Editor\SMTreeGUI.cs" />
     <Compile Include="EncounterShoehorn.cs" />
+    <Compile Include="Editor\ESMSFields.cs" />
+    <Compile Include="Editor\SMSFieldGUI.cs" />
+    <Compile Include="ErrorElements.cs" />
+    <Compile Include="MandatoryException.cs" />
+    <Compile Include="ManWindows\GUIDevControl.cs" />
+    <Compile Include="ManWindows\GUIMessageError.cs" />
+    <Compile Include="ManWindows\GUISMissionEditor.cs" />
+    <Compile Include="ModularMonuments\MM_JSONLoader.cs" />
     <Compile Include="ModuleSubMissionsBoard.cs" />
     <Compile Include="SimpleSMissions.cs" />
     <Compile Include="CustomCorpsMK2\SMCCorpLicense.cs" />
@@ -266,12 +299,15 @@
     <Compile Include="CustomCorpsMK2\SMCCorpBlockRange.cs" />
     <Compile Include="CustomCorpsMK2\SMCSkinID.cs" />
     <Compile Include="SMExplosion.cs" />
+    <Compile Include="SpawnableTech.cs" />
     <Compile Include="Steps\Checks\StepCheckMoney.cs" />
     <Compile Include="Steps\IPositioned.cs" />
     <Compile Include="Steps\StepAirstrike.cs" />
     <Compile Include="Steps\StepFolder.cs" />
     <Compile Include="CustomCorpsMK2\UICCorpLicenses.cs" />
     <Compile Include="CustomCorpsMK2\UICustomCorpSkinsTEMP.CS" />
+    <Compile Include="SubMissionHierachy.cs" />
+    <Compile Include="WorldTerraformer.cs" />
     <Content Include="ModularBrickCube_6x3x6.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -328,7 +364,6 @@
     <Compile Include="Steps\SubMissionStep.cs" />
     <Compile Include="SMUtil.cs" />
     <Compile Include="SubMissionReward.cs" />
-    <Compile Include="TerrainOperations.cs" />
     <Compile Include="TrackedBlock.cs" />
     <Compile Include="TrackedTech.cs" />
   </ItemGroup>
@@ -350,6 +385,9 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="SimpleMissions\" />
+  </ItemGroup>
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
@@ -374,7 +412,7 @@ xcopy /S /Y /R "!e:~0,-1!" !modpath!
 set modpath2="C:\Users\Legionite\Desktop\Advanced AI\Assets\Mods\Mod Missions"
 
 if exist !modpath2! (
-if $(ConfigurationName) == Steam (
+if $(ConfigurationName) == Steam or $(ConfigurationName) == SteamDev (
 echo Copying to SteamMod
 set e=$(TargetDir)&gt;nul
 xcopy /S /Y /R "!e:~0,-1!" !modpath2!
@@ -384,7 +422,7 @@ xcopy /S /Y /R "!e:~0,-1!" !modpath2!
 set modpath3="C:\Program Files (x86)\Steam\steamapps\common\TerraTech\LocalMods\Mod Missions"
 
 if exist !modpath3! (
-if $(ConfigurationName) == Steam (
+if $(ConfigurationName) == Steam or $(ConfigurationName) == SteamDev(
 echo Copying to SteamModLocalDirect
 set e=$(TargetDir)&gt;nul
 xcopy /S /Y /R "!e:~0,-1!" !modpath3!
@@ -393,7 +431,7 @@ xcopy /S /Y /R "!e:~0,-1!" !modpath3!
 set modpath4="C:\Program Files (x86)\Steam\steamapps\workshop\content\285920\2850915625"
 
 if exist !modpath4! (
-if $(ConfigurationName) == Steam (
+if $(ConfigurationName) == Steam or $(ConfigurationName) == SteamDev(
 echo Copying to SteamModWorkshopDirect
 set e=$(TargetDir)&gt;nul
 xcopy /S /Y /R "!e:~0,-1!" !modpath4!

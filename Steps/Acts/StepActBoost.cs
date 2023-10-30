@@ -25,6 +25,13 @@ namespace Sub_Missions.Steps
                   "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to command." +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddGlobal(ESMSFields.SetMissionVarIndex1, "Active Condition", EVaribleType.Int);
+            AddField(ESMSFields.InputString_Tracked_Tech, "Tracked Tech");
+        }
 
         public override void OnInit() { }
 
@@ -42,12 +49,12 @@ namespace Sub_Missions.Steps
                 {
                     try
                     {
-                        target.GetComponent<AIECore.TankAIHelper>().OverrideAllControls = true;
+                        target.GetComponent<TankAIHelper>().OverrideAllControls = true;
                         target.control.BoostControlJets = true;
                     }
                     catch
                     {
-                        Debug_SMissions.Log("SubMissions: Could not fly away Tech as this action requires TACtical AIs to execute correctly!");
+                        SMUtil.Log(true, "SubMissions: Could not fly away Tech as this action requires TACtical AIs to execute correctly!");
                     }
                 }
             }

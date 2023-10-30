@@ -41,6 +41,35 @@ namespace Sub_Missions.Steps
                   "\n  \"InputStringAux\": null,   // Change the aiming target to a valid TrackedTech. Leave empty to target the player" +
                 "\n},";
         }
+
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.Position, "Position");
+            AddField(ESMSFields.Forwards, "Forwards");
+            AddField(ESMSFields.TerrainHandling, "Placement");
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Active Condition");
+            AddField(ESMSFields.InputNum, "Spread Intensity");
+            AddOptions(ESMSFields.InputString, "Aiming", new string[] {
+                "Position",
+                "Instant",
+                "AimInstant",
+                "AimPredict",
+                "AimDirect",
+                "AimGuided",
+            });
+            AddOptions(ESMSFields.InputStringAux, "Target: ", new string[]
+                {
+                    "Player",
+                    "Tracked",
+                },
+                new Dictionary<int, KeyValuePair<string, ESMSFields>>()
+                {
+                    {1, new KeyValuePair<string, ESMSFields>("Tracked Tech", ESMSFields.InputString_Tracked_Tech) },
+                }
+            );
+        }
         public override void OnInit() { }
         public override void OnDeInit() { }
 
@@ -93,7 +122,8 @@ namespace Sub_Missions.Steps
                         }
                         else
                         {
-                            SMUtil.Assert(true, "SubMissions: ActAirstrike - Failed: InputStringAux does not reference a valid TrackedTech within the mission.  Mission " + Mission.Name);
+                            SMUtil.Error(true, SMission.LogName, 
+                                "SubMissions: ActAirstrike - Failed: InputStringAux does not reference a valid TrackedTech within the mission.  Mission " + Mission.Name);
                         }
                     }
                     else if (SMission.InputString == "AimInstant")
@@ -130,6 +160,10 @@ namespace Sub_Missions.Steps
                     {
                         Fire(Singleton.playerPos);
                     }
+                    else if (SMission.InputString == "AimGuided")
+                    {
+                        Fire(Singleton.playerPos, Singleton.playerTank?.visible);
+                    }
                     else
                     {
                         Fire(SMission.Position);
@@ -151,36 +185,36 @@ namespace Sub_Missions.Steps
             {
                 try
                 {
-                    SMUtil.Assert(false, "SubMissions: StepAirstrike(Instant) - Failed on Mission " + Mission.Name);
+                    SMUtil.Assert(false, SMission.LogName, "SubMissions: StepAirstrike(Instant) - Failed on Mission " + Mission.Name, e);
                 }
-                catch
+                catch (Exception e2)
                 {
-                    SMUtil.Assert(true, "SubMissions: StepAirstrike(Instant) - Failed: COULD NOT FETCH INFORMATION!!!");
+                    SMUtil.Assert(true, SMission.LogName, "SubMissions: StepAirstrike(Instant) - Failed: COULD NOT FETCH INFORMATION!!!", e2);
                 }
                 //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
                 Debug_SMissions.Log("SubMissions: Error - " + e);
             }
         }
-        public void Fire(Vector3 scenePos)
+        public void Fire(Vector3 scenePos, Visible target = null)
         {
             try
             {
                 Vector3 variation = SMission.InputNum * UnityEngine.Random.insideUnitCircle.ToVector3XZ();
                 if (SMission.Forwards == Vector3.zero)
-                    SMExplosion.OrbitalLaunch(scenePos + variation, Vector3.forward);
+                    SMExplosion.OrbitalLaunch(scenePos + variation, Vector3.forward, target);
                 else
-                    SMExplosion.OrbitalLaunch(scenePos + variation, SMission.Forwards);
+                    SMExplosion.OrbitalLaunch(scenePos + variation, SMission.Forwards, target);
                 //ManSFX.inst.PlayMiscSFX(ManSFX.MiscSfxType.IntroWindAndAlarm);
             }
             catch (Exception e)
             {
                 try
                 {
-                    SMUtil.Assert(false, "SubMissions: StepAirstrike - Failed on Mission " + Mission.Name);
+                    SMUtil.Assert(false, SMission.LogName, "SubMissions: StepAirstrike - Failed on Mission " + Mission.Name, e);
                 }
-                catch
+                catch (Exception e2)
                 {
-                    SMUtil.Assert(true, "SubMissions: StepAirstrike - Failed: COULD NOT FETCH INFORMATION!!!");
+                    SMUtil.Assert(true, SMission.LogName, "SubMissions: StepAirstrike - Failed: COULD NOT FETCH INFORMATION!!!", e2);
                 }
                 //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
                 Debug_SMissions.Log("SubMissions: Error - " + e);

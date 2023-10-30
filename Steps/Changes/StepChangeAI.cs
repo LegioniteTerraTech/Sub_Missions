@@ -32,6 +32,14 @@ namespace Sub_Missions.Steps
                   "\n  // E = EnemyBolts" +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddGlobal(ESMSFields.SetMissionVarIndex1, "Active Condition", EVaribleType.Int);
+            AddField(ESMSFields.InputString_Tracked_Tech, "Tracked Tech");
+            AddField(ESMSFields.InputStringAux, "AI Modes");
+        }
 
         public override void OnInit() { }
 
@@ -40,9 +48,9 @@ namespace Sub_Missions.Steps
             try
             {
                 TrackedTech tTech = SMUtil.GetTrackedTechBase(ref Mission, SMission.InputString);
-                if (tTech.Tech.GetComponent<EnemyMind>())
+                if (tTech.TechAuto.GetComponent<EnemyMind>())
                 {
-                    EnemyMind mind = tTech.Tech.GetComponent<EnemyMind>();
+                    EnemyMind mind = tTech.TechAuto.GetComponent<EnemyMind>();
                     IntToEnemyAI(ref mind, (int)SMission.InputNum);
                 }
             }
@@ -60,9 +68,9 @@ namespace Sub_Missions.Steps
                 try
                 {
                     TrackedTech tTech = SMUtil.GetTrackedTechBase(ref Mission, SMission.InputString);
-                    if (tTech.Tech.GetComponent<EnemyMind>())
+                    if (tTech.TechAuto.GetComponent<EnemyMind>())
                     {
-                        EnemyMind mind = tTech.Tech.GetComponent<EnemyMind>();
+                        EnemyMind mind = tTech.TechAuto.GetComponent<EnemyMind>();
                         IntToEnemyAI(ref mind, (int)SMission.InputNum);
                         /*
                         try
@@ -141,7 +149,9 @@ namespace Sub_Missions.Steps
                             mind.CommanderBolts = result5;
                         break;
                     default:
-                        SMUtil.Assert(true, "SubMissions: ChangeAI has more than 5 inputted numbers, beyond that of the options changeable.  Mission " + Mission.Name);
+                        SMUtil.Error(true, SMission.LogName, 
+                            "SubMissions: ChangeAI has more than 5 inputted numbers, beyond that " +
+                            "of the options changeable.  Mission " + Mission.Name);
                         break;
                 }
                 position++;

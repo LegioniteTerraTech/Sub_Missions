@@ -39,6 +39,24 @@ namespace Sub_Missions.Steps
                   "\n  //\"Infinite\",  // Allow infinite spawning while conditions are true and within the progress ID range" +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.Position, "Position");
+            AddField(ESMSFields.Forwards, "Forwards");
+            AddField(ESMSFields.EulerAngles, "Euler Angles");
+            AddField(ESMSFields.TerrainHandling, "Placement");
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Success Output");
+            AddField(ESMSFields.InputNum, "Team");
+            AddField(ESMSFields.InputString_Tracked_Tech, "Tracked Tech");
+            AddOptions(ESMSFields.InputStringAux, "Tracking: ", new string[]
+                {
+                    "Trigger Once",
+                    "Infinite",
+                }
+            );
+        }
         public override void OnInit() { }
         public override void OnDeInit() { }
 
@@ -57,15 +75,18 @@ namespace Sub_Missions.Steps
                     {
                         try
                         {
-                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Failed: " + SMission.InputString + " finding failed.");
-                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Team " + SMission.InputNum);
-                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Mission " + Mission.Name);
+                            SMUtil.Error(false, SMission.LogName, 
+                                "SubMissions: StepSetupTech - Failed: " + SMission.InputString + " finding failed.");
+                            SMUtil.Error(false, SMission.LogName, 
+                                "SubMissions: StepSetupTech - Team " + SMission.InputNum);
+                            SMUtil.Error(false, SMission.LogName, 
+                                "SubMissions: StepSetupTech - Mission " + Mission.Name);
                         }
-                        catch
+                        catch (Exception e2)
                         {
-                            SMUtil.Assert(false, "SubMissions: StepSetupTech - Failed: COULD NOT FETCH INFORMATION!!!");
+                            SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupTech - Failed: COULD NOT FETCH INFORMATION!!!", e2);
                         }
-                        Debug_SMissions.Log("SubMissions: Error - " + e);
+                        SMUtil.Assert(false, SMission.LogName, "SubMissions: Error", e);
                     }
                 }
             }
@@ -89,13 +110,17 @@ namespace Sub_Missions.Steps
                             {
                                 try
                                 {
-                                    SMUtil.Assert(false, "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: " + SMission.InputString + " finding failed.");
-                                    SMUtil.Assert(false, "SubMissions: StepSetupTech (OnTriggerOnce) - Team " + SMission.InputNum);
-                                    SMUtil.Assert(true, "SubMissions: StepSetupTech (OnTriggerOnce) - Mission " + Mission.Name);
+                                    SMUtil.Error(false, SMission.LogName, 
+                                        "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: " + SMission.InputString + " finding failed.");
+                                    SMUtil.Error(false, SMission.LogName, 
+                                        "SubMissions: StepSetupTech (OnTriggerOnce) - Team " + SMission.InputNum);
+                                    SMUtil.Error(true, SMission.LogName, 
+                                        "SubMissions: StepSetupTech (OnTriggerOnce) - Mission " + Mission.Name);
                                 }
-                                catch
+                                catch (Exception e2)
                                 {
-                                    SMUtil.Assert(true, "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: COULD NOT FETCH INFORMATION!!!");
+                                    SMUtil.Assert(true, SMission.LogName, "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: COULD NOT " +
+                                        "FETCH INFORMATION!!!", e2);
                                 }
                                 //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
                                 Debug_SMissions.Log("SubMissions: Error - " + e);
@@ -113,13 +138,17 @@ namespace Sub_Missions.Steps
                         {
                             try
                             {
-                                SMUtil.Assert(false, "SubMissions: StepSetupTech (Infinite) - Failed: " + SMission.InputString + " finding failed.");
-                                SMUtil.Assert(false, "SubMissions: StepSetupTech (Infinite) - Team " + SMission.InputNum);
-                                SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Mission " + Mission.Name);
+                                SMUtil.Error(false, SMission.LogName, 
+                                    "SubMissions: StepSetupTech (Infinite) - Failed: " + SMission.InputString + " finding failed.");
+                                SMUtil.Error(false, SMission.LogName, 
+                                    "SubMissions: StepSetupTech (Infinite) - Team " + SMission.InputNum);
+                                SMUtil.Error(true, SMission.LogName, 
+                                    "SubMissions: StepSetupTech (Infinite) - Mission " + Mission.Name);
                             }
-                            catch
+                            catch (Exception e2)
                             {
-                                SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
+                                SMUtil.Assert(true, SMission.LogName, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT " +
+                                    "FETCH INFORMATION!!!", e2);
                             }
                             //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
                             Debug_SMissions.Log("SubMissions: Error - " + e);

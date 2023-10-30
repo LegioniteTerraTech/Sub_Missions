@@ -27,6 +27,15 @@ namespace Sub_Missions.Steps
                   "\n  \"InputStringAux\": \"Hello World\",   // What the speaker will say." +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Output Finished");
+            AddField(ESMSFields.InputNum, "Speak Speed ([-] - dual display)");
+            AddField(ESMSFields.InputString, "Speaker Name");
+            AddField(ESMSFields.InputStringAux_large, "Speak");
+        }
 
         public override void OnInit() { }
 
@@ -65,7 +74,14 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("error " + e);
+                /*
+                if (SMission == null)
+                    Debug_SMissions.Log("error SMission null " + e);
+                else if (SMission.AssignedWindow == null)
+                    Debug_SMissions.Log("error SMission.AssignedWindow null " + e);
+                else
+                    Debug_SMissions.Log("error " + e);
+                */
                 SMUtil.ConcludeGlobal2(ref SMission);
             }
         }

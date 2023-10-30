@@ -24,6 +24,18 @@ namespace Sub_Missions.Steps
                   "\n  \"InputNum\": 0.0,             // Set to 1 to only purge once.\n   // Any other value will repeatedly purge messages if the Conditions are true." +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Active Condition");
+            AddOptions(ESMSFields.InputNum, "Mode", new string[]
+                {
+                    "Always",
+                    "Once",
+                }
+            );
+        }
         public override void OnInit() { }
 
         public override void OnDeInit()

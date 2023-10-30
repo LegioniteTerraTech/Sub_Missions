@@ -7,6 +7,7 @@ using UnityEngine;
 using TAC_AI.Templates;
 using Sub_Missions.Steps;
 using Sub_Missions.ManWindows;
+using Sub_Missions.Editor;
 using Newtonsoft.Json;
 
 namespace Sub_Missions
@@ -80,7 +81,7 @@ namespace Sub_Missions
         [JsonIgnore]
         internal List<SMWorldObject> TrackedMonuments = new List<SMWorldObject>();
 
-        public SubMissionReward Rewards; // MUST be set externally via JSON or built C# code!
+        public SubMissionReward Rewards = new SubMissionReward(); // MUST be set externally via JSON or built C# code!
 
         public float UpdateSpeedMultiplier = 1; // DON'T TOUCH THIS unless you know EXACTLY what you are doing!
         //  If this value is too high, there WILL be framerate and performance issues!
@@ -109,6 +110,10 @@ namespace Sub_Missions
         internal Encounter FakeEncounter = null;
 
 
+        public bool ShowOnGUI()
+        {
+            return SMMissionGUI.ShowGUI(this);
+        }
         public static string GetDocumentation()
         {
             return
@@ -223,22 +228,14 @@ namespace Sub_Missions
         }
         
         [JsonIgnore]
-        private float minRange = 0;
-        /// <summary>
-        /// MUST BE ACTIVATED ON A NON-ACTIVE 
-        /// </summary>
-        /// <returns></returns>
+        private float minRange = -1;
         public float GetMinimumLoadRange()
         {   // 
-            if (minRange == 0)
+            if (minRange == -1)
             {
-                if (IsActive)
-                {
-                    SMUtil.Assert(false, "SubMissions: " + Name + " - GetMinimumLoadRange was called after init but was not properly initialised first!");
-                }
                 foreach (SubMissionStep step in GetAllEvents())
                 {
-                    float mag = step.Position.magnitude;
+                    float mag = step.InitPosition.magnitude;
                     if (mag > minRange)
                         minRange = mag;
                 }
@@ -252,52 +249,79 @@ namespace Sub_Missions
 
         internal void Startup()
         {   // 
-            if (UpdateSpeedMultiplier < 0.5f)
+            try
             {
-                SMUtil.Assert(false, "SubMissions: " + Name + " UpdateSpeedMultiplier cannot be lower than 0.5");
-                UpdateSpeedMultiplier = 0.5f;
-            }
-            Debug_SMissions.Log("SubMissions: Startup for mission " + Name);
+                if (UpdateSpeedMultiplier < 0.5f)
+                {
+                    SMUtil.Error(false, "Mission (Startup) ~ " + Name, 
+                        "SubMissions: " + Name + " UpdateSpeedMultiplier cannot be lower than 0.5");
+                    UpdateSpeedMultiplier = 0.5f;
+                }
+                SMUtil.Log(false, "SubMissions: Startup for mission " + Name);
 
-            IsCleaningUp = false;
-            switch (SpawnPosition)
+                IsCleaningUp = false;
+                switch (SpawnPosition)
+                {
+                    case SubMissionPosition.ClassicSelect:
+                        SetPositionClassicMission();
+                        break;
+                    case SubMissionPosition.FarFromPlayer:
+                        SetPositionFarFromPlayer();
+                        break;
+                    case SubMissionPosition.CloseToPlayer:
+                        SetPositionCloseToPlayer();
+                        break;
+                    case SubMissionPosition.OffsetFromPlayer:
+                        SetPositionFromPlayer();
+                        break;
+                    case SubMissionPosition.OffsetFromPlayerTechFacing:
+                        SetPositionFromPlayerTankFacing();
+                        break;
+                    case SubMissionPosition.FixedCoordinate:
+                        break;
+                }
+
+                bool isMissionImpossible = true;
+                foreach (SubMissionStep step in GetAllEvents())
+                {
+                    if (step.StepType == SMStepType.ActWin)
+                        isMissionImpossible = false;
+                }
+                if (isMissionImpossible)
+                    SMUtil.Error(false, "Mission (Startup) ~ " + Name, 
+                        "SubMissions: " + Name + " is impossible to complete as there are no existing Win Steps in the Event List!!!");
+
+                ActiveState = SubMissionLoadState.NeedsFirstInit;
+                UpdateDistance();
+                if (IgnorePlayerProximity)
+                {
+                    FirstLoad();
+                }
+                else
+                    CheckIfCanSpawn();
+                ManSubMissions.MissionStartedEvent.Send(this);
+            }
+            catch (MandatoryException e)
             {
-                case SubMissionPosition.ClassicSelect:
-                    SetPositionClassicMission();
-                    break;
-                case SubMissionPosition.FarFromPlayer:
-                    SetPositionFarFromPlayer();
-                    break;
-                case SubMissionPosition.CloseToPlayer:
+                throw new MandatoryException("Critical Error within SubMission.Startup() of mission " + Name
+                    + ", type " + Type + "!", e);
+            }
+        }
+        internal void ForceInitiateImmedeate()
+        {
+            try
+            {
+                if (ActiveState != SubMissionLoadState.Loaded)
+                {
                     SetPositionCloseToPlayer();
-                    break;
-                case SubMissionPosition.OffsetFromPlayer:
-                    SetPositionFromPlayer();
-                    break;
-                case SubMissionPosition.OffsetFromPlayerTechFacing:
-                    SetPositionFromPlayerTankFacing();
-                    break;
-                case SubMissionPosition.FixedCoordinate:
-                    break;
+                    FirstLoad();
+                }
             }
-
-            bool isMissionImpossible = true;
-            foreach (SubMissionStep step in GetAllEvents())
+            catch (MandatoryException e)
             {
-                if (step.StepType == SMStepType.ActWin)
-                    isMissionImpossible = false;
+                throw new MandatoryException("Critical Error within SubMission.ForceInitiateImmedeate() of mission " + Name
+                    + ", type " + Type + "!", e);
             }
-            if (isMissionImpossible)
-                SMUtil.Assert(false, "SubMissions: " + Name + " is impossible to complete as there are no existing Win Steps in the Event List!!!");
-            
-            ActiveState = SubMissionLoadState.NeedsFirstInit;
-            UpdateDistance();
-            if (IgnorePlayerProximity)
-            {
-                FirstLoad();
-            }
-            else
-                CheckIfCanSpawn();
         }
 
 
@@ -342,7 +366,8 @@ namespace Sub_Missions
                 }
                 catch
                 {
-                    SMUtil.Assert(false, "SubMissions: Mission " + Name + " has encountered some errors while loading the TrackedBlocks.  Check your syntax.");
+                    SMUtil.Error(false, "Mission (Startup) ~ " + Name, "SubMissions: Mission " + Name +
+                        " has encountered some errors while loading the TrackedBlocks.  Check your syntax.");
                 }
                 try
                 {
@@ -353,18 +378,21 @@ namespace Sub_Missions
                 }
                 catch
                 {
-                    SMUtil.Assert(false, "SubMissions: Mission " + Name + " has encountered some errors while loading the TrackedTechs.  Check your syntax.");
+                    SMUtil.Error(false, "Mission (Startup) ~ " + Name, "SubMissions: Mission " + Name + 
+                        " has encountered some errors while loading the TrackedTechs.  Check your syntax.");
                 }
                 try
                 {
                     foreach (MissionChecklist listEntry in CheckList)
                     {
-                        listEntry.mission = this;
+                        if (listEntry != null)
+                            listEntry.mission = this;
                     }
                 }
                 catch
                 {
-                    SMUtil.Assert(false, "SubMissions: Mission " + Name + " has encountered some errors while loading the CheckList.  Check your syntax.");
+                    SMUtil.Error(false, "Mission (Startup) ~ " + Name, "SubMissions: Mission " + Name + 
+                        " has encountered some errors while loading the CheckList.  Check your syntax.");
                 }
 
                 Debug_SMissions.Log("SubMissions: Mission " + Name + " has loaded into the world!");
@@ -372,14 +400,15 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                SMUtil.Assert(true, "SubMissions: Mission " + Name + " has encountered a serious error on spawning and will not be able to load! " + e);
+                SMUtil.Assert(true, "Mission (Startup) ~ " + Name, "SubMissions: Mission " + Name + 
+                    " has encountered a serious error on spawning and will not be able to load!", e);
                 Corrupted = true; 
             }
         }
 
         private void ReSync()
         {   // 
-            Debug_SMissions.Log("SubMissions: Resync for SubMission " + Name);
+            SMUtil.Log(false, "SubMissions: Resync(Load from save file) for SubMission " + Name);
             IsCleaningUp = false;
             foreach (SubMissionStep step in GetAllEvents())
             {
@@ -473,7 +502,10 @@ namespace Sub_Missions
                         {
                             tech.DestroyTech();
                         }
-                        catch { };
+                        catch (Exception e)
+                        {
+                            Debug_SMissions.Assert("SubMission.Conclude() errored at TrackedTechs: " + e.StackTrace);
+                        }
                     }
                     TrackedTechs.Clear();
                 }
@@ -507,24 +539,57 @@ namespace Sub_Missions
             ActiveState = SubMissionLoadState.PositionSetReady;
         }
 
+        private static List<SubMissionStep> allEventsCached = new List<SubMissionStep>();
+        private static bool GetAllEventsBusy = false;
         public List<SubMissionStep> GetAllEvents()
         {   //
-            List<SubMissionStep> allEvents = new List<SubMissionStep>();
+            if (GetAllEventsBusy)
+                throw new InvalidOperationException("SubMission.GetAllEvents() - cannot nest calls!");
+            GetAllEventsBusy = true;
+            allEventsCached.Clear();
             if (EventList != null)
-                allEvents.AddRange(GetEventsRecursive(EventList));
-            return allEvents;
+                GetEventsRecursive(EventList, ref allEventsCached);
+            GetAllEventsBusy = false;
+            return allEventsCached;
         }
-        private List<SubMissionStep> GetEventsRecursive(List<SubMissionStep> toSearch)
+        private void GetEventsRecursive(List<SubMissionStep> toSearch, ref List<SubMissionStep> allEvents)
         {   //
-            List<SubMissionStep> allEvents = new List<SubMissionStep>();
-            foreach (SubMissionStep step in toSearch)
+            for (int i = 0; i < toSearch.Count; i++)
             {
+                SubMissionStep step = toSearch[i];
                 allEvents.Add(step);
                 if (step.StepType == SMStepType.Folder && step.FolderEventList != null && step.FolderEventList.Count > 0)
-                    allEvents.AddRange(GetEventsRecursive(step.FolderEventList));
+                {
+                    GetEventsRecursive(step.FolderEventList, ref allEvents);
+                }
             }
-            return allEvents;
         }
+
+        public bool RemoveEvent(SubMissionStep toRemove)
+        {   //
+            if (EventList != null)
+                return RemoveEventRecursive(EventList, toRemove);
+            return false;
+        }
+        private bool RemoveEventRecursive(List<SubMissionStep> toSearch, SubMissionStep toRemove)
+        {   //
+            for (int i = 0; i < toSearch.Count; i++)
+            {
+                SubMissionStep step = toSearch[i];
+                if (step == toRemove)
+                {
+                    toSearch.RemoveAt(i);
+                    return true;
+                }
+                if (step.StepType == SMStepType.Folder && step.FolderEventList != null && step.FolderEventList.Count > 0)
+                {
+                    if (RemoveEventRecursive(step.FolderEventList, toRemove))
+                        return true;
+                }
+            }
+            return false;
+        }
+
         internal void PurgeAllActiveMessages()
         {   //
             foreach (SubMissionStep step in GetAllEvents())
@@ -545,10 +610,15 @@ namespace Sub_Missions
         }
 
         // Endings
-        internal void Finish()
+        internal void Finish(bool forced = false)
         {   //
-            if (IsCleaningUp)
+            if (forced)
+            {
+                Debug_SMissions.Assert(true, "SubMission.Finish(true) was force-ended and may encounter problems!");
+            }
+            else if (IsCleaningUp || ManSubMissions.BlockMissionEnd)
                 return;
+            ManSubMissions.MissionFinishedEvent.Send(this, ManEncounter.FinishState.Completed);
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionComplete);
             Rewards.Reward(Tree, this);
             CurrentProgressID = -98;
@@ -559,6 +629,7 @@ namespace Sub_Missions
         }
         internal void Fail()
         {   //
+            ManSubMissions.MissionFinishedEvent.Send(this, ManEncounter.FinishState.Failed);
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
             CurrentProgressID = -100;
             EncounterShoehorn.OnFinishSubMission(this, ManEncounter.FinishState.Failed);
@@ -567,42 +638,67 @@ namespace Sub_Missions
             ManSubMissions.ActiveSubMissions.Remove(this);
         }
 
+        internal void Reboot(bool Reset = false)
+        {   //
+            Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Craft);
+            CurrentProgressID = 0;
+            if (Reset)
+            {
+                Cleanup();
+                FirstLoad();
+            }
+            else
+            {
+                Cleanup(true);
+                ReSync();
+            }
+        }
+
 
         // UPDATE
-        internal void TriggerUpdate()
-        {   // updated at least every half second
-
+        private int updateStep = 0;
+        public int UpdateStep => updateStep;
+        internal void TriggerUpdate(int Steps = int.MaxValue)
+        {
+            int stepper = 0;
             if (IsActive || IgnorePlayerProximity)
             {
-                updateLerp += Time.deltaTime;
-                if (updateLerp * UpdateSpeedMultiplier > 1)
+                updateLerp = 0;
+                int position = 0;
+                Debug_SMissions.Info("SubMissions: LERP " + CurrentProgressID);
+                for (int total = 0; stepper < Steps && total < EventList.Count; total++)
                 {
-                    updateLerp = 0;
-                    int position = 0;
-                    Debug_SMissions.Log("SubMissions: LERP " + CurrentProgressID);
-                    foreach (SubMissionStep step in EventList)
+                    if (updateStep >= EventList.Count)
+                        updateStep = 0;
+                    SubMissionStep step = EventList[updateStep];
+
+                    if (CanRunStep(step.ProgressID))
                     {
-                        if (CanRunStep(step.ProgressID))
+                        stepper++;
+                        try
+                        {   // can potentially fire too early before mission is set
+                            step.Trigger();
+                        }
+                        catch (MandatoryException e)
                         {
+                            throw new MandatoryException("MandatoryException on step " + updateStep + " of StepType " + step.StepType.ToString(), e);
+                        }
+                        catch
+                        {
+                            Debug_SMissions.Log("SubMissions: Error on attempting step lerp " + position + " in relation to " + CurrentProgressID + " of mission " + Name + " in tree " + Tree.TreeName);
                             try
-                            {   // can potentially fire too early before mission is set
-                                step.Trigger();
-                            }
-                            catch
                             {
-                                Debug_SMissions.Log("SubMissions: Error on attempting step lerp " + position + " in relation to " + CurrentProgressID + " of mission " + Name + " in tree " + Tree.TreeName);
-                                try
-                                {
-                                    Debug_SMissions.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
-                                }
-                                catch
-                                {
-                                    Debug_SMissions.Log("SubMissions: Confirmed null");
-                                }
+                                Debug_SMissions.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
+                            }
+                            catch (Exception e)
+                            {
+                                throw new MandatoryException("SubMissions: Confirmed null step, step.StepType, " +
+                                    "step.ProgressID, or step.Mission.  Step " + updateStep + " was improperly set up!", e);
                             }
                         }
-                        position++;
                     }
+                    updateStep++;
+                    position++;
                 }
                 try
                 {   // can potentially fire too early before mission is set
@@ -659,6 +755,20 @@ namespace Sub_Missions
                 catch { }
             }
         }
+        internal void TriggerUpdate(float Speed)
+        {   // updated at least every half second
+
+            float segmentPercent = Mathf.Min(EventList.Count, 1 / Mathf.Max(1, EventList.Count));
+
+            updateLerp += Time.deltaTime;
+
+            float Sped = updateLerp * UpdateSpeedMultiplier * Speed;
+            if (Sped > segmentPercent)
+            {
+                Sped /= segmentPercent;
+                TriggerUpdate(Sped);
+            }
+        }
 
 
         internal EncounterDisplayData GetEncounterDisplayInfo()
@@ -684,7 +794,7 @@ namespace Sub_Missions
                 {
                     if (step.InputString.GetHashCode() == hash)
                     {
-                        pos = step.Position;
+                        pos = step.InitPosition;
                         direction = step.Forwards;
                         team = (int)step.InputNum;
                         return true;
@@ -704,7 +814,7 @@ namespace Sub_Missions
                 {
                     if (step.InputString == BlockName)
                     {
-                        pos = step.Position;
+                        pos = step.InitPosition;
                         return true;
                     }
                 }
@@ -729,9 +839,8 @@ namespace Sub_Missions
                 if (IVc.Terrain && !IVc.IsPopulated)
                     IV.Add(IVc);
             }
-            IV = IV.OrderBy(x => ((Vector2)x.Coord - playerTile).sqrMagnitude).ToList();
             int missionReqRad = (int)GetMinimumLoadRange();
-            foreach (WorldTile IVc in IV)
+            foreach (WorldTile IVc in IV.OrderBy(x => ((Vector2)x.Coord - playerTile).sqrMagnitude))
             {
                 if (IVc.LargestFreeSpaceOnTile > missionReqRad && !ManSubMissions.IsTooCloseToOtherMission(IVc.Coord))
                 {
@@ -912,7 +1021,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                SMUtil.Assert(true, "SubMissions: SubMission - Failed: Could not despawn waypoint!");
+                SMUtil.Assert(true, "Mission (Waypoint) ~ " + Name, "SubMissions: SubMission - Failed: Could not despawn waypoint!", e);
                 Debug_SMissions.Log("SubMissions: Error - " + e);
             }
             return false;

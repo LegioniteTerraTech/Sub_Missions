@@ -25,6 +25,18 @@ namespace Sub_Missions.Steps
                   "\n  \"InputStringAux\": \"100\",      // The upper range" +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Active Condition");
+            AddOptions(ESMSFields.InputNum, "Updating", new string[] {
+                "Once",
+                "While Active",
+            });
+            AddField(ESMSFields.InputString_float, "Min");
+            AddField(ESMSFields.InputStringAux_float, "Max");
+        }
 
         public override void OnInit() { }
 
@@ -53,7 +65,9 @@ namespace Sub_Missions.Steps
                     //Mission.VarInts[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range((int)Mathf.Min(SMission.InputNum, 0), (int)Mathf.Max(0, SMission.InputNum));
                     break;
                 default:
-                    SMUtil.Assert(true, "SubMissions: ActRandom's VaribleType must be set to either True, False, or Int.  Mission " + Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
+                    SMUtil.Error(true, SMission.LogName, 
+                        "SubMissions: ActRandom's VaribleType must be set to either True, False, or Int.  Mission " + 
+                        Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
                     break;
             }
         }

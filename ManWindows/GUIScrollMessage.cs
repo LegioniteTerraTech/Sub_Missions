@@ -22,6 +22,7 @@ namespace Sub_Missions.ManWindows
         public bool DenySkip = false;
         private float scrollDelay = 0.075f;
         private int StepFadeoutDelay = 150;
+        private int StepFadeoutDuration = 60;
         private float tracker = 0;
         private int step = -5;
         private bool bleep = false;
@@ -47,6 +48,7 @@ namespace Sub_Missions.ManWindows
             tracker = 0;
             bleep = false;
             bleepPrev = false;
+            Display.alpha = 0.95f;
             List<GUIPopupDisplay> disps = WindowManager.GetAllActivePopups(GUISetTypes.MessageScroll);
             if (disps.Count > 0)
             {
@@ -75,20 +77,45 @@ namespace Sub_Missions.ManWindows
             }
         }
 
+        public GUIStyle GradientClone(GUIStyle styleC, float alpha)
+        {
+            GUIStyle alphaed = new GUIStyle(styleC);
+            Color refC = styleC.normal.textColor;
+            Color newC = new Color(refC.r, refC.g, refC.b, alpha);
+             GUIStyleState alphaedS = new GUIStyleState()
+            {
+                background = styleC.normal.background,
+                textColor = newC,
+            };
+            alphaed.normal = alphaedS;
+            alphaed.onNormal = alphaedS;
+            alphaed.active = alphaedS;
+            alphaed.onActive = alphaedS;
+            alphaed.focused = alphaedS;
+            alphaed.onFocused = alphaedS;
+            alphaed.hover = alphaedS;
+            alphaed.onHover = alphaedS;
+            return alphaed;
+        }
+
         public void RunGUI(int ID)
         {
+            GUIStyle alphaed = GradientClone(WindowManager.styleScrollFont, Display.alpha);
+            GUIStyle buttonAlphaed = GradientClone(WindowManager.styleButtonHugeFont, Display.alpha);
+
             if (XFlipped)
             {
                 if (Image)
                 {
-                    GUI.DrawTexture(new Rect(Display.Window.width - Display.Window.height - 15, 15, Display.Window.height - 30, Display.Window.height - 30), Image);
-                    GUI.Label(new Rect(30, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                    GUI.DrawTexture(new Rect(Display.Window.width - Display.Window.height - 15, 15, Display.Window.height - 30, Display.Window.height - 30), 
+                        Image, ScaleMode.ScaleToFit, true, 0, new Color(1,1,1, Display.alpha), 0, 4);
+                    GUI.Label(new Rect(30, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, alphaed);
                 }
                 else
-                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, alphaed);
                 if (!DenySkip)
                 {
-                    if (GUI.Button(new Rect(10, Display.Window.height - 38, 40, 28), "<b>OK</b>", WindowManager.styleHugeFont))
+                    if (GUI.Button(new Rect(10, Display.Window.height - 38, 40, 28), "<b>OK</b>", buttonAlphaed))
                     {
                         Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
                         OnRemoval();
@@ -101,14 +128,15 @@ namespace Sub_Missions.ManWindows
             {
                 if (Image)
                 {
-                    GUI.DrawTexture(new Rect(15, 15, Display.Window.height - 30, Display.Window.height - 30), Image);
-                    GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                    GUI.DrawTexture(new Rect(15, 15, Display.Window.height - 30, Display.Window.height - 30), 
+                        Image, ScaleMode.ScaleToFit, true, 0, new Color(1, 1, 1, Display.alpha), 0, 4);
+                    GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, alphaed);
                 }
                 else
-                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, WindowManager.styleDescLargeFontScroll);
+                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, alphaed);
                 if (!DenySkip)
                 {
-                    if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 38, 40, 28), "<b>OK</b>", WindowManager.styleHugeFont))
+                    if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 38, 40, 28), "<b>OK</b>", buttonAlphaed))
                     {
                         Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
                         OnRemoval();
@@ -150,13 +178,19 @@ namespace Sub_Missions.ManWindows
             }
             else
             {   // End of message
-                if (step > Message.Length + StepFadeoutDelay)
+                int ending = Message.Length + StepFadeoutDelay; 
+                if (step > ending + StepFadeoutDuration)
                 {
                     OnRemoval();
                     WindowManager.HidePopup(Display);
                     WindowManager.RemovePopup(Display);
                     return;
                 }
+                else if (step > ending)
+                {
+                    Display.alpha = (float)(StepFadeoutDuration - (step - ending)) / StepFadeoutDuration;
+                }
+                
 
                 step++;
                 return;
@@ -243,12 +277,19 @@ namespace Sub_Missions.ManWindows
             {   // Maintain noise
                 try
                 {
-                    if (!fInst.IsInited)
+                    if (!fInst.IsInited || fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.STOPPED))
                     {
                         fInst = soundSteal.PlayEvent();
                     }
                 }
-                catch { }
+                catch
+                {
+                    try
+                    {
+                        fInst = soundSteal.PlayEvent();
+                    }
+                    catch { }
+                }
             }
             bleepPrev = bleep;
             //Debug_SMissions.Log("Is playing noise " + fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.PLAYING));

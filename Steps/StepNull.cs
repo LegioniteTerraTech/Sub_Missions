@@ -16,6 +16,7 @@ namespace Sub_Missions.Steps
                   "\n  \"StepType\": null,  // all it needs is a poorly spelt StepType to ruin everything. \n    // WATCH YOUR TYPING AND SYNTAX!!" +
                 "\n},";
         }
+        public override void InitGUI() { }
         public override void OnInit() { }
 
         public override void OnDeInit()
@@ -23,11 +24,17 @@ namespace Sub_Missions.Steps
         }
         public override void FirstSetup()
         {
-            SMUtil.Assert(false, "SubMissions: Mission " + Mission.Name + " has a SubMissionStep error at ProgressID " + SMission.ProgressID + ", Type !NULL!, and will not be able to execute. \nStepType is empty or contains an invalid/mispelled value!");
+            SMUtil.Error(false, SMission.LogName, 
+                "SubMissions: Mission " + Mission.Name + 
+                " has a SubMissionStep error at ProgressID " + SMission.ProgressID + 
+                ", Type !NULL!, and will not be able to execute. \nStepType is empty or " +
+                "contains an invalid/mispelled value!");
         }
         public override void Trigger()
         {
-            SMUtil.Assert(true, "SubMissions: NULL SubMissionStep.StepType in " + Mission.Name + " |  There should never be a null StepType in a mission.  \n  Watch your typing and syntax!");
+            SMUtil.Error(true, SMission.LogName, 
+                "SubMissions: NULL SubMissionStep.StepType in " + Mission.Name + 
+                " |  There should NEVER be a null StepType in a mission.  \n  Watch your typing and syntax!");
         }
     }
 }

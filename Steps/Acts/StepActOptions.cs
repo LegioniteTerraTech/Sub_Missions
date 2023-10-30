@@ -21,6 +21,7 @@ namespace Sub_Missions.Steps
                   "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
                   "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if it should be shown." +
                   "\n  // Input Parameters" +
+                  "\n  \"InputNum\": 0,             // The option window mode - 0 for title, 1 for option text" +
                   "\n  \"InputString\": \"TechName\",   // The name of Option Window." +
                   "\n  \"InputStringAux\": null,      // The name of the Option that isn't \"No\"." +
                   "\n  // Input Parameters" +
@@ -28,6 +29,29 @@ namespace Sub_Missions.Steps
                   "\n  \"SetMissionVarIndex3\": -1,       // The index Varible to be set if \"InputStringAux\" option is selected." +
                 "\n},";
         }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Show Condition");
+            AddField(ESMSFields.SetMissionVarIndex2, "\"No\" Output");
+            AddField(ESMSFields.SetMissionVarIndex3, "Other Output");
+            /*
+            AddOptions(ESMSFields.InputNum, "Mode", new string[]
+                {
+                    "Title, Other",
+                    "2 Options",
+                },
+                new Dictionary<int, KeyValuePair<string, ESMSFields>>()
+                {
+                    {0, new KeyValuePair<string, ESMSFields>("Title", ESMSFields.InputString) },
+                    {1, new KeyValuePair<string, ESMSFields>("Option", ESMSFields.InputString) },
+                }
+            );*/
+            AddField(ESMSFields.InputString, "Window Title");
+            AddField(ESMSFields.InputStringAux, "Other Option");
+        }
+
 
         public override void OnInit() { }
 
@@ -45,7 +69,8 @@ namespace Sub_Missions.Steps
         {   // run the text box things
             if (SMission.VaribleType == EVaribleType.DoSuccessID)
             {
-                SMUtil.Assert(true, "SubMissions: ActOptions does not support the VaribleType of DoSuccessID.  Mission " + Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
+                SMUtil.Error(true, SMission.LogName, 
+                    "SubMissions: ActOptions does not support the VaribleType of DoSuccessID.  Mission " + Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
             }
             if (SMission.SavedInt == 9999)
             {

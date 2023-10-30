@@ -23,6 +23,8 @@ namespace Sub_Missions
 
         [JsonIgnore]
         private TankBlock block;
+        [JsonIgnore]
+        public TankBlock blockInst => block;
 
         [JsonIgnore]
         public TankBlock Block
@@ -79,7 +81,8 @@ namespace Sub_Missions
             {
                 if (!(bool)blockUnloaded.block)
                 {
-                    SMUtil.Assert(false, "SubMissions: TrackedBlock - ID DOES NOT MATCH SUBJECT TARGET");
+                    SMUtil.Error(false, "Mission(TrackedBlock) ~ " + mission.Name + ", " + BlockName, 
+                        "SubMissions: TrackedBlock - ID DOES NOT MATCH SUBJECT TARGET");
                     return null;
                 }
                 if (blockUnloaded == block.visible)

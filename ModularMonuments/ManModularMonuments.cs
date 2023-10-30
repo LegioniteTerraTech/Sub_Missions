@@ -8,7 +8,7 @@ namespace Sub_Missions
 {
     public class ManModularMonuments : MonoBehaviour
     {
-        public static Dictionary<int, GameObject> WorldObjects = new Dictionary<int, GameObject>();
+        //public static Dictionary<int, GameObject> WorldObjects = new Dictionary<int, GameObject>();
 
         internal static List<GameObject> ActiveWorldObjects = new List<GameObject>();
         private static List<SMWorldObject> PermWorldObjects = new List<SMWorldObject>();
@@ -16,15 +16,15 @@ namespace Sub_Missions
 
 
 
-        public static bool SpawnMM(string name, Vector3 scenePos, Vector3 forwardsLookEulers, Vector3 scale, out GameObject MM)
+        public static bool SpawnMM(SubMissionTree tree, string name, Vector3 scenePos, Vector3 forwardsLookEulers, Vector3 scale, out GameObject MM)
         {
-            int hash = name.GetHashCode();
-            if (WorldObjects.TryGetValue(hash, out GameObject inst))
+            //int hash = name.GetHashCode();
+            if (tree.WorldObjects.TryGetValue(name, out SMWorldObject inst))
             {
                 scale.x = scale.x <= 0 ? 1 : scale.x;
                 scale.y = scale.y <= 0 ? 1 : scale.y;
                 scale.z = scale.z <= 0 ? 1 : scale.z;
-                MM = Instantiate(inst, null, true);
+                MM = Instantiate(inst.gameObject, null, true);
                 MM.GetComponent<SMWorldObject>().Activate(scenePos);
                 ActiveWorldObjects.Add(MM);
                 MM.transform.eulerAngles = forwardsLookEulers;
@@ -33,18 +33,20 @@ namespace Sub_Missions
                 return true;
             }
             MM = null;
-            SMUtil.Assert(false, "SubMissions: ManModularMonuments - WorldObject " + name + " does not exists");
+            SMUtil.Error(false, "Mission (ModularMonuments) ~ " + name, "SubMissions: ManModularMonuments.SpawnMM() - WorldObject " + name + 
+                " does not exists.  Have you mis-spelled the name by accident?");
             return false;
         }
         public static bool SpawnMM(ModularMonumentSave MMS, out GameObject MM)
         {
-            int hash = MMS.name.GetHashCode();
-            if (WorldObjects.TryGetValue(hash, out GameObject inst))
+            //int hash = MMS.name.GetHashCode();
+            SubMissionTree tree = ManSubMissions.GetTree(MMS.treeName);
+            if (tree.WorldObjects.TryGetValue(MMS.name, out SMWorldObject inst))
             {
                 MMS.scale.x = MMS.scale.x <= 0 ? 1 : MMS.scale.x;
                 MMS.scale.y = MMS.scale.y <= 0 ? 1 : MMS.scale.y;
                 MMS.scale.z = MMS.scale.z <= 0 ? 1 : MMS.scale.z;
-                MM = Instantiate(inst, null, true);
+                MM = Instantiate(inst.gameObject, null, true);
                 MM.GetComponent<SMWorldObject>().Activate(MMS.tilePos, MMS.offsetFromTile);
                 ActiveWorldObjects.Add(MM);
                 MM.transform.eulerAngles = MMS.eulerAngles;
@@ -53,7 +55,8 @@ namespace Sub_Missions
                 return true;
             }
             MM = null;
-            SMUtil.Assert(false, "SubMissions: ManModularMonuments - WorldObject " + MMS.name + " does not exists");
+            SMUtil.Error(false, "Mission (ModularMonuments) ~ " + MMS.name, "SubMissions: ManModularMonuments - WorldObject " + 
+                MMS.name + " does not exists.  Could not be found in database.  Load failed!");
             return false;
         }
 
@@ -78,12 +81,15 @@ namespace Sub_Missions
         {
             if (SMWO != null)
             {
-                ModularMonumentSave MMS1 = new ModularMonumentSave();
-                MMS1.name = SMWO.Name;
-                MMS1.eulerAngles = SMWO.transform.eulerAngles;
-                MMS1.tilePos = SMWO.tilePos;
-                MMS1.offsetFromTile = SMWO.offsetFromTile;
-                MMS1.scale = SMWO.transform.localScale;
+                ModularMonumentSave MMS1 = new ModularMonumentSave()
+                {
+                    name = SMWO.Name,
+                    treeName = SMWO.tree.TreeName,
+                    eulerAngles = SMWO.transform.eulerAngles,
+                    tilePos = SMWO.tilePos,
+                    offsetFromTile = SMWO.offsetFromTile,
+                    scale = SMWO.transform.localScale,
+                };
                 return MMS1;
             }
             return null;
@@ -187,6 +193,7 @@ namespace Sub_Missions
     public class ModularMonumentSave
     {
         public string name;
+        public string treeName;
         public IntVector2 tilePos;
         public Vector3 offsetFromTile;
         public Vector3 eulerAngles;

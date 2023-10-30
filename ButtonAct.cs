@@ -35,10 +35,10 @@ namespace Sub_Missions
                     if (MI != null)
                         MI.Invoke(null, new object[0]);
                     else
-                        SMUtil.Assert(false, "Button(External) - " + InvokeAction + " Method field does not exist");
+                        SMUtil.Error(false, "Backend - ButtonAct.Invoke()", "Button(External) - " + InvokeAction + " Method field does not exist");
                 }
                 else
-                    SMUtil.Assert(false, "Button(External) - " + InvokeAction + " Type field does not exist");
+                    SMUtil.Error(false, "Backend - ButtonAct.Invoke()", "Button(External) - " + InvokeAction + " Type field does not exist");
             }
             else
             {
@@ -46,7 +46,7 @@ namespace Sub_Missions
                 if (MI != null)
                     MI.Invoke(inst, new object[0]);
                 else
-                    SMUtil.Assert(false, "Button(ButtonAct) - " + InvokeAction + " Method field does not exist");
+                    SMUtil.Error(false, "Backend - ButtonAct.Invoke()", "Button(ButtonAct) - " + InvokeAction + " Method field does not exist");
                 //inst.Invoke(InvokeAction, 0);
             }
         }
@@ -58,6 +58,10 @@ namespace Sub_Missions
         {
             ManSubMissions.inst.GetAllPossibleMissions();
             ManSubMissions.ToggleList();
+        }
+        public void Editor()
+        {
+            ManSubMissions.ToggleEditor();
         }
         public void UpdateMissions()
         {

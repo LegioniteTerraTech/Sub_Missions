@@ -14,37 +14,81 @@ namespace Sub_Missions.Steps
         {
             return
                 "{  // Updates a VarInt based on the player's available money" +
-                  "\n  \"StepType\": \"CheckHealth\"," +
+                  "\n  \"StepType\": \"CheckMoney\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if " +
                   "\n  // Input Parameters" +
                   "\n  \"SetMissionVarIndex1\": -1,        // the index to apply the output from this" +
-                  "\n  \"SetMissionVarIndex1\": -1,        // the index to apply the output from this" +
+                  "\n  \"InputNum\": 300,        // Cost" +
+                  "\n  \"InputString\": \"\",        // " +
+                  "\n     \"Collect\" to charge the player on success." +
+                  "\n     \"Send\" to send the . " +
+                  "\n      Leave empty to only check" +
                 "\n},";
         }
 
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.InputNum, "Cost");
+            AddField(ESMSFields.SetMissionVarIndex1, "Output Condition");
+            AddOptions(ESMSFields.InputString, "Mode", new string[] 
+                { 
+                    "Check",
+                    "Send",
+                    "Collect",
+                }
+             );
+        }
         public override void OnInit() { }
 
         public override void FirstSetup()
         {
             SMission.InputNum = Mathf.RoundToInt(SMission.InputNum);
+
+            if (SMission.InputString.Length == 4)
+                SMission.VaribleType = EVaribleType.Int;
+            else
+                SMission.VaribleType = EVaribleType.True;
         }
         public override void Trigger()
         {
             try
             {
-                if (ManPlayer.inst.CanAfford((int)SMission.InputNum))
+                if (SMission.InputString.Length == 4)
                 {
-                    Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = true;
+                    Mission.VarInts[SMission.SetMissionVarIndex1] = ManPlayer.inst.GetCurrentMoney();
                 }
                 else
                 {
-                    Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = false;
+                    if (ManPlayer.inst.CanAfford((int)SMission.InputNum))
+                    {
+                        Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = true;
+                        if (SMission.InputString.Length == 7)
+                            ManPlayer.inst.PayMoney((int)SMission.InputNum);
+                    }
+                    else
+                    {
+                        Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = false;
+                    }
                 }
             }
-            catch
+            catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(true, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + SMission.Mission.Name + " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                    " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                    "on the list, 1 counts as the second entry, and so on.", e);
+            }
+            catch (NullReferenceException e)
+            {
+                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                    " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                    " on the step's set VaribleType.", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
             }
         }
         public override void OnDeInit()

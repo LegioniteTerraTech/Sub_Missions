@@ -278,15 +278,6 @@ namespace Sub_Missions
             }
         }
 
-        [HarmonyPatch(typeof(TileManager))]
-        [HarmonyPatch("CreateTile")]// Setup main menu techs
-        internal static class ExpandWorld
-        {
-            private static void Postfix(TileManager __instance, ref WorldTile tile)
-            {
-                TerrainOperations.AmplifyTerrain(tile.Terrain);
-            }
-        }
         /*
         [HarmonyPatch(typeof(MapGenerator))]
         [HarmonyPatch("GeneratePoint")]// Setup main menu techs
@@ -304,7 +295,7 @@ namespace Sub_Missions
             private static void Prefix(ref ManGameMode.GameType gameType, ref string saveName)
             {
                 Debug_SMissions.Log("SubMissions: ManSubMissions Saving!");
-                SaveManSubMissions.SaveData(saveName);
+                SaveManSubMissions.SaveDataLegacy(saveName);
             }
         }
 

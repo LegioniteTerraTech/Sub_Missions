@@ -23,6 +23,12 @@ namespace Sub_Missions.Steps
                 "\n},";
         }
 
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddGlobal(ESMSFields.SetMissionVarIndex1, "Output", EVaribleType.Int);
+            AddField(ESMSFields.InputString_Tracked_Tech, "Tracked Tech");
+        }
         public override void OnInit() { }
 
         public override void FirstSetup()
@@ -46,19 +52,36 @@ namespace Sub_Missions.Steps
                     {
                         Mission.VarInts[SMission.SetMissionVarIndex1] = 0;
                     }
-                    else if (!tech.Tech)
+                    else if (!tech.TechAuto)
                     {   // unloaded
                         Mission.VarInts[SMission.SetMissionVarIndex1] = 262145; // max possible Tech Volume + 1
                     }
                     else
-                        Mission.VarInts[SMission.SetMissionVarIndex1] = tech.Tech.blockman.blockCount;
+                        Mission.VarInts[SMission.SetMissionVarIndex1] = tech.TechAuto.blockman.blockCount;
                 }
                 else
-                    SMUtil.Assert(true, "SubMissions: Tech not referenced or missing in " + SMission.Mission.Name + " | Step type " + SMission.StepType.ToString() + " - Check your TrackedTechs, Tech names, and missions for consistancy errors");
+                    SMUtil.Error(true, SMission.LogName, 
+                        "SubMissions: Tech not referenced or missing in " + Mission.Name + 
+                        " | Step type " + SMission.StepType.ToString() + " - Check your TrackedTechs, Tech names, " +
+                        "and missions for consistancy errors");
             }
-            catch
+            catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(true, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + SMission.Mission.Name + " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) \nand make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry on the list, 1 counts as the second entry, and so on.");
+                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                    " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
+                    "on the list, 1 counts as the second entry, and so on.", e);
+            }
+            catch (NullReferenceException e)
+            {
+                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                    " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
+                    "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
+                    " on the step's set VaribleType.", e);
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
             }
         }
         public override void OnDeInit()

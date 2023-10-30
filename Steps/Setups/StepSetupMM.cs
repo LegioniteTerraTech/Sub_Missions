@@ -37,12 +37,23 @@ namespace Sub_Missions.Steps
                   "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
                   "\n  \"SetMissionVarIndex1\": -1,       // The index that determines if the ModularMonument should be physically present." +
                   "\n  // Input Parameters" +
-                  "\n  \"InputString\": \"TechName\",   // The name of the ModularMonument to spawn." +
+                  "\n  \"InputString\": \"MM_Name\",   // The name of the ModularMonument to spawn." +
                 "\n},";
+        }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.Position, "Position");
+            AddField(ESMSFields.Forwards, "Forwards");
+            AddField(ESMSFields.EulerAngles, "Euler Angles");
+            AddField(ESMSFields.TerrainHandling, "Placement");
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddField(ESMSFields.SetMissionVarIndex1, "Active Condition");
+            AddField(ESMSFields.InputString_MM, "Monument");
         }
         public override void OnInit()
         { // Spawn a ModularMonument
-            if (ManModularMonuments.SpawnMM(SMission.InputString, SMission.Position, SMission.EulerAngles, SMission.Forwards, out GameObject GO))
+            if (ManModularMonuments.SpawnMM(Mission.Tree, SMission.InputString, SMission.Position, SMission.EulerAngles, SMission.Forwards, out GameObject GO))
             {
                 Debug_SMissions.Log("SubMissions: SpawnMM - " + SMission.InputString + " for mission " + Mission.Name);
                 SMission.Mission.TrackedMonuments.Add(GO.GetComponent<SMWorldObject>());

@@ -28,7 +28,7 @@ namespace Sub_Missions
         static FieldInfo skinS = typeof(ManCustomSkins).GetField("m_SkinUIInfos", BindingFlags.NonPublic | BindingFlags.Instance);
         [JsonIgnore]
         static FieldInfo crateS = typeof(ManSpawn).GetField("m_CorpCratePrefabsDict", BindingFlags.NonPublic | BindingFlags.Instance);
-        
+
         //
         public string FullName = "NuLl";    // The FULL Name
         public string Faction = null;     // The SHORTENED name
@@ -77,6 +77,13 @@ namespace Sub_Missions
         [JsonIgnore]
         public Crate CratePrefab;
 
+        public string GetLogName(string context = null)
+        {
+            if (context == null)
+                return "Corp [" + (OfficialCorp ? "Official" : "Unofficial") + "] ~ " + Faction;
+            return "Corp [" + (OfficialCorp ? "Official" : "Unofficial") + "] (" + context + ") ~ " + Faction;
+        }
+
 
         [JsonIgnore]
         public Dictionary<int, Sprite> CSIRenderCache = new Dictionary<int, Sprite>();
@@ -113,7 +120,7 @@ namespace Sub_Missions
                         {
                             if (CL.GetDirectory(out string directory))
                             {
-                                string directed = directory + SMissionJSONLoader.up + CL.ExampleSkinTech;
+                                string directed = Path.Combine(directory, CL.ExampleSkinTech);
                                 if (File.Exists(directed))
                                 {
                                     Texture2D T2D = FileUtils.LoadTexture(directed);
@@ -124,10 +131,14 @@ namespace Sub_Missions
                                         CL.SkinRefTech = TP;
                                     }
                                     else
-                                        SMUtil.Assert(false, "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Could not load ExampleSkinTech for " + CL.Faction + ". \n Tech is corrupted or needed blocks are missing");
+                                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) " +
+                                            "- Could not load ExampleSkinTech for " + CL.Faction + 
+                                            ". \n Tech is corrupted or needed blocks are missing");
                                 }
                                 else
-                                    SMUtil.Assert(false, "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) - Could not load ExampleSkinTech for " + CL.Faction + ". \n Check your naming and files");
+                                    SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: TryReRenderCSIBacklog(SMCCorpLicense) " +
+                                        "- Could not load ExampleSkinTech for " + CL.Faction + 
+                                        ". \n Check your naming and files");
                             }
                         }
                         if (CL.SkinRefTech == null)
@@ -195,7 +206,8 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - CRITICAL ERROR " + e);
+                SMUtil.Assert(false, "All Corps (Skins)", "SubMissions: MirrorSkin(SMCCorpLicense) - CRITICAL ERROR " +
+                    "- CORRUPTED ATTEMPT", e);
                 needsToRenderSkins = false;
                 CSIBacklogRender.Clear();
                 countWorked = 0;
@@ -220,7 +232,7 @@ namespace Sub_Missions
             this.ID = (int)ID;
             OfficialCorp = true;
             GradesXP = new int[5] { 100, 250, 1000, 2000, 4000 };
-            Debug_SMissions.Log("SubMissions: SMCCorpLicense(OfficialMods) - Init for " + MCD.m_DisplayName);
+            SMUtil.Info(false, "Corp [Official] (Startup) ~ " + Faction, "SubMissions: SMCCorpLicense(OfficialMods) - Init for " + MCD.m_DisplayName);
             TryInitFactionEXPSys();
         }
         /// <summary>
@@ -268,24 +280,26 @@ namespace Sub_Missions
             return GetCorpNameForBlocks().GetHashCode();
         }
 
+        private static List<BlockTypes> boundle = new List<BlockTypes>();
+        private static List<BlockTypes> boundle2 = new List<BlockTypes>();
         public BlockTypes[] GetRandomBlocks(int grade, int amount)
         {   //
             try
             {
                 if (GradeUnlockBlocks.Count == 0)
                     return new BlockTypes[1] { BlockIndexer.StringToBlockType(FirstCabUnlocked) };
+                boundle2.Clear();
                 int maxGradeVal = grade > GradeUnlockBlocks.Count - 1 ? GradeUnlockBlocks.Count - 1 : grade;
-                List<BlockTypes> boundle = new List<BlockTypes>();
                 for (int step = 0; maxGradeVal > step; step++)
                     boundle.AddRange(GradeUnlockBlocks[step].BlocksAvail);
-                List<BlockTypes> boundle2 = new List<BlockTypes>();
                 for (int step2 = 0; amount > step2; step2++)
                     boundle2.Add(boundle.GetRandomEntry());
+                boundle.Clear();
                 return boundle2.ToArray();
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: GetRandomBlocks(SMCCorpLicense) - BLOCK could not be obtained - " + e);
+                SMUtil.Assert(false, GetLogName("Reward"), "SubMissions: GetRandomBlocks(SMCCorpLicense) - BLOCK could not be obtained", e);
             }
             return new BlockTypes[1] { BlockTypes.GSOCockpit_111 };
         }
@@ -303,7 +317,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: GetRandomBlock(SMCCorpLicense) - BLOCK could not be obtained - " + e);
+                SMUtil.Assert(false, GetLogName("Reward"), "SubMissions: GetRandomBlock(SMCCorpLicense) - BLOCK could not be obtained", e);
             }
             return BlockTypes.GSOAIController_111;
         }
@@ -322,7 +336,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: GetGradeUnlockBlocks(SMCCorpLicense) - BLOCK could not be obtained - " + e);
+                SMUtil.Assert(false, GetLogName("Reward"), "SubMissions: GetGradeUnlockBlocks(SMCCorpLicense) - BLOCK could not be obtained", e);
             }
             var fCab = BlockIndexer.StringToBlockType(FirstCabUnlocked);
             return new BlockTypes[3] { fCab, fCab, fCab };
@@ -354,7 +368,7 @@ namespace Sub_Missions
                     string GO;
                     if (GetDirectory(out string directory))
                     {
-                        GO = System.IO.Path.GetFullPath(directory) + SMissionJSONLoader.up + fileName;
+                        GO = Path.Combine(Path.GetFullPath(directory), fileName);
                         Debug_SMissions.Log("SubMissions: RegisterCorpMusics - " + GO);
                         ManSMCCorps.sys.createSound(GO, FMOD.MODE.CREATESAMPLE | FMOD.MODE.ACCURATETIME, out Sound newSound);
                         combatMusicLoaded.Add(newSound);
@@ -424,7 +438,7 @@ namespace Sub_Missions
                         {
                             if (!ManSpawn.inst)
                             {
-                                Debug_SMissions.Log("SubMissions: ManSpawn is still loading");
+                                SMUtil.Log(false, "SubMissions: ManSpawn is still loading");
                                 return;
                             }
                             else
@@ -433,7 +447,10 @@ namespace Sub_Missions
                     }
                 }
             }
-            catch (Exception e) { Debug_SMissions.Log("SubMissions: GAME is still loading " + e); }
+            catch (Exception e)
+            {
+                SMUtil.Info(false, "Backend", "SubMissions: GAME is still loading " + e);
+            }
         }
 
         internal void RefreshCorpUISPUnofficial(FactionSubTypes corpID)
@@ -488,7 +505,7 @@ namespace Sub_Missions
 #endif
         }
 
-        internal void BuildSkins()
+        internal void BuildUnofficialSkins()
         {   //
             try
             {
@@ -505,7 +522,8 @@ namespace Sub_Missions
                     {
                         if ((int)SkinReferenceFaction >= Enum.GetValues(typeof(FactionSubTypes)).Length || !ManCustomSkins.inst.CanUseSkin(SkinReferenceFaction, step))
                         {
-                            Debug_SMissions.Log("SubMissions: Could not make a Corp Skin for ID " + (int)corpID + " skinIndex " + step);
+                            SMUtil.Log(false, "SubMissions: Could not make a Corp Skin for ID " + (int)corpID + " skinIndex " + step +
+                                " Required DLC not present");
                             continue;
                         }
                         Debug_SMissions.Log("SubMissions: Making a Corp Skin for ID " + (int)corpID + " skinIndex " + step);
@@ -524,7 +542,7 @@ namespace Sub_Missions
                     int skinCount = ManCustomSkins.inst.GetNumSkinsInCorp(corpID);
                     if (skinCount == 0)
                     {
-                        SMUtil.Assert(false, "Corp " + Faction + " HAS NO VALID TEXTURES!!!");
+                        SMUtil.Error(false, "Corp [Unofficial] (Skins) ~ " + Faction, "Corp " + Faction + " HAS NO VALID TEXTURES!!!");
                         /*
                         CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
                         if (SkinFromExisting(ref CSI, SkinReferenceFaction, 0, out int ID))
@@ -542,7 +560,10 @@ namespace Sub_Missions
                     }
                 }
             }
-            catch (Exception e) { Debug_SMissions.Log("SubMissions: BuildTextures - Error on compiling - " + e); }
+            catch (Exception e)
+            {
+                SMUtil.Assert(false, GetLogName("Skins"), "SubMissions: BuildTextures - Error on compiling skins for " + Faction, e);
+            }
         }
         internal bool MirrorSkin(ref CorporationSkinInfo toChange, FactionSubTypes corpID, int skinIndex, out int skinID)
         {   //
@@ -589,7 +610,7 @@ namespace Sub_Missions
                     UII.m_IsModded = true;
                     UII.m_LocalisedString = null;
                     toChange.m_SkinUIInfo = UII;
-                    Debug_SMissions.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
+                    SMUtil.Log(false, "SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
                     return true;
                 }
                 else
@@ -600,7 +621,7 @@ namespace Sub_Missions
                     toChange.m_SkinMeshes = new SkinMeshes();
                     error++;
                     toChange.m_SkinTextureInfo = ManCustomSkins.inst.GetSkinTexture(corpID, skinIndex);
-                    Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Skin Name: " + ManCustomSkins.inst.GetSkinNameForSnapshot(corpID, (uint)skinIndex));
+                    //Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - Skin Name: " + ManCustomSkins.inst.GetSkinNameForSnapshot(corpID, (uint)skinIndex));
                     error++;
 
                     UIIref = ManCustomSkins.inst.GetSkinUIInfo(corpID, skinIndex);
@@ -622,13 +643,13 @@ namespace Sub_Missions
                     UII.m_SkinLocked = false;
                     UII.m_IsModded = false;
                     UII.m_LocalisedString = null;
-                    Debug_SMissions.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
+                    SMUtil.Log(false, "SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
                     toChange.m_SkinUIInfo = UII;
                 }
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: MirrorSkin(SMCCorpLicense) - error on execution!  error no " + error + " | " + e);
+                SMUtil.Assert(false, GetLogName("Skins"), "SubMissions: MirrorSkin(SMCCorpLicense) - error on execution!  error no " + error, e);
                 return false;
             }
             return true;
@@ -665,10 +686,10 @@ namespace Sub_Missions
                         }
                     }
                     else
-                        SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
+                        SMUtil.Error(false, "Corp [Unofficial] (Skins) ~ " + Faction, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
                 }
                 else
-                    SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
+                    SMUtil.Error(false, "Corp [Unofficial] (Skins) ~ " + Faction, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
                 SkinTextures ST = new SkinTextures();
                 ST.m_Albedo = Albedo;
                 ST.m_Emissive = Emissive;
@@ -695,7 +716,7 @@ namespace Sub_Missions
                 UII.m_SkinLocked = false;
                 UII.m_IsModded = false;
                 UII.m_LocalisedString = null;
-                Debug_SMissions.Log("SubMissions: Made skin for " + ID + " skinIndex: " + skinIndex + " ID: " + skinID);
+                SMUtil.Log(false, "SubMissions: Made skin for " + Faction + " skinIndex: " + skinIndex + " ID: " + skinID);
                 toChange.m_SkinUIInfo = UII;
             }
             catch (Exception e)
@@ -842,10 +863,10 @@ namespace Sub_Missions
                         }
                     }
                     else
-                        SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
+                        SMUtil.Error(false, GetLogName("Setup - Blocks"), "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
                 }
                 else
-                    SMUtil.Assert(false, "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
+                    SMUtil.Error(false, GetLogName("Setup - Blocks"), "Corp " + Faction + " does not have an existing FirstCabUnlocked!");
             }
             if (ManTechMaterialSwap.inst.m_FinalCorpMaterials.TryGetValue(ID, out Material val))
             {
@@ -958,24 +979,22 @@ namespace Sub_Missions
                     return;
                 }
                 int smallestCabVolume = 262145;
-                List<BlockTypes> BTs = new List<BlockTypes>();
                 foreach (var item in GradeUnlockBlocks)
                 {
-                    BTs.AddRange(item.BlocksAvail);
-                }
-                foreach (BlockTypes BT in BTs)
-                {
-                    TankBlock TB = ManSpawn.inst.GetBlockPrefab(BT);
-                    if (TB)
+                    foreach (BlockTypes BT in item.BlocksAvail)
                     {
-                        int cabVolume = TB.filledCells.Length;
-                        var techControl = TB.GetComponent<ModuleTechController>();
-                        if (techControl && smallestCabVolume > cabVolume)
+                        TankBlock TB = ManSpawn.inst.GetBlockPrefab(BT);
+                        if (TB)
                         {
-                            if (techControl.HandlesPlayerInput)
+                            int cabVolume = TB.filledCells.Length;
+                            var techControl = TB.GetComponent<ModuleTechController>();
+                            if (techControl && smallestCabVolume > cabVolume)
                             {
-                                FirstCabUnlocked = ManSpawn.inst.GetBlockPrefab(BT).name;
-                                smallestCabVolume = cabVolume;
+                                if (techControl.HandlesPlayerInput)
+                                {
+                                    FirstCabUnlocked = ManSpawn.inst.GetBlockPrefab(BT).name;
+                                    smallestCabVolume = cabVolume;
+                                }
                             }
                         }
                     }
@@ -997,7 +1016,7 @@ namespace Sub_Missions
         {   //
             if (!GetDirectory(out string directory))
                 return;
-            if (SMissionJSONLoader.DirectoryExists(directory + SMissionJSONLoader.up + "AutoBlockList.txt"))
+            if (SMissionJSONLoader.DirectoryExists(Path.Combine(directory, "AutoBlockList.txt")))
                 return;
             Debug_SMissions.Log("Building AutoBlockList for faction " + Faction);
             StringBuilder SB = new StringBuilder();
@@ -1093,9 +1112,9 @@ namespace Sub_Missions
                 }
                 Debug_SMissions.Log("SubMissions: Imported " + importedSkins.Count + " Skin.json skins for Custom Corp " + Faction);
             }
-            catch
+            catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Check your Skins file names!  Some may be invalid!");
+                SMUtil.Assert(false, GetLogName("Skins"), "SubMissions: Check your Skins file names!  Some may be invalid!", e);
             }
         }
         private static FieldInfo FIFetch(Type type, string name)
@@ -1152,7 +1171,7 @@ namespace Sub_Missions
                                 string crateName = "m_" + CrateReferenceFaction.ToString() + "_";
                                 Mesh mesh;
                                 Transform trans;
-                                mesh = SMissionJSONLoader.LoadMesh(directory + SMissionJSONLoader.up + "Crate_Base.obj");
+                                mesh = SMissionJSONLoader.LoadMesh(Path.Combine(directory, "Crate_Base.obj"));
                                 if (mesh != null)
                                 {
                                     trans = GO.transform.Find(crateName + "Crate_Base");
@@ -1211,7 +1230,7 @@ namespace Sub_Missions
             {
                 if (GetDirectory(out string directory))
                 {
-                    Mesh mesh = SMissionJSONLoader.LoadMesh(directory + SMissionJSONLoader.up + partName + ".obj");
+                    Mesh mesh = SMissionJSONLoader.LoadMesh(Path.Combine(directory, partName + ".obj"));
                     if (mesh != null)
                     {
                         Transform trans = GO.transform.Find(crateName + partName);
@@ -1283,7 +1302,7 @@ namespace Sub_Missions
             {
                 if (directoryCache == null)
                 {
-                    if (SMissionJSONLoader.TryGetCorpInfoDirectory(Faction, out string directoryEnd))
+                    if (SMissionJSONLoader.TryGetCorpInfoData(Faction, out string directoryEnd))
                     {
                         directoryCache = directoryEnd;
                     }
@@ -1296,7 +1315,7 @@ namespace Sub_Missions
                 directory = directoryCache;
                 return true;
             }
-            directory = SMissionJSONLoader.MissionCorpsDirectory + SMissionJSONLoader.up + Faction;
+            directory = Path.Combine(SMissionJSONLoader.MissionCorpsDirectory, Faction);
             return true;
         }
         public void TryFindTextures()
@@ -1307,22 +1326,22 @@ namespace Sub_Missions
                 {
                     if (SmallCorpIcon == null && !StandardCorpIcon.NullOrEmpty())
                     {
-                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + StandardCorpIcon);
+                        Texture tex = FileUtils.LoadTexture(Path.Combine(directory,StandardCorpIcon));
                         SmallCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
                     }
                     if (SmallSelectedCorpIcon == null && !SelectedCorpIcon.NullOrEmpty())
                     {
-                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + SelectedCorpIcon);
+                        Texture tex = FileUtils.LoadTexture(Path.Combine(directory, SelectedCorpIcon));
                         SmallSelectedCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
                     }
                     if (HighResCorpIcon == null && !HighResolutionCorpIcon.NullOrEmpty())
                     {
-                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + HighResolutionCorpIcon);
+                        Texture tex = FileUtils.LoadTexture(Path.Combine(directory, HighResolutionCorpIcon));
                         HighResCorpIcon = Sprite.Create((Texture2D)tex, new Rect(0, 0, tex.width, tex.height), Vector2.zero);
                     }
                     if (SkinRefTech == null && !ExampleSkinTech.NullOrEmpty())
                     {
-                        Texture tex = FileUtils.LoadTexture(directory + SMissionJSONLoader.up + ExampleSkinTech);
+                        Texture tex = FileUtils.LoadTexture(Path.Combine(directory, ExampleSkinTech));
                         if (ManScreenshot.TryDecodeSnapshotRender((Texture2D)tex, out TechData.SerializedSnapshotData data))
                         {
                             TankPreset TP = TankPreset.CreateInstance();
@@ -1349,13 +1368,13 @@ namespace Sub_Missions
                 if (GetDirectory(out string directory))
                 {
                     SMissionJSONLoader.ValidateDirectory(directory);
-                    SMissionJSONLoader.TryWriteToTextFile(directory + SMissionJSONLoader.up + "AutoBlockList", toSave);
+                    SMissionJSONLoader.TryWriteToTextFile(Path.Combine(directory, "AutoBlockList"), toSave);
                 }
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not edit BlockList.txt.  \n   This could be due to a bug with this mod or file permissions. - " + e);
-                return;
+                SMUtil.Assert(false, GetLogName("Export"), "SubMissions: Could not edit BlockList.txt.  " +
+                    "\n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
         private void SaveToDisk()
@@ -1367,13 +1386,13 @@ namespace Sub_Missions
                 {
                     SMissionJSONLoader.ValidateDirectory(directory);
                     string toSave = JsonConvert.SerializeObject(ConvertToJSON(), Formatting.Indented);
-                    SMissionJSONLoader.TryWriteToJSONFile(directory + SMissionJSONLoader.up + "MissionCorp", toSave);
+                    SMissionJSONLoader.TryWriteToJSONFile(Path.Combine(directory, "MissionCorp"), toSave);
                 }
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not edit MissionCorp.json.  \n   This could be due to a bug with this mod or file permissions. - " + e);
-                return;
+                SMUtil.Assert(false, GetLogName("Export"), "SubMissions: Could not edit MissionCorp.json.  " +
+                    "\n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
         public static void SaveTemplateToDisk()
@@ -1385,8 +1404,8 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: Could not edit MissionCorp.json.  \n   This could be due to a bug with this mod or file permissions. - " + e);
-                return;
+                SMUtil.Assert(false, "Corps (Export) ~ ExampleCorp", "SubMissions: Could not edit MissionCorp.json.  " +
+                    "\n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
 

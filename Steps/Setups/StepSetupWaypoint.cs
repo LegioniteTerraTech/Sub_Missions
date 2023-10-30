@@ -16,6 +16,12 @@ namespace Sub_Missions.Steps
                 "{  // Sets up a Waypoint for the Mission." +
                   "\n  \"StepType\": \"SetupWaypoint\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
+                  "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +
+                  "\n    \"x\": 0.0," +
+                  "\n    \"y\": 2.0," +
+                  "\n    \"z\": 0.0" +
+                  "\n  }," +
+                  "\n  \"TerrainHandling\": 2,  // " + TerrainHandlingDesc +
                   "\n  // Conditions TO CHECK before executing" +
                   "\n  \"VaribleType\": \"True\",       // See the top of this file." +
                   "\n  \"VaribleCheckNum\": 0.0,      // What fixed value to compare VaribleType to." +
@@ -23,6 +29,24 @@ namespace Sub_Missions.Steps
                   "\n  // Input Parameters" +
                   "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech for the Waypoint to follow.  Leave empty to leave stationary" +
                 "\n},";
+        }
+        public override void InitGUI()
+        {
+            AddField(ESMSFields.Position, "Position");
+            AddField(ESMSFields.TerrainHandling, "Placement");
+            AddField(ESMSFields.VaribleType, "Condition Mode");
+            AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
+            AddGlobal(ESMSFields.SetMissionVarIndex1, "Active Condition", EVaribleType.Int);
+            AddOptions(ESMSFields.InputStringAux, "Change: ", new string[]
+                {
+                    "Position",
+                    "Tech",
+                },
+                new Dictionary<int, KeyValuePair<string, ESMSFields>>()
+                {
+                    {1, new KeyValuePair<string, ESMSFields>("Tech Name", ESMSFields.InputStringAux_Tech) },
+                }
+            );
         }
         public override void OnInit() { }
 
@@ -89,7 +113,8 @@ namespace Sub_Missions.Steps
                     }
                 }
                 if (!SpawnWaypoint())
-                    SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not find/spawn waypoint!");
+                    SMUtil.Error(false, SMission.LogName, 
+                        "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not find/spawn waypoint!");
                 return;
             }
             foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(SMission.Position, 8, new Bitfield<ObjectTypes>()))
@@ -102,7 +127,8 @@ namespace Sub_Missions.Steps
                 }
             }
             if (!SpawnWaypoint())
-                SMUtil.Assert(false, "SubMissions: StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
+                SMUtil.Error(false, SMission.LogName, 
+                    "SubMissions: StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
         }
         private void TryFetchWaypoint()
         {
@@ -133,7 +159,8 @@ namespace Sub_Missions.Steps
                     }
                 }
             }
-            SMUtil.Assert(false, "SubMissions: StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
+            SMUtil.Error(false, SMission.LogName, 
+                "SubMissions: StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
         }
         private bool SpawnWaypoint()
         {
@@ -151,7 +178,7 @@ namespace Sub_Missions.Steps
                     }
                     catch (Exception e)
                     {
-                        SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not setup waypoint!");
+                        SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not setup waypoint!", e);
                         Debug_SMissions.Log("SubMissions: Error - " + e);
                     }
                 }
@@ -164,7 +191,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: StepSetupWaypoint - Failed: Could not setup waypoint!");
+                SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupWaypoint - Failed: Could not setup waypoint!", e);
                 Debug_SMissions.Log("SubMissions: Error - " + e);
             }
             return false;
@@ -188,7 +215,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "SubMissions: StepSetupWaypoint - Failed: Could not despawn waypoint!");
+                SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupWaypoint - Failed: Could not despawn waypoint!", e);
                 Debug_SMissions.Log("SubMissions: Error - " + e);
             }
             return false;
