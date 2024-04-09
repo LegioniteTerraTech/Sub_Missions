@@ -36,7 +36,14 @@ namespace Sub_Missions.Steps
 
         public abstract void InitGUI();
 
+        /// <summary>
+        /// Called every time the mission is loaded
+        /// Called on FirstSetup(), before the included FirstSetup().
+        /// </summary>
         public abstract void OnInit();
+        /// <summary>
+        /// Only called on first mission load
+        /// </summary>
         public abstract void FirstSetup();
         public abstract void Trigger();
 

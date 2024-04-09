@@ -56,32 +56,32 @@ namespace Sub_Missions.Steps
             {
                 if (SMission.InputString.Length == 4)
                 {
-                    Mission.VarInts[SMission.SetMissionVarIndex1] = ManPlayer.inst.GetCurrentMoney();
+                    Mission.VarIntsActive[SMission.SetMissionVarIndex1] = ManPlayer.inst.GetCurrentMoney();
                 }
                 else
                 {
                     if (ManPlayer.inst.CanAfford((int)SMission.InputNum))
                     {
-                        Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = true;
+                        Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1] = true;
                         if (SMission.InputString.Length == 7)
                             ManPlayer.inst.PayMoney((int)SMission.InputNum);
                     }
                     else
                     {
-                        Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = false;
+                        Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1] = false;
                     }
                 }
             }
             catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
                     "on the list, 1 counts as the second entry, and so on.", e);
             }
             catch (NullReferenceException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
                     " on the step's set VaribleType.", e);

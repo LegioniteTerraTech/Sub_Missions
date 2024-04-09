@@ -32,11 +32,11 @@ namespace Sub_Missions
                 switch (ValueType)
                 {
                     case VarType.Bool:
-                        if (mission.VarTrueFalse[GlobalIndex])
+                        if (mission.VarTrueFalseActive[GlobalIndex])
                             triggerCountdownRemoval = true;
                         break;
                     case VarType.IntOverInt:
-                        if (mission.VarInts[GlobalIndex] >= mission.VarInts[GlobalIndex2])
+                        if (mission.VarIntsActive[GlobalIndex] >= mission.VarIntsActive[GlobalIndex2])
                             triggerCountdownRemoval = true;
                         break;
                 }
@@ -56,15 +56,15 @@ namespace Sub_Missions
             }
             catch (IndexOutOfRangeException e)
             {
-                SMUtil.Error(false, "Mission (Checklist) ~" + mission.Name, "SubMissions: MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
+                SMUtil.Error(false, "Mission (Checklist) ~" + mission.Name, KickStart.ModID + ": MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
 
                 switch (ValueType)
                 {
                     case VarType.Bool:
-                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, "SubMissions: Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
+                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, KickStart.ModID + ": Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
                         break;
                     case VarType.IntOverInt:
-                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, "SubMissions: Make sure both GlobalIndexes are set properly and exist in VarInts!");
+                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, KickStart.ModID + ": Make sure both GlobalIndexes are set properly and exist in VarInts!");
                         break;
                     default:
                         throw new MandatoryException(e);
@@ -73,7 +73,7 @@ namespace Sub_Missions
             catch (Exception e)
             {
                 throw new MandatoryException(e);
-                //SMUtil.Assert(true, "SubMissions: Internal issue!  Contact Legionite!", e);
+                //SMUtil.Assert(true, KickStart.ModID + ": Internal issue!  Contact Legionite!", e);
             }
             return triggerCountdownRemoval;
         }
@@ -89,9 +89,9 @@ namespace Sub_Missions
             }
             else
             {
-                if (BoolToEnable != -1 && BoolToEnable < mission.VarTrueFalse.Count)
+                if (BoolToEnable != -1 && BoolToEnable < mission.VarTrueFalseActive.Count)
                 {
-                    if (!mission.VarTrueFalse[BoolToEnable])
+                    if (!mission.VarTrueFalseActive[BoolToEnable])
                     {
                         return false;
                     }
@@ -111,33 +111,33 @@ namespace Sub_Missions
             switch (ValueType)
             {
                 case VarType.Bool:
-                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarTrueFalse.Count)
+                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarTrueFalseActive.Count)
                     {
                         GUILayout.Label("<b>ER</b>");
                     }
                     else
                     {
-                        if (mission.VarTrueFalse[GlobalIndex])
+                        if (mission.VarTrueFalseActive[GlobalIndex])
                             GUILayout.Label("<b>✓</b>");
                         else
                             GUILayout.Label("<b>!</b>");
                     }
                     break;
                 case VarType.IntOverInt:
-                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarInts.Count ||
-                        GlobalIndex2 == -1 || GlobalIndex2 >= mission.VarInts.Count)
+                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarIntsActive.Count ||
+                        GlobalIndex2 == -1 || GlobalIndex2 >= mission.VarIntsActive.Count)
                     {
                         GUILayout.Label("<b>ER</b>");
                     }
                     else
                     {
-                        if (mission.VarInts[GlobalIndex] >= mission.VarInts[GlobalIndex2])
+                        if (mission.VarIntsActive[GlobalIndex] >= mission.VarIntsActive[GlobalIndex2])
                             GUILayout.Label("<b>✓</b>");
                         else
                         {
-                            GUILayout.Label(mission.VarInts[GlobalIndex].ToString());
+                            GUILayout.Label(mission.VarIntsActive[GlobalIndex].ToString());
                             GUILayout.Label(" / ");
-                            GUILayout.Label(mission.VarInts[GlobalIndex2].ToString());
+                            GUILayout.Label(mission.VarIntsActive[GlobalIndex2].ToString());
                         }
                     }
                     break;
@@ -157,8 +157,8 @@ namespace Sub_Missions
                     output = 0;
                     return false;
                 case VarType.IntOverInt:
-                    output = mission.VarInts[GlobalIndex];
-                    return false;
+                    output = mission.VarIntsActive[GlobalIndex];
+                    return true;
                 default:
                     output = 0;
                     return false;

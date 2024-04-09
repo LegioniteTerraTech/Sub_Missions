@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Sub_Missions.ManWindows;
+using TerraTechETCUtil;
 using UnityEngine;
 
 namespace Sub_Missions
@@ -24,10 +25,10 @@ namespace Sub_Missions
             } 
         }
         public UISkinsPaletteHUD HUDinstInternal;
-        public int ID = WindowManager.IDOffset - 1;
+        public int ID = ManModGUI.IDOffset - 1;
         public string context = "Custom Corps Skins";
         public bool isOpen = false;
-        public Rect Window = new Rect(WindowManager.WideWindow);   // the "window"
+        public Rect Window = new Rect(ManModGUI.WideWindow);   // the "window"
 
         private Vector2 scrolll = new Vector2(0, 0);
         public float scrolllSize = 50;
@@ -38,7 +39,7 @@ namespace Sub_Missions
 
         private void OnGUI()
         {
-            //Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - ACTIVE: " + (bool)HUDinst + ((bool)HUDinst ? " - Expanded: " + HUDinst.IsShowing : "not expanded"));
+            //Debug_SMissions.Log(KickStart.ModID + ": UICustomCorpSkinsTEMP - ACTIVE: " + (bool)HUDinst + ((bool)HUDinst ? " - Expanded: " + HUDinst.IsShowing : "not expanded"));
 
             if (HUDinst && HUDinst.IsShowing && !ManPauseGame.inst.IsPaused)
                 Window = GUI.Window(ID, Window, RunGUI, isOpen ? context : "");
@@ -46,7 +47,7 @@ namespace Sub_Missions
 
         public void RunGUI(int ID)
         {
-            //Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - GUIACTIVE");
+            //Debug_SMissions.Log(KickStart.ModID + ": UICustomCorpSkinsTEMP - GUIACTIVE");
             try
             {
                 if (!isOpen)
@@ -115,14 +116,14 @@ namespace Sub_Missions
                                     if (PC)
                                     {
                                         PC.SetCurrentSelectedCorp(FST);
-                                        Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - SetCurrentSelectedCorp " + (int)PC.GetCurrentSelectedCorp() + "... CustomSkins - " + (int)Singleton.Manager<ManCustomSkins>.inst.GetCurrentSelectedCorp());
+                                        Debug_SMissions.Log(KickStart.ModID + ": UICustomCorpSkinsTEMP - SetCurrentSelectedCorp " + (int)PC.GetCurrentSelectedCorp() + "... CustomSkins - " + (int)Singleton.Manager<ManCustomSkins>.inst.GetCurrentSelectedCorp());
                                     }
                                 }
                                 posLerp++;
                             }
                             catch (Exception e)
                             {
-                                Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP - SetCurrentSelectedCorp ERROR - " + e);
+                                Debug_SMissions.Log(KickStart.ModID + ": UICustomCorpSkinsTEMP - SetCurrentSelectedCorp ERROR - " + e);
                             }
                         }
                     }
@@ -132,7 +133,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: UICustomCorpSkinsTEMP(FULL) - SetCurrentSelectedCorp ERROR - " + e);
+                Debug_SMissions.Log(KickStart.ModID + ": UICustomCorpSkinsTEMP(FULL) - SetCurrentSelectedCorp ERROR - " + e);
             }
         }
     }

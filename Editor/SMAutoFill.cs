@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using UnityEngine;
 using TerraTechETCUtil;
 using Sub_Missions.ManWindows;
+using Sub_Missions.Steps;
+using Newtonsoft.Json.Linq;
 
 namespace Sub_Missions.Editor
 {
@@ -49,27 +51,44 @@ namespace Sub_Missions.Editor
                 boolSet = true;
             }
         }
+        public static void OneWayButtonLarge(string name, ref bool boolSet)
+        {
+            if (boolSet)
+                GUILayout.Button(name, AltUI.ButtonOrangeLargeActive, GUILayout.Height(48));
+            else if (GUILayout.Button(name, AltUI.ButtonOrangeLarge, GUILayout.Height(48)))
+                boolSet = true;
+        }
+        public static void OneWayButtonLargeInv(string name, ref bool boolSet)
+        {
+            if (!boolSet)
+                GUILayout.Button(name, AltUI.ButtonOrangeLargeActive, GUILayout.Height(48));
+            else if (GUILayout.Button(name, AltUI.ButtonOrangeLarge, GUILayout.Height(48)))
+                boolSet = false;
+        }
         public static void OneWayButton(string name, ref bool boolSet)
         {
             if (boolSet)
-            {
-                GUILayout.Button(name, AltUI.ButtonOrangeLargeActive, GUILayout.Height(48));
-            }
-            else if (GUILayout.Button(name, AltUI.ButtonOrangeLarge, GUILayout.Height(48)))
-            {
+                GUILayout.Button(name, AltUI.ButtonBlueActive, GUILayout.Height(48));
+            else if (GUILayout.Button(name, AltUI.ButtonBlue, GUILayout.Height(48)))
                 boolSet = true;
-            }
         }
-        public static void OneWayButton<T>(string name, T index, ref T boolSet) where T : Enum
+        public static bool OneWayButton(string name, int valueToSet, ref int boolSet)
         {
-            if (boolSet.CompareTo(index) == 0)
+            if (valueToSet == boolSet)
+                GUILayout.Button(name, AltUI.ButtonBlueActive, GUILayout.Height(48));
+            else if (GUILayout.Button(name, AltUI.ButtonBlue, GUILayout.Height(48)))
             {
-                GUILayout.Button(name, AltUI.ButtonOrangeLargeActive, GUILayout.Height(48));
+                boolSet = valueToSet;
+                return true;
             }
-            else if (GUILayout.Button(name, AltUI.ButtonOrangeLarge, GUILayout.Height(48)))
-            {
-                boolSet = index;
-            }
+            return false;
+        }
+        public static void OneWayButton<T>(string name, T valueToSet, ref T boolSet) where T : Enum
+        {
+            if (boolSet.CompareTo(valueToSet) == 0)
+                GUILayout.Button(name, AltUI.ButtonBlueActive, GUILayout.Height(48));
+            else if (GUILayout.Button(name, AltUI.ButtonBlue, GUILayout.Height(48)))
+                boolSet = valueToSet;
         }
 
         public static void AutoFixedOptions(string name, ref int settable, ref Vector2 scroller, ref bool opened,
@@ -119,8 +138,15 @@ namespace Sub_Missions.Editor
             bool setted = false;
             GUILayout.BeginVertical();
             int num = settable;
-            if (lookup != null)
-                num = lookupInv[num];
+            try
+            {
+                if (lookup != null)
+                    num = lookupInv[num];
+            }
+            catch (Exception)
+            {
+                num = lookupInv.FirstOrDefault().Value;
+            }
             if (GUILayout.Button(options[num]))
             {
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Button);
@@ -138,6 +164,7 @@ namespace Sub_Missions.Editor
                         else
                             settable = step;
                         opened = false;
+                        setted = true;
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
                     }
                 }
@@ -312,9 +339,9 @@ namespace Sub_Missions.Editor
             GUILayout.FlexibleSpace();
             if (settable < 0)
                 GUILayout.Label("Disabled");
-            else if (settable < Mission.VarTrueFalse.Count)
-                GUILayout.Label(invertOutput ? (!Mission.VarTrueFalse[settable]).ToString() :
-                    Mission.VarTrueFalse[settable].ToString());
+            else if (settable < Mission.VarTrueFalseActive.Count)
+                GUILayout.Label(invertOutput ? (!Mission.VarTrueFalseActive[settable]).ToString() :
+                    Mission.VarTrueFalseActive[settable].ToString());
             else
                 GUILayout.Label("N/A");
 
@@ -332,13 +359,13 @@ namespace Sub_Missions.Editor
                         settable = ClampInt(val2);
                     }
                 }
-                else if (settable >= Mission.VarTrueFalse.Count)
+                else if (settable >= Mission.VarTrueFalseActive.Count)
                 {
                     GUILayout.Button("–", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
-                    settable = Mission.VarTrueFalse.Count;
-                    setCache = Mission.VarTrueFalse.Count.ToString();
-                    Mission.VarTrueFalse.Add(false);
+                    settable = Mission.VarTrueFalseActive.Count;
+                    setCache = Mission.VarTrueFalseActive.Count.ToString();
+                    Mission.VarTrueFalseActive.Add(false);
                 }
                 else
                 {
@@ -379,8 +406,8 @@ namespace Sub_Missions.Editor
             GUILayout.FlexibleSpace();
             if (settable < 0)
                 GUILayout.Label("Disabled");
-            else if (settable < Mission.VarInts.Count)
-                GUILayout.Label(Mission.VarInts[settable].ToString());
+            else if (settable < Mission.VarIntsActive.Count)
+                GUILayout.Label(Mission.VarIntsActive[settable].ToString());
             else
                 GUILayout.Label("N/A");
 
@@ -398,13 +425,13 @@ namespace Sub_Missions.Editor
                         settable = ClampInt(val2);
                     }
                 }
-                else if (settable >= Mission.VarInts.Count)
+                else if (settable >= Mission.VarIntsActive.Count)
                 {
                     GUILayout.Button("–", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
-                    settable = Mission.VarInts.Count;
-                    setCache = Mission.VarInts.Count.ToString();
-                    Mission.VarInts.Add(0);
+                    settable = Mission.VarIntsActive.Count;
+                    setCache = Mission.VarIntsActive.Count.ToString();
+                    Mission.VarIntsActive.Add(0);
                 }
                 else
                 {
@@ -480,6 +507,7 @@ namespace Sub_Missions.Editor
                 typeof(T).ToString() + ">.Display(" + typeof(C).ToString() + " runData) was incorrectly set up!" +
                 " \nDisplay(" + typeof(C).ToString() + " runData) must be overrriden with the display GUILayout functions!");
         }*/
+        public virtual void RefreshGUI(SubMissionStep runData) { }
         /// <summary>
         /// Call this to show the function and it's respective fields
         /// </summary>
@@ -492,7 +520,7 @@ namespace Sub_Missions.Editor
             data = (F)FuncLookup(context);
             Display(runData);
         }
-        public virtual void Update(C runData) { }
+        public virtual void UpdateScene(C runData) { }
 
         /// <summary>
         /// "Get" operation for field <typeparamref name="F"/>.  
@@ -514,7 +542,9 @@ namespace Sub_Missions.Editor
         protected Func<long, byte> ClampByte => SMAutoFill.ClampByte;
         protected bool DisplayBoolean(bool settable)
         {
-            bool set = AltUI.Toggle(settable, settable ? "true" : "false");
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(settable ? "True" : "False");
+            bool set = GUILayout.Toggle(settable, string.Empty);
             if (set != settable)
             {
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);

@@ -5,6 +5,7 @@ using System.Text;
 using System.Reflection;
 using UnityEngine;
 using Sub_Missions.ManWindows;
+using TerraTechETCUtil;
 
 namespace Sub_Missions
 {
@@ -80,7 +81,7 @@ namespace Sub_Missions
         {
             if (ManSubMissions.SelectedAnon == null)
             {
-                Debug_SMissions.Log("SubMissions: GUIMissionsList - tried to fetch NULL ANON MISSION");
+                Debug_SMissions.Log(KickStart.ModID + ": GUIMissionsList - tried to fetch NULL ANON MISSION");
                 return;
             }
             else
@@ -92,7 +93,7 @@ namespace Sub_Missions
         {
             if (ManSubMissions.Selected == null)
             {
-                Debug_SMissions.Log("SubMissions: GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
+                Debug_SMissions.Log(KickStart.ModID + ": GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
                 return;
             }
             else
@@ -105,7 +106,7 @@ namespace Sub_Missions
         {
             if (ManSubMissions.Selected == null)
             {
-                Debug_SMissions.Log("SubMissions: GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
+                Debug_SMissions.Log(KickStart.ModID + ": GUIMissionsList - tried to fetch NULL ACTIVE MISSION");
                 return;
             }
             else

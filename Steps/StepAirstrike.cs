@@ -123,7 +123,7 @@ namespace Sub_Missions.Steps
                         else
                         {
                             SMUtil.Error(true, SMission.LogName, 
-                                "SubMissions: ActAirstrike - Failed: InputStringAux does not reference a valid TrackedTech within the mission.  Mission " + Mission.Name);
+                                KickStart.ModID + ": ActAirstrike - Failed: InputStringAux does not reference a valid TrackedTech within the mission.  Mission " + Mission.Name);
                         }
                     }
                     else if (SMission.InputString == "AimInstant")
@@ -185,14 +185,14 @@ namespace Sub_Missions.Steps
             {
                 try
                 {
-                    SMUtil.Assert(false, SMission.LogName, "SubMissions: StepAirstrike(Instant) - Failed on Mission " + Mission.Name, e);
+                    SMUtil.Assert(false, SMission.LogName, KickStart.ModID + ": StepAirstrike(Instant) - Failed on Mission " + Mission.Name, e);
                 }
                 catch (Exception e2)
                 {
-                    SMUtil.Assert(true, SMission.LogName, "SubMissions: StepAirstrike(Instant) - Failed: COULD NOT FETCH INFORMATION!!!", e2);
+                    SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": StepAirstrike(Instant) - Failed: COULD NOT FETCH INFORMATION!!!", e2);
                 }
-                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                Debug_SMissions.Log("SubMissions: Error - " + e);
+                //Debug_SMissions.Log(KickStart.ModID + ": Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
             }
         }
         public void Fire(Vector3 scenePos, Visible target = null)
@@ -210,14 +210,14 @@ namespace Sub_Missions.Steps
             {
                 try
                 {
-                    SMUtil.Assert(false, SMission.LogName, "SubMissions: StepAirstrike - Failed on Mission " + Mission.Name, e);
+                    SMUtil.Assert(false, SMission.LogName, KickStart.ModID + ": StepAirstrike - Failed on Mission " + Mission.Name, e);
                 }
                 catch (Exception e2)
                 {
-                    SMUtil.Assert(true, SMission.LogName, "SubMissions: StepAirstrike - Failed: COULD NOT FETCH INFORMATION!!!", e2);
+                    SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": StepAirstrike - Failed: COULD NOT FETCH INFORMATION!!!", e2);
                 }
-                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                Debug_SMissions.Log("SubMissions: Error - " + e);
+                //Debug_SMissions.Log(KickStart.ModID + ": Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
             }
         }
     }

@@ -70,7 +70,7 @@ namespace Sub_Missions.Steps
             if (SMission.VaribleType == EVaribleType.DoSuccessID)
             {
                 SMUtil.Error(true, SMission.LogName, 
-                    "SubMissions: ActOptions does not support the VaribleType of DoSuccessID.  Mission " + Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
+                    KickStart.ModID + ": ActOptions does not support the VaribleType of DoSuccessID.  Mission " + Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
             }
             if (SMission.SavedInt == 9999)
             {

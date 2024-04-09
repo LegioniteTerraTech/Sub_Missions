@@ -33,8 +33,13 @@ namespace Sub_Missions
                 return true;
             }
             MM = null;
-            SMUtil.Error(false, "Mission (ModularMonuments) ~ " + name, "SubMissions: ManModularMonuments.SpawnMM() - WorldObject " + name + 
-                " does not exists.  Have you mis-spelled the name by accident?");
+            string msg = "";
+            foreach (var item in tree.WorldObjects)
+            {
+                msg += "\n- " + item.Key;
+            }
+            SMUtil.Error(false, "Mission (ModularMonuments) ~ " + name, KickStart.ModID + ": ManModularMonuments.SpawnMM() - WorldObject " + name + 
+                " does not exists.  Have you mis-spelled the name by accident?\nNames:" + msg);
             return false;
         }
         public static bool SpawnMM(ModularMonumentSave MMS, out GameObject MM)
@@ -55,7 +60,7 @@ namespace Sub_Missions
                 return true;
             }
             MM = null;
-            SMUtil.Error(false, "Mission (ModularMonuments) ~ " + MMS.name, "SubMissions: ManModularMonuments - WorldObject " + 
+            SMUtil.Error(false, "Mission (ModularMonuments) ~ " + MMS.name, KickStart.ModID + ": ManModularMonuments - WorldObject " + 
                 MMS.name + " does not exists.  Could not be found in database.  Load failed!");
             return false;
         }
@@ -75,7 +80,7 @@ namespace Sub_Missions
                 return;
             foreach (SMWorldObject SMWO in makePerm)
                 PermWorldObjects.Add(SMWO);
-            Debug_SMissions.Log("SubMissions: ManModularMonuments - Graduated " + makePerm.Count + " pieces to perm");
+            Debug_SMissions.Log(KickStart.ModID + ": ManModularMonuments - Graduated " + makePerm.Count + " pieces to perm");
         }
         internal static ModularMonumentSave Save(SMWorldObject SMWO)
         {

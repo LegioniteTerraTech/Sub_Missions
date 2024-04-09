@@ -4,30 +4,30 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIButtonWindow : IGUIFormat
+    public class GUIButtonWindow : GUIMiniMenu<GUIButtonWindow>
     {
-        public GUIPopupDisplay Display { get; set; }
         public string buttonMessage;
         public bool DestroyOnPress = false;
         public string InvokeAction;
 
 
-        public void Setup(GUIPopupDisplay display, string buttonLabel, bool removeOnPress, string ActionName)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
-            buttonMessage = buttonLabel;
-            DestroyOnPress = removeOnPress;
-            InvokeAction = ActionName;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
+            buttonMessage = (string)stats2.val1;
+            DestroyOnPress = (bool)stats2.val2;
+            InvokeAction = (string)stats2.val3;
         }
 
-        public void OnOpen()
+        public override void OnOpen()
         {
         }
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
 
             if (GUI.Button(new Rect(0, 10, Display.Window.width, Display.Window.height - 10), buttonMessage, WindowManager.styleButtonHugeFont))
@@ -45,12 +45,12 @@ namespace Sub_Missions.ManWindows
             WindowManager.KeepWithinScreenBounds(Display);
         }
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

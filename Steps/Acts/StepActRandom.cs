@@ -46,7 +46,7 @@ namespace Sub_Missions.Steps
         public override void FirstSetup()
         {
             if (SMission.InputNum == 0)
-                Mission.VarInts[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux));
+                Mission.VarIntsActive[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux));
         }
         public override void Trigger()
         {
@@ -55,18 +55,18 @@ namespace Sub_Missions.Steps
             switch (SMission.VaribleType)
             {
                 case EVaribleType.True: // Random bool
-                    Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux)) > SMission.VaribleCheckNum;
+                    Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux)) > SMission.VaribleCheckNum;
                     break;
                 case EVaribleType.False:
-                    Mission.VarTrueFalse[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux)) < SMission.VaribleCheckNum;
+                    Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux)) < SMission.VaribleCheckNum;
                     break;
                 case EVaribleType.Int:
-                    Mission.VarInts[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux));
+                    Mission.VarIntsActive[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range(int.Parse(SMission.InputString), int.Parse(SMission.InputStringAux));
                     //Mission.VarInts[SMission.SetMissionVarIndex1] = UnityEngine.Random.Range((int)Mathf.Min(SMission.InputNum, 0), (int)Mathf.Max(0, SMission.InputNum));
                     break;
                 default:
                     SMUtil.Error(true, SMission.LogName, 
-                        "SubMissions: ActRandom's VaribleType must be set to either True, False, or Int.  Mission " + 
+                        KickStart.ModID + ": ActRandom's VaribleType must be set to either True, False, or Int.  Mission " + 
                         Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
                     break;
             }

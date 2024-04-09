@@ -9,9 +9,8 @@ using Sub_Missions.Editor;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUISMissionEditor : IGUIFormat
+    public class GUISMissionEditor : GUIMiniMenu<GUISMissionEditor>
     {
-        public GUIPopupDisplay Display { get; set; }
         public Texture CachedPic;
         public bool LockEnding = false;
         public bool SlowMode = false;
@@ -19,12 +18,12 @@ namespace Sub_Missions.ManWindows
         private SubMissionTree Tree = null;
         public SubMissionTree TreeSelected => Tree;
 
-        public void Setup(GUIPopupDisplay display)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
             ManSubMissions.Editor = this;
         }
-        public void OnOpen()
+        public override void OnOpen()
         {
         }
 
@@ -84,20 +83,17 @@ namespace Sub_Missions.ManWindows
             GUILayout.EndHorizontal();
             return interacted;
         }
-        
-        public void RunGUI(int ID)
+
+        public override void RunGUI(int ID)
         {
             try
             {
                 if (ManSubMissions.Selected != null)
                     GUIMission();
+                else if (Tree != null)
+                    GUITree();
                 else
-                {
-                    if (Tree != null)
-                        GUITree();
-                    else
-                        GUIMain();
-                }
+                    GUIMain();
             }
             catch (ExitGUIException e) { throw e; }
             catch (Exception e)
@@ -155,6 +151,21 @@ namespace Sub_Missions.ManWindows
             GUILayout.Label("Trees Loaded: ");
             GUILayout.Label(ManSubMissions.SubMissionTrees.Count.ToString());
             GUILayout.FlexibleSpace();
+            if (ActiveGameInterop.inst && ActiveGameInterop.IsReady)
+            {
+                if (GUILayout.Button("Unhook from UnityEditor", AltUI.ButtonBlue))
+                    ActiveGameInterop.DeInitBothEnds();
+            }
+            else if (ActiveGameInterop.inst)
+            {
+                if (GUILayout.Button("Waiting For UnityEditor...", AltUI.ButtonRed))
+                    ActiveGameInterop.DeInitJustThisSide();
+            }
+            else if (GUILayout.Button("Try Hook To UnityEditor", AltUI.ButtonBlue))
+            {
+                ActiveGameInterop.Init();
+                InvokeHelper.InvokeSingleRepeat(ActiveGameInterop.UpdateNow, 1);
+            }
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal(GUILayout.Height(64));
@@ -164,8 +175,11 @@ namespace Sub_Missions.ManWindows
             }
             if (GUILayout.Button("Reload Trees", AltUI.ButtonOrangeLarge))
             {
-                ManSubMissions.inst.HarvestAllTrees();
+                ManSubMissions.inst.ReloadAllMissionTrees();
             }
+            if (GUILayout.Button("Reset ALL", AltUI.ButtonOrangeLarge))
+                ManSubMissions.RecycleAllDataForMissionsAndRefresh();
+
             GUILayout.EndHorizontal();
 
             try
@@ -216,22 +230,39 @@ namespace Sub_Missions.ManWindows
                         }
                     }
                 }
+                GUILayout.FlexibleSpace();
+
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("Open Files", AltUI.ButtonBlue))
+                    SMissionJSONLoader.OpenInExplorer(SMissionJSONLoader.MissionsDirectory);
+                if (WorldTerraformer.tool.UtilityShown)
+                {
+                    if (GUILayout.Button("Close Terraformer", AltUI.ButtonGreen))
+                    {
+                        WorldTerraformer.tool.ToggleGUIDisplay();
+                    }
+                }
+                else if (GUILayout.Button("Open Terraformer", AltUI.ButtonBlue))
+                {
+                    WorldTerraformer.tool.ToggleGUIDisplay();
+                }
+                GUILayout.EndHorizontal();
             }
             catch (ExitGUIException e) { throw e; }
             catch (Exception e)
             {
                 Tree = null;
-                throw new Exception("Error in GUIMIssionEditor.GUIMain()", e);
+                throw new Exception("Error in GUIMissionEditor.GUIMain()", e);
             }
         }
 
 
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
             BuildStatus();
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
             this.UpdateTransparency(0.4f);
             SMMissionGUI.GUIWorldDisplayUpdate();
@@ -240,6 +271,6 @@ namespace Sub_Missions.ManWindows
         public void BuildStatus()
         {
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

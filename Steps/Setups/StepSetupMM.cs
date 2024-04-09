@@ -55,7 +55,7 @@ namespace Sub_Missions.Steps
         { // Spawn a ModularMonument
             if (ManModularMonuments.SpawnMM(Mission.Tree, SMission.InputString, SMission.Position, SMission.EulerAngles, SMission.Forwards, out GameObject GO))
             {
-                Debug_SMissions.Log("SubMissions: SpawnMM - " + SMission.InputString + " for mission " + Mission.Name);
+                Debug_SMissions.Log(KickStart.ModID + ": SpawnMM - " + SMission.InputString + " for mission " + Mission.Name);
                 SMission.Mission.TrackedMonuments.Add(GO.GetComponent<SMWorldObject>());
             }
         }

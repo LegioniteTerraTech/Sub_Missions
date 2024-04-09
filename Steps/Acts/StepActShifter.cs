@@ -59,28 +59,28 @@ namespace Sub_Missions.Steps
             switch (SMission.VaribleType)
             {
                 case EVaribleType.True:
-                    if (Mission.VarTrueFalse[SMission.SetMissionVarIndex1])
+                    if (Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1])
                     {
                         SMUtil.ShiftCurrentID(ref SMission);
                         return;
                     }
                     break;
                 case EVaribleType.False:
-                    if (!Mission.VarTrueFalse[SMission.SetMissionVarIndex1])
+                    if (!Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1])
                     {
                         SMUtil.ShiftCurrentID(ref SMission);
                         return;
                     }
                     break;
                 case EVaribleType.IntGreaterThan:
-                    if (Mission.VarInts[SMission.SetMissionVarIndex1] > (int)SMission.InputNum)
+                    if (Mission.VarIntsActive[SMission.SetMissionVarIndex1] > (int)SMission.InputNum)
                     {
                         SMUtil.ShiftCurrentID(ref SMission);
                         return;
                     }
                     break;
                 case EVaribleType.IntLessThan:
-                    if (Mission.VarInts[SMission.SetMissionVarIndex1] < (int)SMission.InputNum)
+                    if (Mission.VarIntsActive[SMission.SetMissionVarIndex1] < (int)SMission.InputNum)
                     {
                         SMUtil.ShiftCurrentID(ref SMission);
                         return;

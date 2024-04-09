@@ -9,15 +9,23 @@ namespace Sub_Missions
             " or notify user Legionite (@LegioniteTT)";
 
         protected readonly string name;
+        /// <summary>
+        /// It MUST nest another exception!
+        /// </summary>
         public MandatoryException() : base()
         {
             throw new MandatoryException("MandatoryException() cannot be used standalone, " +
-                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!");
+                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!",
+                new NullReferenceException("MandatoryException - Exception argument NULL"));
         }
+        /// <summary>
+        /// It MUST nest another exception!
+        /// </summary>
         public MandatoryException(string Message) : base(Message)
         {
             throw new MandatoryException("MandatoryException(string Message) cannot be used standalone, " +
-                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!");
+                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!", 
+                new NullReferenceException("MandatoryException - Exception argument NULL"));
         }
         public MandatoryException(Exception InnerException) : 
             base("MANDATORY: This is the mod developer's issue, please report it " + ReportDest + "!", InnerException)
@@ -41,13 +49,15 @@ namespace Sub_Missions
         protected readonly string name;
         public WarningException() : base()
         {
-            throw new MandatoryException("WarningException() cannot be used standalone, " +
-                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!");
+            throw new WarningException("WarningException() cannot be used standalone, " +
+                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!",
+                new NullReferenceException("WarningException - Exception argument NULL"));
         }
         public WarningException(string Message) : base(Message)
         {
-            throw new MandatoryException("WarningException(string Message) cannot be used standalone, " +
-                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!");
+            throw new WarningException("WarningException(string Message) cannot be used standalone, " +
+                "Its main purpose is to bypass the user UI bug reporter.  It MUST nest another exception!",
+                new NullReferenceException("WarningException - Exception argument NULL"));
         }
         public WarningException(string Message, Exception InnerException) : base(Message, InnerException)
         {
@@ -56,7 +66,7 @@ namespace Sub_Missions
         public WarningException(System.Runtime.Serialization.SerializationInfo info,
             System.Runtime.Serialization.StreamingContext context) : base(info, context)
         {
-            throw new MandatoryException("WarningException(System.Runtime.Serialization.SerializationInfo info, " +
+            throw new WarningException("WarningException(System.Runtime.Serialization.SerializationInfo info, " +
                 "System.Runtime.Serialization.StreamingContext context) cannot be used as it is not implemented!");
         }
     }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using TerraTechETCUtil;
 using System.Reflection;
 
 namespace Sub_Missions
@@ -62,13 +63,13 @@ namespace Sub_Missions
             if (FakeEncounters.TryGetValue(hash, out GameObject val))
             {
                 Encounter Enc = val.GetComponent<Encounter>();
-                Debug_SMissions.Log("SubMissions: GetFakeEncounterInternal - Loaded for " + name);
+                Debug_SMissions.Log(KickStart.ModID + ": GetFakeEncounterInternal - Loaded for " + name);
                 EDl = val.GetComponent<EncounterDetails>();
                 EI = ((Encounter.SaveData)saveD.GetValue(Enc)).m_EncounterDef;
                 encounter = Enc;
                 return false;
             }
-            Debug_SMissions.Log("SubMissions: GetFakeEncounterInternal - New for " + name);
+            Debug_SMissions.Log(KickStart.ModID + ": GetFakeEncounterInternal - New for " + name);
             GameObject temp = new GameObject(searchTerm);
             temp.AddComponent<DenySave>();
             EDl = temp.AddComponent<EncounterDetails>();
@@ -130,7 +131,7 @@ namespace Sub_Missions
                     regiCounter.Remove(Enc);
                 }
                 else
-                    Debug_SMissions.Assert("SubMissions: Encounter " + Enc.EncounterName + " was not within ManEncounter!");
+                    Debug_SMissions.Assert(KickStart.ModID + ": Encounter " + Enc.EncounterName + " was not within ManEncounter!");
             }
             FakeEncounters.Clear();
         }
@@ -144,7 +145,7 @@ namespace Sub_Missions
                     regiCounter.Add(Enc);
                 }
                 else
-                    Debug_SMissions.Assert("SubMissions: Encounter " + Enc.EncounterName + " was already within ManEncounter!");
+                    Debug_SMissions.Assert(KickStart.ModID + ": Encounter " + Enc.EncounterName + " was already within ManEncounter!");
             }
             FakeEncounters.Clear();
         }
@@ -167,18 +168,18 @@ namespace Sub_Missions
                 }
                 else
                 {
-                    Debug_SMissions.Log("SubMissions: Encounters within ManEncounter:");
+                    Debug_SMissions.Log(KickStart.ModID + ": Encounters within ManEncounter:");
                     foreach (var item in regiCounter)
                     {
                         if (item != null && !item.EncounterName.NullOrEmpty())
                             Debug_SMissions.Log("- " + item.EncounterName);
                     }
-                    Debug_SMissions.Assert("SubMissions: Encounter " + name + " was removed but was not within ManEncounter!");
+                    Debug_SMissions.Assert(KickStart.ModID + ": Encounter " + name + " was removed but was not within ManEncounter!");
                 }
                 if (!cache.Remove(name))
-                    Debug_SMissions.Assert("SubMissions: Encounter " + name + " was removed but cache did not have the entry!");
+                    Debug_SMissions.Assert(KickStart.ModID + ": Encounter " + name + " was removed but cache did not have the entry!");
                 Enc.Recycle();
-                Debug_SMissions.Log("SubMissions: Encounter Destroyed.");
+                Debug_SMissions.Log(KickStart.ModID + ": Encounter Destroyed.");
             }
         }
         internal static void RecycleAllFakeEncounters()
@@ -191,7 +192,7 @@ namespace Sub_Missions
                     regiCounter.Remove(Enc);
                 }
                 else
-                    Debug_SMissions.Assert("SubMissions: Encounter " + Enc.EncounterName + " was removed but was not within ManEncounter!");
+                    Debug_SMissions.Assert(KickStart.ModID + ": Encounter " + Enc.EncounterName + " was removed but was not within ManEncounter!");
                 Enc.Recycle();
             }
             FakeEncounters.Clear();
@@ -211,17 +212,20 @@ namespace Sub_Missions
             int errorl = 0;
             try
             {
-                errorl++;
+                errorl = 1;
                 Array array = Array.CreateInstance(objective, 0);
 
-                errorl++;
+                errorl = 2;
                 obsticles.SetValue(EDl, array);
 
+                errorl = 3;
                 Title.SetValue(EDl, mission.Name);
                 Desc.SetValue(EDl, mission.Description);
                 Timed.SetValue(EDl, false);
+                errorl = 4;
 
                 FactionSubTypes FST = SubMissionTree.GetTreeCorp(mission.Rewards.CorpToGiveEXP);
+                errorl = 5;
                 if (mission.Rewards.EXPGain > 0)
                 {
                     if (Singleton.Manager<ManLicenses>.inst.IsLicenseDiscovered(FST))
@@ -245,6 +249,7 @@ namespace Sub_Missions
                     AwardLice.SetValue(EDl, false);
                     XPTarg.SetValue(EDl, FST);
                 }
+                errorl = 6;
 
                 if (mission.Rewards.MoneyGain > 0)
                 {
@@ -253,26 +258,35 @@ namespace Sub_Missions
                 }
                 else
                     AwardBB.SetValue(EDl, false);
+                errorl = 7;
 
                 bool randBlocks = mission.Rewards.RandomBlocksToSpawn > 0;
                 if (randBlocks || mission.Rewards.BlocksToSpawn.Count > 0)
                 {
                     AwardBloc.SetValue(EDl, true);
-                    BlocSet.SetValue(EDl, mission.Rewards.BlocksToSpawn.ToArray());
+                    BlockTypes[] blocks = new BlockTypes[mission.Rewards.BlocksToSpawn.Count];
+                    for (int i = 0; blocks.Length > i; i++)
+                    {
+                        blocks[i] = BlockIndexer.GetBlockIDLogFree(mission.Rewards.BlocksToSpawn[i]);
+                    }
+                    BlocSet.SetValue(EDl, blocks);
                     BlocPool.SetValue(EDl, randBlocks);
                     BlocPoolAmou.SetValue(EDl, mission.Rewards.RandomBlocksToSpawn);
                     BlocPoolLice.SetValue(EDl, FST);
                 }
                 else
                     AwardBloc.SetValue(EDl, false);
+                errorl = 8;
 
                 track.SetValue(EDl, EncounterDetails.AnalyticsMissionType.DoNotTrack);
                 popDis.SetValue(dummyEmpty, false);
                 RadU.SetValue(dummyEmpty, mission.GetMinimumLoadRange());
+                errorl = 9;
 
                 // Setup the UI stuff
                 int checkLength = mission.CheckList.Count;
                 array = Array.CreateInstance(objective, checkLength);
+                errorl = 10;
 
                 for (int step = 0; step < checkLength; step++)
                 {
@@ -293,12 +307,14 @@ namespace Sub_Missions
                         Debug_SMissions.Assert(true, "FAILED TO REBUILD " + mission.Name + " MISSION CHECKLIST ON STEP " + step + " | " + e);
                     }
                 }
+                errorl = 11;
                 obsticles.SetValue(EDl, array);
                 questLog.SetValue(dummyEmpty, new QuestLogData(EI, EDl, CustomDisplayID));
             }
-            catch
+            catch (Exception e)
             {
-                Debug_SMissions.LogError("Error on " + errorl);
+                Debug_SMissions.LogError("Error on " + errorl + "\n" + e);
+                throw new MandatoryException("EncounterShoehorn.GetFakeEncounter Error on " + errorl, e);
             }
 
             return dummyEmpty;
@@ -433,32 +449,32 @@ namespace Sub_Missions
             Encounter dummyEmpty = ManEncounter.inst.GetActiveEncounter(mission.FakeEncounter.EncounterDef);
             if (dummyEmpty)
             {
-                Debug_SMissions.Log("SubMissions: EncounterShoehorn - Finished SubMission " + mission.Name);
+                Debug_SMissions.Log(KickStart.ModID + ": EncounterShoehorn - Finished SubMission " + mission.Name);
                 ForceFinish(dummyEmpty);
                 if (finish == ManEncounter.FinishState.Cancelled)
                 {
-                    Debug_SMissions.Log("SubMissions: FinishSubMission Cancelled " + mission.Name);
+                    Debug_SMissions.Log(KickStart.ModID + ": FinishSubMission Cancelled " + mission.Name);
                     ManQuestLog.inst.RemoveLog(dummyEmpty, ManEncounter.FinishState.Cancelled, null);
                 }
                 else if (finish == ManEncounter.FinishState.Completed)
                 {
-                    Debug_SMissions.Log("SubMissions: FinishSubMission Completed " + mission.Name);
+                    Debug_SMissions.Log(KickStart.ModID + ": FinishSubMission Completed " + mission.Name);
                     ManQuestLog.inst.RemoveLog(dummyEmpty, ManEncounter.FinishState.Completed, null);
                 }
                 else if (finish == ManEncounter.FinishState.Failed)
                 {
-                    Debug_SMissions.Log("SubMissions: FinishSubMission Failed " + mission.Name);
+                    Debug_SMissions.Log(KickStart.ModID + ": FinishSubMission Failed " + mission.Name);
                     ManQuestLog.inst.RemoveLog(dummyEmpty, ManEncounter.FinishState.Failed, null);
                 }
                 else
                 {
-                    Debug_SMissions.Assert("SubMissions: FinishSubMission recieved invalid request! " + finish);
+                    Debug_SMissions.Assert(KickStart.ModID + ": FinishSubMission recieved invalid request! " + finish);
                 }
                 //ManEncounter.inst.FinishEncounter(dummyEmpty, finish);
                 RecycleFakeEncounter(mission.Name, dummyEmpty);
             }
             else
-                Debug_SMissions.Log("SubMissions: OnFinishSubMission " + mission.Name + " HAS NO ASSIGNED FAKE ENCOUNTER");
+                Debug_SMissions.Log(KickStart.ModID + ": OnFinishSubMission " + mission.Name + " HAS NO ASSIGNED FAKE ENCOUNTER");
         }
         internal static void ForceFinish(Encounter mission)
         {
@@ -524,7 +540,7 @@ namespace Sub_Missions
             ETS.m_Rotation = Quaternion.identity;
             ETS.m_UsePosForPlacement = false;
             _ = ETS.m_EncounterData.m_EncounterPrefab.EncounterDetails;
-            Debug_SMissions.Log("SubMissions: GetEncounterSpawnDisplayInfo(SubMission) - New EncounterToSpawn for " + mission.Name + ".");
+            Debug_SMissions.Log(KickStart.ModID + ": GetEncounterSpawnDisplayInfo(SubMission) - New EncounterToSpawn for " + mission.Name + ".");
             return ETS;
         }
 
@@ -548,7 +564,7 @@ namespace Sub_Missions
                 ETS.m_UsePosForPlacement = false;
                 _ = ETS.m_EncounterData.m_EncounterPrefab.EncounterDetails;
                 cache.Add(mission.Name, ETS);
-                Debug_SMissions.Log("SubMissions: GetEncounterSpawnDisplayInfo(SubMissionStandby) - New EncounterToSpawn for " + mission.Name + ".");
+                Debug_SMissions.Log(KickStart.ModID + ": GetEncounterSpawnDisplayInfo(SubMissionStandby) - New EncounterToSpawn for " + mission.Name + ".");
             }
             return ETS;
         }

@@ -9,24 +9,23 @@ using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIMessageError : IGUIFormat
+    public class GUIMessageError : GUIMiniMenu<GUIMessageError>
     {
-        public GUIPopupDisplay Display { get; set; }
         private Vector2 scroll = Vector2.zero;
         private SMUtil.ErrorQueue errors;
 
 
-        internal void Setup(GUIPopupDisplay display, SMUtil.ErrorQueue elements)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
-            errors = elements;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
+            errors = (SMUtil.ErrorQueue)stats2.val1;
         }
-        public void OnOpen()
+        public override void OnOpen()
         {
         }
 
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
             if (errors.Count > 0)
             {
@@ -38,31 +37,47 @@ namespace Sub_Missions.ManWindows
                 GUILayout.Label("No Errors", WindowManager.styleButtonGinormusFont);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("<b>CONTINUE</b>", AltUI.ButtonBlueLarge, GUILayout.Width(200), GUILayout.Height(46)))
+            if (GUILayout.Button("<b>EXIT</b>", AltUI.ButtonBlueLarge, GUILayout.Width(200), GUILayout.Height(46)))
             {
-                Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Enter);
+                Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 WindowManager.HidePopup(Display);
                 WindowManager.RemovePopup(Display);
             }
             if (GUILayout.Button("<b>CLEAR</b>", AltUI.ButtonGreyLarge, GUILayout.Width(200), GUILayout.Height(46)))
             {
-                Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Enter);
+                Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 SMUtil.ClearErrors();
             }
             if (KickStart.Debugger)
             {
-                if (GUILayout.Button("<b>PAUSE</b>", AltUI.ButtonOrangeLargeActive, GUILayout.Width(200), GUILayout.Height(46)))
+                if (GUILayout.Button("<b>Hold Logging</b>", AltUI.ButtonOrangeLargeActive, GUILayout.Width(200), GUILayout.Height(46)))
                 {
-                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.AIIdle);
+                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Back);
                     KickStart.Debugger = false;
                 }
             }
             else
             {
-                if (GUILayout.Button("<b>RESUME</b>", AltUI.ButtonOrangeLarge, GUILayout.Width(200), GUILayout.Height(46)))
+                if (GUILayout.Button("<b>Resume Logging</b>", AltUI.ButtonOrangeLarge, GUILayout.Width(200), GUILayout.Height(46)))
                 {
-                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.AIFollow);
+                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Enter);
                     KickStart.Debugger = true;
+                }
+            }
+            if (ManSubMissions.inst.enabled)
+            {
+                if (GUILayout.Button("<b>STOP UPDATES</b>", AltUI.ButtonOrangeLargeActive, GUILayout.Width(200), GUILayout.Height(46)))
+                {
+                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.AIIdle);
+                    ManSubMissions.inst.enabled = false;
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("<b>RUN UPDATES</b>", AltUI.ButtonOrangeLarge, GUILayout.Width(200), GUILayout.Height(46)))
+                {
+                    Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.AIGuard);
+                    ManSubMissions.inst.enabled = true;
                 }
             }
             GUILayout.EndHorizontal();
@@ -71,13 +86,13 @@ namespace Sub_Missions.ManWindows
             WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
             this.UpdateTransparency(0.4f);
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

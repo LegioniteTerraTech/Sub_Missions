@@ -35,19 +35,24 @@ namespace Sub_Missions.Steps
         }
         public override void FirstSetup()
         {
+            triggered = false;
         }
+        /// <summary>
+        /// Prevent ENDLESS LOOP from happening!
+        /// </summary>
+        private bool triggered = false;
         public override void Trigger()
         {
             switch (SMission.VaribleType)
             {
                 case EVaribleType.True: // when set global is true
-                    if (Mission.VarTrueFalse[SMission.SetMissionVarIndex1])
+                    if (Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1])
                     {
                         Mission.Fail();
                     }
                     break;
                 case EVaribleType.False: // when set global is false
-                    if (!Mission.VarTrueFalse[SMission.SetMissionVarIndex1])
+                    if (!Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1])
                     {
                         Mission.Fail();
                     }

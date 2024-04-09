@@ -19,6 +19,12 @@ namespace Sub_Missions
                 return;
             UnityEngine.Debug.Log(message);
         }
+        internal static void Log(float message)
+        {
+            if (!ShouldLog)
+                return;
+            UnityEngine.Debug.Log(message.ToString());
+        }
         internal static void Log(string message)
         {
             if (!ShouldLog)
@@ -65,19 +71,19 @@ namespace Sub_Missions
         }
         internal static void Exception(string message)
         {
-            throw new Exception("SubMissions: Exception - ", new Exception(message));
+            throw new Exception(KickStart.ModID + ": Exception - ", new Exception(message));
         }
         internal static void FatalError()
         {
-            ManUI.inst.ShowErrorPopup("SubMissions: ENCOUNTERED CRITICAL ERROR");
-            UnityEngine.Debug.Log("SubMissions: ENCOUNTERED CRITICAL ERROR");
-            UnityEngine.Debug.Log("SubMissions: MAY NOT WORK PROPERLY AFTER THIS ERROR, PLEASE REPORT!");
+            ManUI.inst.ShowErrorPopup(KickStart.ModID + KickStart.ModID + ": ENCOUNTERED CRITICAL ERROR");
+            UnityEngine.Debug.Log(KickStart.ModID + ": ENCOUNTERED CRITICAL ERROR");
+            UnityEngine.Debug.Log(KickStart.ModID + ": MAY NOT WORK PROPERLY AFTER THIS ERROR, PLEASE REPORT!");
         }
         internal static void FatalError(string e)
         {
-            ManUI.inst.ShowErrorPopup("SubMissions: ENCOUNTERED CRITICAL ERROR: " + e);
-            UnityEngine.Debug.Log("SubMissions: ENCOUNTERED CRITICAL ERROR");
-            UnityEngine.Debug.Log("SubMissions: MAY NOT WORK PROPERLY AFTER THIS ERROR, PLEASE REPORT!");
+            ManUI.inst.ShowErrorPopup(KickStart.ModID + ": ENCOUNTERED CRITICAL ERROR: " + e);
+            UnityEngine.Debug.Log(KickStart.ModID + ": ENCOUNTERED CRITICAL ERROR: " + e);
+            UnityEngine.Debug.Log(KickStart.ModID + ": MAY NOT WORK PROPERLY AFTER THIS ERROR, PLEASE REPORT!");
         }
     }
 }

@@ -74,13 +74,13 @@ namespace Sub_Missions
         {
             if (shown)
             {
-                if (GUILayout.Button(title, AltUI.ButtonRedActive, GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button(title, AltUI.ButtonOrangeLargeActive, GUILayout.ExpandWidth(true)))
                     shown = false;
                 GUILayout.Label(info, WindowManager.styleScrollFont);
             }
             else
             {
-                if (GUILayout.Button(title, AltUI.ButtonRed, GUILayout.ExpandWidth(true)))
+                if (GUILayout.Button(title, AltUI.ButtonOrangeLarge, GUILayout.ExpandWidth(true)))
                     shown = true;
             }
         }
@@ -117,7 +117,7 @@ namespace Sub_Missions
         {
             if (shown)
             {
-                if (GUILayout.Button(title, AltUI.ButtonOrangeLargeActive, GUILayout.ExpandWidth(true), GUILayout.Height(46)))
+                if (GUILayout.Button(title, AltUI.ButtonRedActive, GUILayout.ExpandWidth(true), GUILayout.Height(46)))
                     shown = false;
                 GUILayout.Label(info, WindowManager.styleScrollFont);
                 if (exShown)
@@ -134,7 +134,7 @@ namespace Sub_Missions
             }
             else
             {
-                if (GUILayout.Button(title, AltUI.ButtonOrangeLarge, GUILayout.ExpandWidth(true), GUILayout.Height(46)))
+                if (GUILayout.Button(title, AltUI.ButtonRed, GUILayout.ExpandWidth(true), GUILayout.Height(46)))
                     shown = true;
             }
         }

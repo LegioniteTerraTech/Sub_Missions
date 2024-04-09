@@ -32,6 +32,8 @@ namespace Sub_Missions.Editor
             else
                 GUILayout.Label(context.ProgressID.ToString());
             GUILayout.FlexibleSpace();
+            if (SMAutoFill.OneWayButton("Do Always", SubMission.alwaysRunValue, ref context.ProgressID))
+                setCache = context.ProgressID.ToString();
             if (!int.TryParse(setCache, out int val) || val == context.ProgressID)
                 setCache = context.ProgressID.ToString();
             string set = GUILayout.TextField(setCache, 32, AltUI.TextfieldBlackAdjusted, GUILayout.Width(160));
@@ -48,6 +50,7 @@ namespace Sub_Missions.Editor
             {
                 GUILayout.Label("<color=red>X</color>", GUILayout.Width(25));
             }
+
             setCache = set;
             GUILayout.EndHorizontal();
             foreach (var item in elements)
@@ -71,7 +74,16 @@ namespace Sub_Missions.Editor
         {
             foreach (var item in elements)
             {
-                item.Value.Update(context);
+                item.Value.UpdateScene(context);
+            }
+        }
+
+        internal void RefreshFields(SubMissionStep step)
+        {
+            setCache = step.ProgressID.ToString();
+            foreach (var item in elements)
+            {
+                item.Value.RefreshGUI(step);
             }
         }
     }

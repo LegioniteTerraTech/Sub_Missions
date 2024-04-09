@@ -50,7 +50,7 @@ namespace Sub_Missions.Steps
             }
             catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
                     "[SetMissionVarIndex3] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
@@ -58,7 +58,7 @@ namespace Sub_Missions.Steps
             }
             catch (NullReferenceException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
                     "[SetMissionVarIndex3] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +

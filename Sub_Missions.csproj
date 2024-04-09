@@ -274,6 +274,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ButtonAct.cs" />
+    <Compile Include="CursorChanger.cs" />
     <Compile Include="Debug_SMissions.cs" />
     <Compile Include="Editor\ESMFields.cs" />
     <Compile Include="Editor\ESMTFields.cs" />
@@ -287,12 +288,18 @@
     <Compile Include="Editor\ESMSFields.cs" />
     <Compile Include="Editor\SMSFieldGUI.cs" />
     <Compile Include="ErrorElements.cs" />
+    <Compile Include="LargeStringData.cs" />
     <Compile Include="MandatoryException.cs" />
     <Compile Include="ManWindows\GUIDevControl.cs" />
     <Compile Include="ManWindows\GUIMessageError.cs" />
     <Compile Include="ManWindows\GUISMissionEditor.cs" />
+    <Compile Include="ManWindows\WindowManager.cs" />
     <Compile Include="ModularMonuments\MM_JSONLoader.cs" />
     <Compile Include="ModuleSubMissionsBoard.cs" />
+    <Compile Include="PatchesBatched\GlobalPatches.cs" />
+    <Compile Include="PatchesBatched\TerrainPatches.cs" />
+    <Compile Include="PatchesBatched\UIPatches.cs" />
+    <Compile Include="PatchesBatched\ProgressionPatches.cs" />
     <Compile Include="SimpleSMissions.cs" />
     <Compile Include="CustomCorpsMK2\SMCCorpLicense.cs" />
     <Compile Include="CustomCorpsMK2\ManSMCCorps.cs" />
@@ -300,6 +307,7 @@
     <Compile Include="CustomCorpsMK2\SMCSkinID.cs" />
     <Compile Include="SMExplosion.cs" />
     <Compile Include="SpawnableTech.cs" />
+    <Compile Include="Steps\Acts\StepActDrive.cs" />
     <Compile Include="Steps\Checks\StepCheckMoney.cs" />
     <Compile Include="Steps\IPositioned.cs" />
     <Compile Include="Steps\StepAirstrike.cs" />
@@ -307,6 +315,8 @@
     <Compile Include="CustomCorpsMK2\UICCorpLicenses.cs" />
     <Compile Include="CustomCorpsMK2\UICustomCorpSkinsTEMP.CS" />
     <Compile Include="SubMissionHierachy.cs" />
+    <Compile Include="SubMissionsWiki.cs" />
+    <Compile Include="TerrainOperations.cs" />
     <Compile Include="WorldTerraformer.cs" />
     <Content Include="ModularBrickCube_6x3x6.obj">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -338,9 +348,8 @@
     <Compile Include="ManWindows\GUIMessage.cs" />
     <Compile Include="ManWindows\GUISMissionsList.cs" />
     <Compile Include="ManWindows\IGUIFormat.cs" />
-    <Compile Include="ManWindows\WindowManager.cs" />
     <Compile Include="MissionChecklist.cs" />
-    <Compile Include="PatchBatch.cs" />
+    <Compile Include="PatchesBatched\PatchBatch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ManSubMissions.cs" />
     <Compile Include="SMissionJSONLoader.cs" />

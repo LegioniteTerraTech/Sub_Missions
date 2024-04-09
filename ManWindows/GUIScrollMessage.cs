@@ -6,12 +6,12 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using Sub_Missions.Steps;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIScrollMessage : IGUIFormat
+    public class GUIScrollMessage : GUIMiniMenu<GUIScrollMessage>
     {
-        public GUIPopupDisplay Display { get; set; }
         public Texture2D Image;
         public StringBuilder MessageBuilder = new StringBuilder();
         public string Message = "ERROR 404 NOT FOUND (Init Failiure)";
@@ -32,16 +32,16 @@ namespace Sub_Missions.ManWindows
         private static int StepRate = 1;
 
 
-        public void Setup(GUIPopupDisplay display, string message, float scrollLerpTime, bool HalfSize, SMissionStep assignedStep)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
-            Message = message;
-            scrollDelay = scrollLerpTime;
-            Dual = HalfSize;
-            this.assignedStep = assignedStep;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
+            Message = (string)stats2.val1;
+            scrollDelay = (float)stats2.val2;
+            Dual = (bool)stats2.val3;
+            this.assignedStep = (SMissionStep)stats2.val4;
         }
 
-        public void OnOpen()
+        public override void OnOpen()
         {
             step = -5;
             MessageBuilder.Clear();
@@ -49,7 +49,7 @@ namespace Sub_Missions.ManWindows
             bleep = false;
             bleepPrev = false;
             Display.alpha = 0.95f;
-            List<GUIPopupDisplay> disps = WindowManager.GetAllActivePopups(GUISetTypes.MessageScroll);
+            List<GUIPopupDisplay> disps = WindowManager.GetAllActivePopups(typeof(GUIScrollMessage).GetHashCode());
             if (disps.Count > 0)
             {
                 Rect rectOffset = Display.Window;
@@ -98,7 +98,7 @@ namespace Sub_Missions.ManWindows
             return alphaed;
         }
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
             GUIStyle alphaed = GradientClone(WindowManager.styleScrollFont, Display.alpha);
             GUIStyle buttonAlphaed = GradientClone(WindowManager.styleButtonHugeFont, Display.alpha);
@@ -130,10 +130,10 @@ namespace Sub_Missions.ManWindows
                 {
                     GUI.DrawTexture(new Rect(15, 15, Display.Window.height - 30, Display.Window.height - 30), 
                         Image, ScaleMode.ScaleToFit, true, 0, new Color(1, 1, 1, Display.alpha), 0, 4);
-                    GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 60), MessageOut, alphaed);
+                    GUI.Label(new Rect(20 + Display.Window.height, 30, Display.Window.width - Display.Window.height - 60, Display.Window.height - 10), MessageOut, alphaed);
                 }
                 else
-                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 60), MessageOut, alphaed);
+                    GUI.Label(new Rect(40, 30, Display.Window.width - 80, Display.Window.height - 10), MessageOut, alphaed);
                 if (!DenySkip)
                 {
                     if (GUI.Button(new Rect(Display.Window.width - 50, Display.Window.height - 38, 40, 28), "<b>OK</b>", buttonAlphaed))
@@ -195,7 +195,7 @@ namespace Sub_Missions.ManWindows
                 step++;
                 return;
             }
-            //Debug_SMissions.Log("SubMissions: stepchek");
+            //Debug_SMissions.Log(KickStart.ModID + ": stepchek");
             for (int stepSped = 0; stepSped < StepRate; stepSped++)
             {
                 try
@@ -231,7 +231,7 @@ namespace Sub_Missions.ManWindows
             {
                 bleep = false;
             }
-            //Debug_SMissions.Log("SubMissions: stepchek2");
+            //Debug_SMissions.Log(KickStart.ModID + ": stepchek2");
             MessageOut = MessageBuilder.ToString() + (BOLD ? "</b>" : "");
             step += StepRate;
         }
@@ -295,7 +295,7 @@ namespace Sub_Missions.ManWindows
             //Debug_SMissions.Log("Is playing noise " + fInst.CheckPlaybackState(FMOD.Studio.PLAYBACK_STATE.PLAYING));
         }
 
-        public void FastUpdate()
+        public override void FastUpdate()
         {
             StepRate = Input.GetKey(KeyCode.Space) ? 2 : 1;
             BleepCommand();
@@ -306,14 +306,14 @@ namespace Sub_Missions.ManWindows
             }
             tracker += Time.deltaTime;
         }
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
         }
-        public void OnRemoval()
+        public override void OnRemoval()
         {
             try
             {
-                //Debug_SMissions.Assert("SubMissions: GUIScrollMessage - OnRemoval");
+                //Debug_SMissions.Assert(KickStart.ModID + ": GUIScrollMessage - OnRemoval");
                 if (assignedStep != null)
                 {
                     if (assignedStep is StepActSpeak SAS)

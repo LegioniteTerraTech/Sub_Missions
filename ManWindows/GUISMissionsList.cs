@@ -8,9 +8,8 @@ using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUISMissionsList : IGUIFormat
+    public class GUISMissionsList : GUIMiniMenu<GUISMissionsList>
     {
-        public GUIPopupDisplay Display { get; set; }
         private Vector2 scrolll = new Vector2(0, 0);
         public float scrolllSize = 50;
         public Texture CachedPic;
@@ -20,16 +19,16 @@ namespace Sub_Missions.ManWindows
         private const int buttonSideSpacing = 40;
         private const int buttonWidth = 350;
 
-        public void Setup(GUIPopupDisplay display)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
             ManSubMissions.Board = this;
         }
-        public void OnOpen()
+        public override void OnOpen()
         {
         }
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
             scrolll = GUI.BeginScrollView(new Rect(20, 60, (Display.Window.width / 2.1f), Display.Window.height - 120), scrolll, new Rect(0, 0, (Display.Window.width / 3), scrolllSize ));
             int posLerp = 0;
@@ -78,7 +77,7 @@ namespace Sub_Missions.ManWindows
             posLerp++;
             if (showActive)
             {
-                foreach (SubMission active in ManSubMissions.ActiveSubMissions)
+                foreach (SubMission active in ManSubMissions.GetActiveSubMissions)
                 {
                     string buttonText;
                     if (active == ManSubMissions.Selected)
@@ -212,11 +211,11 @@ namespace Sub_Missions.ManWindows
             GUI.DragWindow();
             WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
             BuildStatus();
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
             this.UpdateTransparency(0.4f);
         }
@@ -224,6 +223,6 @@ namespace Sub_Missions.ManWindows
         public void BuildStatus()
         {
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

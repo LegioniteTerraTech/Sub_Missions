@@ -6,6 +6,7 @@ using UnityEngine;
 using TerraTechETCUtil;
 using Sub_Missions.Steps;
 using Sub_Missions.ManWindows;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.Editor
 {
@@ -13,13 +14,14 @@ namespace Sub_Missions.Editor
     {
         //1000 is width of editor window
         internal const int LeftBarSize = 200;
-        internal const int RightDisplaySize = WindowManager.LargeWindowWidth - LeftBarSize;
+        internal const int RightDisplaySize = ManModGUI.LargeWindowWidth - LeftBarSize;
 
         // UI Display Information
         internal static float PositioningHighlightStopDelay = 2;
         internal static Dictionary<SMStepType, Color> PositioningColor = new Dictionary<SMStepType, Color>()
         {
             { SMStepType.ActAirstrike, new Color(1, 0.5f, 0.5f) },
+            { SMStepType.ActDrive, new Color(1, 0.5f, 0) },
             { SMStepType.CheckPlayerDist, Color.grey },
             { SMStepType.SetupMM, Color.black },
             { SMStepType.SetupResources, Color.green },
@@ -39,7 +41,7 @@ namespace Sub_Missions.Editor
             {
                 if (GUILayout.Button("Save", AltUI.ButtonGreen, GUILayout.Width(60)))
                 {
-                    SMissionJSONLoader.SaveNewMission(ManSubMissions.Selected.Tree, ManSubMissions.Selected);
+                    SMissionJSONLoader.SaveMission(ManSubMissions.Selected.Tree, ManSubMissions.Selected);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.InfoOpen);
                 }
             }
@@ -109,7 +111,9 @@ namespace Sub_Missions.Editor
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Back);
                     }
                 }
-                if (GUILayout.Button("Log", AltUI.ButtonBlue, GUILayout.Width(60)))
+                if (GUILayout.Button("Log", SMUtil.collectedErrors ? AltUI.ButtonRed :
+                    SMUtil.collectedLogs ? AltUI.ButtonGreen : SMUtil.collectedInfos ?
+                    AltUI.ButtonBlue : AltUI.ButtonGrey, GUILayout.Width(60)))
                 {
                     SMUtil.PushErrors();
                 }
@@ -187,7 +191,7 @@ namespace Sub_Missions.Editor
             if (mission != null)
             {
                 int step = 0;
-                foreach (var item in mission.GetAllEvents())
+                foreach (var item in mission.GetAllEventsLinear())
                 {
                     if (StepsByTier.TryGetValue(item.ProgressID, out var val))
                     {
@@ -353,21 +357,21 @@ namespace Sub_Missions.Editor
         private static Vector2 GUIMissionInfoScroll = Vector2.zero;
         private static void GUIMissionInfo()
         {
-            GUILayout.Box("Information", AltUI.WindowHeaderBlue, GUILayout.Height(32));
+            GUILayout.Box(mission.Name + " Info", AltUI.WindowHeaderBlue, GUILayout.Height(32));
             if (mission != null)
             {
                 GUIMissionInfoScroll = GUILayout.BeginScrollView(GUIMissionInfoScroll);
                 GUILayout.BeginHorizontal(GUILayout.Height(64));
-                GUILayout.Label("Default Name/ID", WindowManager.styleLabelLargerFont);
+                GUILayout.Label("Default Name/ID", ManModGUI.styleLabelLargerFont);
                 GUILayout.FlexibleSpace();
-                GUILayout.Label(mission.Name, WindowManager.styleBorderedFont);
-                GUILayout.EndVertical();
+                GUILayout.Label(mission.Name, ManModGUI.styleBorderedFont);
+                GUILayout.EndHorizontal();
 
                 GUILayout.BeginHorizontal(GUILayout.Height(32));
                 GUILayout.Label("Active State");
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(mission.ActiveState.ToString(), AltUI.TextfieldBordered);
-                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
 
                 if (mission.AltNames == null)
                     mission.AltNames = new List<string>();
@@ -381,12 +385,12 @@ namespace Sub_Missions.Editor
                 {
                     GUILayout.BeginHorizontal(GUILayout.Height(32));
                     item.DoDisplay(mission);
-                    GUILayout.EndVertical();
+                    GUILayout.EndHorizontal();
                 }
                 GUILayout.EndScrollView();
             }
             else
-                GUILayout.Label("Mission is somehow NULL", WindowManager.styleLabelLargerFont);
+                GUILayout.Label("Mission is somehow NULL", ManModGUI.styleLabelLargerFont);
         }
 
 
@@ -417,9 +421,9 @@ namespace Sub_Missions.Editor
             if (HeldElementInst != null)
             {
                 GUILayout.FlexibleSpace();
-                GUILayout.Label("Place down\nheld element", WindowManager.styleLargeFont);
-                GUILayout.Label(HeldElementInst.StepType.ToString(), WindowManager.styleLargeFont);
-                GUILayout.Label("first!", WindowManager.styleLargeFont);
+                GUILayout.Label("Place down\nheld element", ManModGUI.styleLargeFont);
+                GUILayout.Label(HeldElementInst.StepType.ToString(), ManModGUI.styleLargeFont);
+                GUILayout.Label("first!", ManModGUI.styleLargeFont);
                 GUILayout.FlexibleSpace();
             }
             else
@@ -465,11 +469,18 @@ namespace Sub_Missions.Editor
         private static int curStep => ManSubMissions.SlowMo ? (mission != null ? mission.UpdateStep : 0) : -1;
         private static bool GUITimeTable()
         {
-            GUILayout.Label("Steps", AltUI.WindowHeaderBlue, GUILayout.Height(32));
+            GUILayout.BeginHorizontal(AltUI.WindowHeaderBlue, GUILayout.Height(32));
+            GUILayout.Label("Step:", AltUI.LabelBlackTitle, GUILayout.Height(32));
+            GUILayout.FlexibleSpace();
+            GUILayout.Label(mission.CurrentProgressID.ToString(), AltUI.LabelBlackTitle, GUILayout.Height(32));
+            GUILayout.EndHorizontal();
 
+            /// ONLY SINGLES WORK!!!
+            /*
             tableType = (ETimeTableType)GUILayout.Toolbar((int)tableType,
                 Enum.GetNames(typeof(ETimeTableType)), GUILayout.Height(32));
-            if (GUILayout.Button(ShowAllStepsInWorld ? "Hide All" : " Show ALL", ShowAllStepsInWorld ?
+            */
+            if (GUILayout.Button(ShowAllStepsInWorld ? "Hide From World" : " Show In World", ShowAllStepsInWorld ?
                 AltUI.ButtonBlueActive : AltUI.ButtonBlue))
                 ShowAllStepsInWorld = !ShowAllStepsInWorld;
             switch (tableType)
@@ -487,75 +498,23 @@ namespace Sub_Missions.Editor
             bool interacted = false;
             scrollTable = GUILayout.BeginScrollView(scrollTable);
 
-            int y = 0;
+            int InsertIndex = 0;
+            GUITimeTableSingleSteps(mission.EventList, ref interacted, ref InsertIndex);
+            GUITimeTableSingleAddNew(mission.EventList, ref interacted, ref InsertIndex);
 
-            var iterate = mission.GetAllEvents();
-            for (int step = 0; step < iterate.Count; step++)
-            {
-                var item = iterate[step];
-                GUILayout.BeginHorizontal();
-                GUIStyle style;
-                if (item.ProgressID == mission.CurrentProgressID)
-                {
-                    if (y == curStep || y == SubMission.alwaysRunValue)
-                        style = AltUI.ButtonGreenActive;
-                    else
-                        style = AltUI.ButtonGreen;
-                }
-                else
-                    style = AltUI.ButtonRed;
-                if (GUILayout.Button(item.StepType.ToString(), style, GUILayout.Width(160)))
-                {
-                    if (HeldElementInst != null)
-                    {
-                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
-                        mission.EventList.Insert(y, HeldElementInst);
-                        OnMissionChange();
-                        HeldElementInst = null;
-                        selectedStep = null;
-                        LastHeldElement = null;
-                    }
-                    else if(LastHeldElement != null)
-                    {
-                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
-                        SubMissionStep SMS = new SubMissionStep
-                        {
-                            StepType = (SMStepType)Enum.Parse(typeof(SMStepType), LastHeldElement),
-                            Mission = mission,
-                            ProgressID = y,
-                            InitPosition = new Vector3(0, 0, 0),
-                            VaribleType = EVaribleType.None,
-                        };
-                        mission.EventList.Insert(y, SMS);
-                        SMS.FirstSetup();
-                        OnMissionChange();
-                        selectedStep = null;
-                        LastHeldElement = null;
-                    }
-                    else
-                    {
-                        if (selectedStep != item)
-                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
-                        selectedStep = item;
-                    }
-                    interacted = true;
-                }
-                GUILayout.FlexibleSpace();
-                if (item.ProgressID == SubMission.alwaysRunValue)
-                    GUILayout.Label("Always");
-                else
-                    GUILayout.Label(item.ProgressID.ToString());
-                GUILayout.EndHorizontal();
-                y++;
-            }
+            GUILayout.EndScrollView();
+            return interacted;
+        }
+        private static void GUITimeTableSingleAddNew(List<SubMissionStep> listEvents, 
+            ref bool interacted, ref int y)
+        {
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(emptyString, AltUI.ButtonGrey, GUILayout.Width(160)))
+            if (GUILayout.Button("+ ADD +", AltUI.ButtonGrey))
             {
-
                 if (HeldElementInst != null)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
-                    mission.EventList.Insert(y, HeldElementInst);
+                    listEvents.Insert(y, HeldElementInst);
                     OnMissionChange();
                     HeldElementInst = null;
                     selectedStep = null;
@@ -568,11 +527,11 @@ namespace Sub_Missions.Editor
                     {
                         StepType = (SMStepType)Enum.Parse(typeof(SMStepType), LastHeldElement),
                         Mission = mission,
-                        ProgressID = y,
+                        ProgressID = 0,
                         InitPosition = new Vector3(0, 0, 0),
                         VaribleType = EVaribleType.None,
                     };
-                    mission.EventList.Insert(y, SMS);
+                    listEvents.Insert(y, SMS);
                     SMS.FirstSetup();
                     OnMissionChange();
                     selectedStep = null;
@@ -582,9 +541,106 @@ namespace Sub_Missions.Editor
             }
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+        }
+        private static void GUITimeTableSingleSteps(List<SubMissionStep> iterate, 
+            ref bool interacted, ref int y)
+        {
+            for (int step = 0; step < iterate.Count; step++)
+            {
+                var item = iterate[step];
+                GUILayout.BeginVertical(AltUI.TextfieldBlackHuge, GUILayout.MinHeight(55));
+                GUIStyle style;
+                if (mission.CanRunStep(item.ProgressID))
+                {
+                    if (item == selectedStep)
+                        style = AltUI.ButtonBlueActive;
+                    else
+                        style = AltUI.ButtonBlue;
+                }
+                else
+                {
+                    if (item == selectedStep)
+                        style = AltUI.ButtonRedActive;
+                    else
+                        style = AltUI.ButtonRed;
+                }
 
-            GUILayout.EndScrollView();
-            return interacted;
+                GUILayout.BeginHorizontal();
+
+                if (item.ProgressID == SubMission.alwaysRunValue)
+                    SubMissionStep.ShowStringColorGUI(item.StepType, "Any");
+                else
+                    SubMissionStep.ShowStringColorGUI(item.StepType, item.ProgressID.ToString());
+
+                if (GUILayout.Button(item.StepType.ToString(), style, GUILayout.Height(40)))
+                {
+                    if (HeldElementInst != null)
+                    {
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
+                        iterate.Insert(y, HeldElementInst);
+                        OnMissionChange();
+                        HeldElementInst = null;
+                        selectedStep = null;
+                        LastHeldElement = null;
+                    }
+                    else if (LastHeldElement != null)
+                    {
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
+                        SubMissionStep SMS = new SubMissionStep
+                        {
+                            StepType = (SMStepType)Enum.Parse(typeof(SMStepType), LastHeldElement),
+                            Mission = mission,
+                            ProgressID = 0,
+                            InitPosition = new Vector3(0, 0, 0),
+                            VaribleType = EVaribleType.None,
+                        };
+                        iterate.Insert(y, SMS);
+                        SMS.FirstSetup();
+                        OnMissionChange();
+                        selectedStep = null;
+                        LastHeldElement = null;
+                    }
+                    else
+                    {
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
+                        if (selectedStep != item)
+                            selectedStep = item;
+                        else
+                            selectedStep = null;
+                    }
+                    interacted = true;
+                }
+
+                GUILayout.EndHorizontal();
+
+
+                if (Event.current.type == EventType.Repaint)
+                {
+                    var hoverRect = GUILayoutUtility.GetLastRect();
+
+                    if (HeldElementInst != null || LastHeldElement != null)
+                    {
+                        if (hoverRect.Contains(Event.current.mousePosition))
+                        {
+                            GUI.Box(new Rect(hoverRect.x, hoverRect.y - 10, hoverRect.width, 15),
+                                string.Empty, AltUI.TextfieldBordered);
+                        }
+                    }
+                }
+
+                if (item.StepType == SMStepType.Folder)
+                {
+                    if (item.FolderEventList == null)
+                        item.FolderEventList = new List<SubMissionStep>();
+                    int InsertIndex = 0;
+                    GUITimeTableSingleSteps(item.FolderEventList, ref interacted, ref InsertIndex);
+                    GUITimeTableSingleAddNew(item.FolderEventList, ref interacted, ref InsertIndex);
+                }
+                GUILayout.EndVertical();
+
+                y++;
+            }
+            GUILayout.FlexibleSpace();
         }
         private static bool GUITimeTableRows()
         {
@@ -726,6 +782,12 @@ namespace Sub_Missions.Editor
                 LastHeldElement = null;
                 mission.RemoveEvent(selectedStep);
             }
+            if (GUILayout.Button("Copy", AltUI.ButtonBlue))
+            {
+                var clone = selectedStep.CloneDeep();
+                mission.EventList.Add(clone);
+                HeldElementInst = clone;
+            }
             if (GUILayout.Button("Close", AltUI.ButtonGrey))
             {
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Close);
@@ -754,7 +816,7 @@ namespace Sub_Missions.Editor
                 DebugExtUtilities.DrawDirIndicatorCircle(mission.ScenePosition + new Vector3(0, 16, 0),
                     Vector3.up, Vector3.forward, mission.GetMinimumLoadRange(),
                     Color.magenta, Time.deltaTime + 0.01f);
-                foreach (var item in mission.GetAllEvents())
+                foreach (var item in mission.GetAllEventsLinear())
                 {
                     item.Update();
                 }
@@ -775,7 +837,7 @@ namespace Sub_Missions.Editor
         {
             LBarTitle = "Details";
 
-            SMAutoFill.OneWayButton("Add New", ref addChecklist);
+            SMAutoFill.OneWayButtonLarge("Add New", ref addChecklist);
 
             if (mission.CheckList != null)
             {
@@ -879,12 +941,12 @@ namespace Sub_Missions.Editor
                 {
                     case VarType.Bool:
                         GUILayout.BeginHorizontal();
-                        if (selectedChecker.GlobalIndex >= 0 && selectedChecker.GlobalIndex < mission.VarTrueFalse.Count)
+                        if (selectedChecker.GlobalIndex >= 0 && selectedChecker.GlobalIndex < mission.VarTrueFalseActive.Count)
                         {
                             GUILayout.Label("Boolean");
                             GUILayout.FlexibleSpace();
                             GUILayout.Label("State: ");
-                            if (mission.VarTrueFalse[selectedChecker.GlobalIndex])
+                            if (mission.VarTrueFalseActive[selectedChecker.GlobalIndex])
                                 GUILayout.Label("<color=green><b>✓</b></color>", AltUI.TextfieldBordered);
                             else
                                 GUILayout.Label("<color=red><b>X</b></color>", AltUI.TextfieldBordered);
@@ -902,22 +964,22 @@ namespace Sub_Missions.Editor
                         break;
                     case VarType.IntOverInt:
                         GUILayout.BeginHorizontal();
-                        if (selectedChecker.GlobalIndex >= 0 && selectedChecker.GlobalIndex < mission.VarInts.Count &&
-                            selectedChecker.GlobalIndex2 >= 0 && selectedChecker.GlobalIndex2 < mission.VarInts.Count)
+                        if (selectedChecker.GlobalIndex >= 0 && selectedChecker.GlobalIndex < mission.VarIntsActive.Count &&
+                            selectedChecker.GlobalIndex2 >= 0 && selectedChecker.GlobalIndex2 < mission.VarIntsActive.Count)
                         {
-                            if (mission.VarInts[selectedChecker.GlobalIndex] >= mission.VarInts[selectedChecker.GlobalIndex2])
+                            if (mission.VarIntsActive[selectedChecker.GlobalIndex] >= mission.VarIntsActive[selectedChecker.GlobalIndex2])
                             {
-                                GUILayout.Label(mission.VarInts[selectedChecker.GlobalIndex].ToString());
+                                GUILayout.Label(mission.VarIntsActive[selectedChecker.GlobalIndex].ToString());
                                 GUILayout.Label(" <color=green><b>>=</b></color> ");
-                                GUILayout.Label(mission.VarInts[selectedChecker.GlobalIndex2].ToString());
+                                GUILayout.Label(mission.VarIntsActive[selectedChecker.GlobalIndex2].ToString());
                                 GUILayout.FlexibleSpace();
                                 GUILayout.Label("State: <color=green><b>✓</b></color>", AltUI.TextfieldBordered);
                             }
                             else
                             {
-                                GUILayout.Label(mission.VarInts[selectedChecker.GlobalIndex].ToString());
+                                GUILayout.Label(mission.VarIntsActive[selectedChecker.GlobalIndex].ToString());
                                 GUILayout.Label(" <color=red><b>>=</b></color> ");
-                                GUILayout.Label(mission.VarInts[selectedChecker.GlobalIndex2].ToString());
+                                GUILayout.Label(mission.VarIntsActive[selectedChecker.GlobalIndex2].ToString());
                                 GUILayout.FlexibleSpace();
                                 GUILayout.Label("State: <color=red><b>X</b></color>", AltUI.TextfieldBordered);
                             }
@@ -1054,21 +1116,111 @@ namespace Sub_Missions.Editor
 
         private static Vector2 GUIVariablesBoolScroll = Vector2.zero;
         private static Vector2 GUIVariablesIntScroll = Vector2.zero;
+        private static void RemoveAllUnusedVariablesBools()
+        {
+            int shiftAmount = 0;
+            for (int i = 0; i < mission.VarTrueFalseActive.Count; i++)
+            {
+                bool remove = true;
+                foreach (var item in mission.GetAllEventsLinear())
+                {
+                    if (item.VaribleType == EVaribleType.True ||
+                        item.VaribleType == EVaribleType.False)
+                    {
+                        if (item.SetMissionVarIndex1 == i || item.SetMissionVarIndex2 == i ||
+                            item.SetMissionVarIndex3 == i)
+                        {
+                            remove = false;
+                        }
+                        if (shiftAmount > 0)
+                        {
+                            if (item.SetMissionVarIndex1 > 0)
+                                item.SetMissionVarIndex1 -= shiftAmount;
+                            if (item.SetMissionVarIndex2 > 0)
+                                item.SetMissionVarIndex2 -= shiftAmount;
+                            if (item.SetMissionVarIndex3 > 0)
+                                item.SetMissionVarIndex3 -= shiftAmount;
+                        }
+                    }
+                }
+                if (remove)
+                    shiftAmount++;
+            }
+            if (shiftAmount > 0)
+            {
+                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
+                for (int i = 0; i < shiftAmount; i++)
+                {
+                    mission.VarTrueFalse.RemoveAt(mission.VarTrueFalse.Count - 1);
+                    mission.VarTrueFalseActive.RemoveAt(mission.VarTrueFalseActive.Count - 1);
+                }
+            }
+            else
+                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
+        }
+        private static void RemoveAllUnusedVariablesVals()
+        {
+            int shiftAmount = 0;
+            for (int i = 0; i < mission.VarIntsActive.Count; i++)
+            {
+                bool remove = true;
+                foreach (var item in mission.GetAllEventsLinear())
+                {
+                    if (item.VaribleType == EVaribleType.Int ||
+                        item.VaribleType == EVaribleType.IntLessThan ||
+                        item.VaribleType == EVaribleType.IntGreaterThan)
+                    {
+                        if (item.SetMissionVarIndex1 == i || item.SetMissionVarIndex2 == i ||
+                            item.SetMissionVarIndex3 == i)
+                        {
+                            remove = false;
+                        }
+                        if (shiftAmount > 0)
+                        {
+                            if (item.SetMissionVarIndex1 > 0)
+                                item.SetMissionVarIndex1 -= shiftAmount;
+                            if (item.SetMissionVarIndex2 > 0)
+                                item.SetMissionVarIndex2 -= shiftAmount;
+                            if (item.SetMissionVarIndex3 > 0)
+                                item.SetMissionVarIndex3 -= shiftAmount;
+                        }
+                    }
+                }
+                if (remove)
+                    shiftAmount++;
+            }
+            if (shiftAmount > 0)
+            {
+                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
+                for (int i = 0; i < shiftAmount; i++)
+                {
+                    mission.VarInts.RemoveAt(mission.VarInts.Count - 1);
+                    mission.VarIntsActive.RemoveAt(mission.VarIntsActive.Count - 1);
+                }
+            }
+            else
+                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
+        }
         private static void GUIVariablesInfo()
         {
             if (mission != null)
             {
                 GUILayout.BeginHorizontal();
-                GUILayout.BeginVertical();
+                GUILayout.BeginVertical(GUILayout.Width(360));
                 GUILayout.Box("Booleans", AltUI.WindowHeaderBlue, GUILayout.Height(32));
+                if (GUILayout.Button("Remove Unused", AltUI.ButtonRed))
+                    RemoveAllUnusedVariablesBools();
                 GUIVariablesBoolScroll = GUILayout.BeginScrollView(GUIVariablesBoolScroll);
-                for (int step = 0; step < mission.VarTrueFalse.Count; step++)
+                for (int step = 0; step < mission.VarTrueFalseActive.Count; step++)
                 {
-                    var item = mission.VarTrueFalse[step];
+                    var item = mission.VarTrueFalseActive[step];
                     GUILayout.BeginHorizontal(GUILayout.Height(32));
                     GUILayout.Label("Index: ");
                     GUILayout.Label(step.ToString());
                     GUILayout.FlexibleSpace();
+                    GUILayout.Label("Start: ");
+                    GUILayout.Label(mission.VarTrueFalse[step].ToString());
+                    GUILayout.Label("Active: ");
                     GUILayout.Label(item.ToString());
                     GUILayout.EndHorizontal();
                 }
@@ -1077,14 +1229,19 @@ namespace Sub_Missions.Editor
 
                 GUILayout.BeginVertical();
                 GUILayout.Box("Integers", AltUI.WindowHeaderBlue, GUILayout.Height(32));
+                if (GUILayout.Button("Remove Unused", AltUI.ButtonRed))
+                    RemoveAllUnusedVariablesVals();
                 GUIVariablesIntScroll = GUILayout.BeginScrollView(GUIVariablesIntScroll);
-                for (int step = 0; step < mission.VarInts.Count; step++)
+                for (int step = 0; step < mission.VarIntsActive.Count; step++)
                 {
-                    var item = mission.VarInts[step];
+                    var item = mission.VarIntsActive[step];
                     GUILayout.BeginHorizontal(GUILayout.Height(32));
                     GUILayout.Label("Index: ");
                     GUILayout.Label(step.ToString());
                     GUILayout.FlexibleSpace();
+                    GUILayout.Label("Start: ");
+                    GUILayout.Label(mission.VarInts[step].ToString());
+                    GUILayout.Label("Active: ");
                     GUILayout.Label(item.ToString());
                     GUILayout.EndHorizontal();
                 }
@@ -1098,7 +1255,7 @@ namespace Sub_Missions.Editor
                 GUILayout.Box("Booleans", AltUI.WindowHeaderBlue, GUILayout.Height(32));
                 GUILayout.Box("Integers", AltUI.WindowHeaderBlue, GUILayout.Height(32));
                 GUILayout.EndHorizontal();
-                GUILayout.Label("Mission is somehow NULL", WindowManager.styleLabelLargerFont);
+                GUILayout.Label("Mission is somehow NULL", ManModGUI.styleLabelLargerFont);
             }
         }
 
@@ -1137,11 +1294,11 @@ namespace Sub_Missions.Editor
                     GUILayout.EndScrollView();
                 }
                 else
-                    GUILayout.Label("No Tracked Blocks?", WindowManager.styleLabelLargerFont);
+                    GUILayout.Label("No Tracked Blocks?", ManModGUI.styleLabelLargerFont);
             }
             else
             {
-                GUILayout.Label("Mission is somehow NULL", WindowManager.styleLabelLargerFont);
+                GUILayout.Label("Mission is somehow NULL", ManModGUI.styleLabelLargerFont);
             }
         }
 
@@ -1182,11 +1339,11 @@ namespace Sub_Missions.Editor
                     GUILayout.EndScrollView();
                 }
                 else
-                    GUILayout.Label("No Tracked Techs?", WindowManager.styleLabelLargerFont);
+                    GUILayout.Label("No Tracked Techs?", ManModGUI.styleLabelLargerFont);
             }
             else
             {
-                GUILayout.Label("Mission is somehow NULL", WindowManager.styleLabelLargerFont);
+                GUILayout.Label("Mission is somehow NULL", ManModGUI.styleLabelLargerFont);
             }
         }
 
@@ -1220,11 +1377,11 @@ namespace Sub_Missions.Editor
                     GUILayout.EndScrollView();
                 }
                 else
-                    GUILayout.Label("No Tracked Monuments?", WindowManager.styleLabelLargerFont);
+                    GUILayout.Label("No Tracked Monuments?", ManModGUI.styleLabelLargerFont);
             }
             else
             {
-                GUILayout.Label("Mission is somehow NULL", WindowManager.styleLabelLargerFont);
+                GUILayout.Label("Mission is somehow NULL", ManModGUI.styleLabelLargerFont);
             }
         }
     }

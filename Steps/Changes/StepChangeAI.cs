@@ -56,9 +56,9 @@ namespace Sub_Missions.Steps
             }
             catch //(Exception e)
             {   // Cannot work without TACtical_AI
-                //SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
-                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                //Debug_SMissions.Log("SubMissions: Error - " + e);
+                //SMUtil.Assert(true, KickStart.ModID + ": StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
+                //Debug_SMissions.Log(KickStart.ModID + ": Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                //Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
             }
         }
         public override void Trigger()
@@ -113,9 +113,9 @@ namespace Sub_Missions.Steps
                 }
                 catch //(Exception e)
                 {   // Cannot work without TACtical_AI
-                    //SMUtil.Assert(true, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
-                    //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                    //Debug_SMissions.Log("SubMissions: Error - " + e);
+                    //SMUtil.Assert(true, KickStart.ModID + ": StepSetupTech (Infinite) - Failed: COULD NOT FETCH INFORMATION!!!");
+                    //Debug_SMissions.Log(KickStart.ModID + ": Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                    //Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
                 }
             }
         }
@@ -150,7 +150,7 @@ namespace Sub_Missions.Steps
                         break;
                     default:
                         SMUtil.Error(true, SMission.LogName, 
-                            "SubMissions: ChangeAI has more than 5 inputted numbers, beyond that " +
+                            KickStart.ModID + ": ChangeAI has more than 5 inputted numbers, beyond that " +
                             "of the options changeable.  Mission " + Mission.Name);
                         break;
                 }

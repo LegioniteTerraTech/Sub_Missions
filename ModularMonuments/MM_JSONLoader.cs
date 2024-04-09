@@ -52,12 +52,12 @@ namespace Sub_Missions.ModularMonuments
             {
                 hash = 0;
                 GO = null;
-                SMUtil.Assert(false, "WorldObject (Loading) ~ " + name, "SubMissions: BuildWorldObject - CRITICAL ERROR WITH CREATING " + name, e);
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " + name, KickStart.ModID + ": BuildWorldObject - CRITICAL ERROR WITH CREATING " + name, e);
                 throw new MandatoryException(e);
             }
             hash = 0;
             GO = null;
-            SMUtil.Assert(false, "WorldObject (Loading) ~ " + name, "SubMissions: BuildWorldObject - Could not build for " +
+            SMUtil.Assert(false, "WorldObject (Loading) ~ " + name, KickStart.ModID + ": BuildWorldObject - Could not build for " +
                 name + " of tree " + SMT.TreeName + "!", ex);
             return false;
         }
@@ -114,8 +114,11 @@ namespace Sub_Missions.ModularMonuments
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ UNKNOWN in " + SMT.TreeName, "SubMissions: BuildNewWorldObjectPrefabJSON - Check your WorldObject.json for errors!  " +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " +
+                    (ObjectJSON.Name.NullOrEmpty() ? "UNKNOWN" : ObjectJSON.Name) +
+                    " in " + SMT.TreeName, KickStart.ModID + ": BuildNewWorldObjectPrefabJSON - Check your WorldObject.json for errors!  " +
                     "Tree: " + SMT.TreeName, e);
+                Debug_SMissions.Log(e);
                 return null;
             }
         }
@@ -129,7 +132,7 @@ namespace Sub_Missions.ModularMonuments
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ UNKNOWN in " + SMT.TreeName, "SubMissions: BuildNewWorldObjectPrefab - Check your WorldObject.json for errors!  " +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ UNKNOWN in " + SMT.TreeName, KickStart.ModID + ": BuildNewWorldObjectPrefab - Check your WorldObject.json for errors!  " +
                     "Tree: " + SMT.TreeName, e);
                 return null;
             }
@@ -150,7 +153,7 @@ namespace Sub_Missions.ModularMonuments
             }
             else
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.worldObj.name, "SubMissions: Check your WorldObject.json " + info.worldObj.Name + " for a mesh!  " +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.worldObj.name, KickStart.ModID + ": Check your WorldObject.json " + info.worldObj.Name + " for a mesh!  " +
                     "It MUST have a valid VisualMeshName (with .obj included) provided in it's base SubMission folder or " +
                             "a valid in-game mesh to use!  Tree: " + info.SMT.TreeName,
                             new NullReferenceException("AssignMeshBase(ref WorldObjInfo info) info.worldObj.VisualMeshName is null"));
@@ -168,9 +171,17 @@ namespace Sub_Missions.ModularMonuments
             else
             {
                 var boxCol = info.baseGO.AddComponent<BoxCollider>();
-                boxCol.size = info.baseMesh.bounds.size;
-                boxCol.center = info.baseMesh.bounds.center;
-                //SMUtil.Assert(false, "SubMissions: Check your WorldObject.json " + worldObj.Name + " for a mesh!  It MUST have a valid ColliderMeshName (with .obj included) provided in it's base SubMission folder!  Tree: " + SMT.TreeName);
+                if (info.baseMesh)
+                {
+                    boxCol.size = info.baseMesh.bounds.size;
+                    boxCol.center = info.baseMesh.bounds.center;
+                }
+                else
+                    SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.worldObj.name, 
+                        KickStart.ModID + ": Check your WorldObject.json " + info.worldObj.Name + 
+                        " for a mesh!  It MUST have a valid ColliderMeshName (with .obj included) provided in it's base SubMission folder!  Tree: " +
+                        info.SMT.TreeName, 
+                        new NullReferenceException("AssignColliderBase(ref WorldObjInfo info) info.worldObj.VisualMeshName is null"));
                 //return null;
             }
         }
@@ -190,7 +201,7 @@ namespace Sub_Missions.ModularMonuments
                         {
                             if (depth > MaxDepth)
                             {
-                                SMUtil.Error(false, "WorldObjectJSON(Load) ~ " + info.baseGO.name, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
+                                SMUtil.Error(false, "WorldObjectJSON(Load) ~ " + info.baseGO.name, KickStart.ModID + ": Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
                                     info.SMT.TreeName + "\n You have exceeded the maximum safe GameObject depth of " + MaxDepth + "!");
                                 continue;
                             }
@@ -219,14 +230,14 @@ namespace Sub_Missions.ModularMonuments
                                         Construct(ref info, comp, PI, pair.Value);
                                     }
                                     else
-                                        SMUtil.Error(false, "WorldObjectJSON(Load) ~ " + info.baseGO.name, "SubMissions: Error in " + info.baseGO.name +
+                                        SMUtil.Error(false, "WorldObjectJSON(Load) ~ " + info.baseGO.name, KickStart.ModID + ": Error in " + info.baseGO.name +
                                             " WorldObjectJSON Tree: " + info.SMT.TreeName + "\n No such variable exists: " +
                                             (pair.Key.NullOrEmpty() ? pair.Key : "ENTRY IS NULL OR EMPTY"));
                                 }
                             }
                             catch (Exception e)
                             {   // report missing component 
-                                SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.baseGO.name, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
+                                SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.baseGO.name, KickStart.ModID + ": Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
                                     info.SMT.TreeName + "\n No such type exists: " + (entry.Key.NullOrEmpty() ? entry.Key :
                                     "ENTRY IS NULL OR EMPTY"), e);
                             }
@@ -234,14 +245,14 @@ namespace Sub_Missions.ModularMonuments
                     }
                     catch (Exception e)
                     {
-                        SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.baseGO.name, "SubMissions: Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
+                        SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.baseGO.name, KickStart.ModID + ": Error in " + info.baseGO.name + " WorldObjectJSON Tree: " +
                             info.SMT.TreeName, e);
                     }
                 }
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.baseGO.name, "SubMissions: (GameObject case) Error in " + info.baseGO.name +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " + info.baseGO.name, KickStart.ModID + ": (GameObject case) Error in " + info.baseGO.name +
                     " WorldObjectJSON Tree: " + info.SMT.TreeName, e);
             }
             depth--;
@@ -269,11 +280,11 @@ namespace Sub_Missions.ModularMonuments
                 Material[] mats = Resources.FindObjectsOfTypeAll<Material>();
                 mats = mats.Where(cases => cases.name == GameMaterialName).ToArray();
                 if (mats != null && mats.Count() > 0)
-                    Mat = mats.First();
+                    Mat = mats.FirstOrDefault();
                 if (!Mat)
                 {
                     SMUtil.Error(false, "WorldObjectJSON(Load) ~ " + info.baseGO.name,
-                        "SubMissions: Check your WorldObject.json " + info.baseGO.name +
+                        KickStart.ModID + ": Check your WorldObject.json " + info.baseGO.name +
                         "'s GameMaterialName is not a valid material!  Tree: " + info.SMT.TreeName);
                     Mat = (Material)Resources.Load("GSO_Scenery");
                 }
@@ -291,7 +302,7 @@ namespace Sub_Missions.ModularMonuments
                     return newMat;
                 }
             }
-            if (nameWithExt != null && info.SMT.MissionTextures.TryGetValue(nameWithExt.GetHashCode(), out tex))
+            if (nameWithExt != null && info.SMT.MissionTextures.TryGetValue(nameWithExt, out tex))
             {
                 Material newMat = new Material(Mat);
                 newMat.mainTexture = tex;
@@ -316,19 +327,20 @@ namespace Sub_Missions.ModularMonuments
                         return mesh;
                 }
                 //Debug_SMissions.Log("4");
-                if (info.SMT.MissionMeshes.TryGetValue(nameWithExt.GetHashCode(), out Mesh obj))
+                if (info.SMT.TryGetMesh(nameWithExt, out Mesh obj))
                     return obj;
                 else
                 {
                     //Debug_SMissions.Log("5");
-                    var mes = Resources.FindObjectsOfTypeAll<Mesh>().First(x => !x.name.NullOrEmpty() && nameWithExt.CompareTo(x.name) == 0);
+                    var mes = Resources.FindObjectsOfTypeAll<Mesh>().FirstOrDefault(x => !x.name.NullOrEmpty() && nameWithExt.CompareTo(x.name) == 0);
                     if (mes != null)
                         return mes;
                 }
             }
             //Debug_SMissions.Log("6");
             SMUtil.Error(false, "WorldObjectJSON(Load) ~ " + info.baseGO.name,
-                "SubMissions: Check your WorldObject.json " + info.baseGO.name + " for the mesh!  " +
+                KickStart.ModID + ": Check your WorldObject.json " + info.baseGO.name + " for the mesh!  " +
+                "Mesh name " + nameWithExt + " does not exists  " +
                 "It MUST have a valid VisualMeshName (with .obj included) provided in it's base SubMission folder or " +
                 "a valid in-game mesh to use!  Tree: " + info.SMT.TreeName);
             return null;
@@ -343,6 +355,7 @@ namespace Sub_Missions.ModularMonuments
                 int counter = 0;
                 foreach (SubMissionTree tree in SMTs)
                 {
+                    tree.WorldObjects.Clear();
                     Dictionary<string, SMWorldObject> iGO = tree.WorldObjects;
                     List<string> outputs = tree.WorldObjectFileNames;
                     foreach (string nameCase in outputs)
@@ -356,14 +369,14 @@ namespace Sub_Missions.ModularMonuments
                 }
                 if (counter > 0)
                 {
-                    Debug_SMissions.Log("SubMissions: BuildAllWorldObjects - Loaded " + counter + " WorldObj.json files from all trees successfully.");
+                    Debug_SMissions.Log(KickStart.ModID + ": BuildAllWorldObjects - Loaded " + counter + " WorldObj.json files from all trees successfully.");
                 }
                 else
-                    Debug_SMissions.Log("SubMissions: BuildAllWorldObjects - There were no WorldObj.json files to load.");
+                    Debug_SMissions.Log(KickStart.ModID + ": BuildAllWorldObjects - There were no WorldObj.json files to load.");
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "WorldObjects (Loading)", "SubMissions: BuildAllWorldObjects - CRITICAL ERROR", e);
+                SMUtil.Assert(false, "WorldObjects (Loading)", KickStart.ModID + ": BuildAllWorldObjects - CRITICAL ERROR", e);
             }
         }
         private static string LoadMissionTreeWorldObjectFromFile(SubMissionTree tree, string ObjectName)

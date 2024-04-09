@@ -9,6 +9,10 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Converters;
+using System.Collections;
+using System.Xml.Linq;
+using TAC_AI.Templates;
+using Sub_Missions.ModularMonuments;
 
 namespace Sub_Missions
 {
@@ -26,40 +30,75 @@ namespace Sub_Missions
             TreeName = treeName;
         }
 
+        private static Dictionary<string, string> nameCollisionDetector = new Dictionary<string, string>();
         internal SubMissionHierachyAssetBundle CreateAssetBundleable()
         {
-            SubMissionHierachyAssetBundle newC = new SubMissionHierachyAssetBundle();
-            newC.TreeName = tree.TreeName;
-            newC.AddressName = "(Bundled) " + tree.TreeName;
-            foreach (var item in tree.TreeTechs)
+            try
             {
-                newC.TechNames.Add(item.Key);
+                SubMissionHierachyAssetBundle newC = new SubMissionHierachyAssetBundle(tree);
+                foreach (var item in tree.TerrainEdits)
+                {
+                    if (nameCollisionDetector.TryGetValue(item.Key, out string conflict))
+                    {
+                        SMUtil.Error(false, "Mission Tree AssetBundle (Building) ~ " + TreeName,
+                            "Terrain of name " + item.Key + " clashes with item of same name in - " + conflict);
+                        SMUtil.PushErrors();
+                        return newC;
+                    }
+                    nameCollisionDetector.Add(item.Key, "Terrains");
+                    newC.TerrainNames.Add(item.Key);
+                }
+                foreach (var item in tree.TreeTechs)
+                {
+                    if (nameCollisionDetector.TryGetValue(item.Key, out string conflict))
+                    {
+                        SMUtil.Error(false, "Mission Tree AssetBundle (Building) ~ " + TreeName,
+                            "Tech of name " + item.Key + " clashes with item of same name in - " + conflict);
+                        SMUtil.PushErrors();
+                        return newC;
+                    }
+                    nameCollisionDetector.Add(item.Key, "Techs");
+                    newC.TechNames.Add(item.Key);
+                }
+                foreach (var item in tree.WorldObjectFileNames)
+                {
+                    if (nameCollisionDetector.TryGetValue(item, out string conflict))
+                    {
+                        SMUtil.Error(false, "Mission Tree AssetBundle (Building) ~ " + TreeName,
+                            "WorldObject of name " + item + " clashes with item of same name in - " + conflict);
+                        SMUtil.PushErrors();
+                        return newC;
+                    }
+                    nameCollisionDetector.Add(item, "Pieces");
+                    newC.ObjectNames.Add(item);
+                }
+                foreach (var item in tree.MissionNames)
+                {
+                    newC.MissionNames.Add(item);
+                }
+                return newC;
             }
-            foreach (var item in tree.WorldObjectFileNames)
+            finally
             {
-                newC.ObjectNames.Add(item);
+                nameCollisionDetector.Clear();
             }
-            foreach (var item in tree.MissionNames)
-            {
-                newC.MissionNames.Add(item);
-            }
-            return newC;
         }
 
         internal abstract string LoadMissionTreeTrunkFromFile();
         internal abstract void LoadMissionTreeDataFromFile(
-            ref Dictionary<int, Texture> album, ref Dictionary<int, Mesh> models,
+            ref Dictionary<string, Texture> album, ref Dictionary<string, Mesh> models,
             ref Dictionary<string, SpawnableTech> techs);
         internal abstract string LoadMissionTreeMissionFromFile(string MissionName);
         internal abstract string LoadMissionTreeWorldObjectFromFile(string ObjectName);
 
 
         // ETC
-        internal abstract void LoadTreePNGs(ref Dictionary<int, Texture> dictionary);
-        internal abstract void LoadTreeMeshes(ref Dictionary<int, Mesh> dictionary);
+        internal abstract void LoadTreePNGs(ref Dictionary<string, Texture> dictionary);
+        internal abstract void LoadTreeMeshes(ref Dictionary<string, Mesh> dictionary);
         internal abstract Mesh LoadMesh(string MeshName);
-        internal abstract void LoadTreeTechs(ref Dictionary<string, SpawnableTech> dictionary);
-
+        internal abstract void LoadTreeTerrains(ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> dictionary);
+        internal abstract void LoadTreeTechs(ref Dictionary<string, Texture> dictTexs, ref Dictionary<string, SpawnableTech> dictionary);
+        internal abstract void LoadTreeWorldObjects(ref List<string> entries);
     }
     public class SubMissionHierachyAssetBundle : SubMissionHierachy
     {
@@ -68,11 +107,15 @@ namespace Sub_Missions
         internal ModContents contents => container.Contents;
         public List<string> MissionNames = new List<string>();
         public List<string> TechNames = new List<string>();
+        public List<string> TerrainNames = new List<string>();
         public List<string> ObjectNames = new List<string>();
 
 
         /// <summary> SERIALIZATION ONLY </summary>
         public SubMissionHierachyAssetBundle()
+        {
+        }
+        public SubMissionHierachyAssetBundle(SubMissionTree Treee) : base(Treee.TreeName)
         {
             AddressName = "(Bundled) " + tree.TreeName;
         }
@@ -88,19 +131,19 @@ namespace Sub_Missions
         }
         internal override string LoadMissionTreeTrunkFromFile()
         {
-            return ((TextAsset)contents.m_AdditionalAssets.First(x => x.name == TreeName)).text;
+            return ((TextAsset)contents.m_AdditionalAssets.FirstOrDefault(x => x.name == TreeName)).text;
         }
         internal override void LoadMissionTreeDataFromFile(
-                    ref Dictionary<int, Texture> album, ref Dictionary<int, Mesh> models,
+                    ref Dictionary<string, Texture> album, ref Dictionary<string, Mesh> models,
                     ref Dictionary<string, SpawnableTech> techs)
         {
             try
             {
                 LoadTreePNGs(ref album);
                 LoadTreeMeshes(ref models);
-                LoadTreeTechs(ref techs);
+                LoadTreeTechs(ref album, ref techs);
 
-                Debug_SMissions.Log("SubMissions: Loaded MissionTree.json for " + TreeName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json for " + TreeName + " successfully.");
             }
             catch (Exception e)
             {
@@ -119,29 +162,65 @@ namespace Sub_Missions
 
 
         // ETC
-        internal override void LoadTreePNGs(ref Dictionary<int, Texture> dictionary)
+        internal override void LoadTreePNGs(ref Dictionary<string, Texture> dictionary)
         {
-            foreach (var item in ResourcesHelper.IterateObjectsFromModContainer<Texture>(container))
+            foreach (var item in ResourcesHelper.IterateAssetsInModContainer<Texture2D>(container))
             {
-                if (!dictionary.ContainsKey(item.name.GetHashCode()))
-                    dictionary.Add(item.name.GetHashCode(), item);
+                if (!dictionary.ContainsKey(item.name))
+                    dictionary.Add(item.name, item);
             }
         }
-        internal override void LoadTreeMeshes(ref Dictionary<int, Mesh> dictionary)
+        internal override void LoadTreeMeshes(ref Dictionary<string, Mesh> dictionary)
         {
-            foreach (var item in ResourcesHelper.IterateObjectsFromModContainer<Mesh>(container))
+            foreach (var item in ResourcesHelper.IterateAssetsInModContainer<Mesh>(container))
             {
-                if (!dictionary.ContainsKey(item.name.GetHashCode()))
-                    dictionary.Add(item.name.GetHashCode(), item);
+                if (!dictionary.ContainsKey(item.name))
+                    dictionary.Add(item.name, item);
             }
         }
         internal override Mesh LoadMesh(string MeshName)
         {
             return ResourcesHelper.GetMeshFromModAssetBundle(container, MeshName);
         }
-        internal override void LoadTreeTechs(ref Dictionary<string, SpawnableTech> dictionary)
+        internal override void LoadTreeTerrains(ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> dictionary)
         {
-            foreach (var item in ResourcesHelper.IterateObjectsFromModContainer<Texture2D>(container))
+            dictionary.Clear();
+            try
+            {
+                foreach (var item in ResourcesHelper.IterateAssetsInModContainer<TextAsset>(container))
+                {
+                    if (TechNames.Contains(item.name) && !dictionary.ContainsKey(item.name))
+                    {
+                        try
+                        {
+                            if (!item.text.NullOrEmpty())
+                            {
+                                dictionary.Add(item.name, JsonConvert.DeserializeObject<Dictionary<IntVector2, TerrainModifier>>(
+                                    item.text));
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            SMUtil.Error(false, "Mission Tree Terrain (Loading) ~ " + TreeName + ", terrain " + item.name,
+                                "Terrain of name " + item.name + " is corrupted, unable to load! - " + e);
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(false, "Mission Tree Techs (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load Techs for " + TreeName +
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
+            }
+        }
+        internal override void LoadTreeTechs(ref Dictionary<string, Texture> dictTexs, ref Dictionary<string, SpawnableTech> dictionary)
+        {
+            foreach (var item in dictionary)
+            {
+                dictTexs.Remove(item.Key);
+            }
+            dictionary.Clear();
+            foreach (var item in ResourcesHelper.IterateAssetsInModContainer<Texture2D>(container))
             {
                 if (TechNames.Contains(item.name) && !dictionary.ContainsKey(item.name))
                 {
@@ -151,7 +230,7 @@ namespace Sub_Missions
                     }
                 }
             }
-            foreach (var item in ResourcesHelper.IterateObjectsFromModContainer<TextAsset>(container))
+            foreach (var item in ResourcesHelper.IterateAssetsInModContainer<TextAsset>(container))
             {
                 if (TechNames.Contains(item.name) && !dictionary.ContainsKey(item.name))
                 {
@@ -160,6 +239,41 @@ namespace Sub_Missions
                         dictionary.Add(item.name, new SpawnableTechBundledRAW(item.name, item));
                     }
                 }
+            }
+        }
+
+        internal override void LoadTreeWorldObjects(ref List<string> entries)
+        {
+            entries.Clear();
+            try
+            {
+                bool foundAny = false;
+                foreach (var item in ResourcesHelper.IterateAssetsInModContainer<Texture2D>(container))
+                {
+                    if (item.name.EndsWith("_P.json"))
+                    {
+                        if (entries.Contains(item.name))
+                        {
+                            SMUtil.Error(false, "Mission Tree WorldObjects (Loading) ~ " + TreeName + ", piece " +
+                                item.name, "Piece of name " + item.name + " already is assigned to the tree.  Cannot add " +
+                                "multiple Pieces of same name!");
+                        }
+                        else
+                            entries.Add(item.name);
+                        foundAny = true;
+                    }
+                }
+                if (foundAny)
+                {
+                    Debug_SMissions.Log(KickStart.ModID + ": Loaded " + entries.Count + " Pieces for " + TreeName + " successfully.");
+                }
+                else
+                    Debug_SMissions.Log(KickStart.ModID + ": " + TreeName + " does not have any Pieces to load.");
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(false, "Mission Tree WorldObjects (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load Pieces for " + TreeName +
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
     }
@@ -185,29 +299,29 @@ namespace Sub_Missions
             {
                 string output = File.ReadAllText(Path.Combine(TreeDirectory, "MissionTree.json"));
 
-                Debug_SMissions.Log("SubMissions: Loaded MissionTree.json trunk for " + TreeName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json trunk for " + TreeName + " successfully.");
                 return output;
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - File MissionTree.json is not at destination", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
@@ -217,7 +331,7 @@ namespace Sub_Missions
             return null;
         }
         internal override void LoadMissionTreeDataFromFile(
-            ref Dictionary<int, Texture> album, ref Dictionary<int, Mesh> models,
+            ref Dictionary<string, Texture> album, ref Dictionary<string, Mesh> models,
             ref Dictionary<string, SpawnableTech> techs)
         {
             SMissionJSONLoader.ValidateDirectory(TreeDirectory);
@@ -225,30 +339,30 @@ namespace Sub_Missions
             {
                 LoadTreePNGs(ref album);
                 LoadTreeMeshes(ref models);
-                LoadTreeTechs(ref techs);
+                LoadTreeTechs(ref album, ref techs);
 
-                Debug_SMissions.Log("SubMissions: Loaded MissionTree.json for " + TreeName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json for " + TreeName + " successfully.");
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - File MissionTree.json is not at destination", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, "SubMissions: Could not edit MissionTree.json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
                     "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
@@ -264,29 +378,31 @@ namespace Sub_Missions
             try
             {
                 string output = File.ReadAllText(Path.Combine(destination, MissionName + ".json"));
-                Debug_SMissions.Log("SubMissions: Loaded Mission.json for " + MissionName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded Mission.json for " + MissionName + " successfully.");
                 return output;
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, "SubMissions: Could not read " + MissionName + ".json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
                     "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, "SubMissions: Could not read " + MissionName + ".json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
                     "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, "SubMissions: Could not read " + MissionName + ".json for " + TreeName + "." +
-                    "\n - File MissionTree.json is not at destination", e);
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
+                    "\n - File " + MissionName + ".json is not at destination, this needs to have " +
+                    "both main Name and the file's name should match, minus the \".json\" for " +
+                    "the Name within the file", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, "SubMissions: Could not read " + MissionName + ".json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
                     "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
@@ -304,29 +420,29 @@ namespace Sub_Missions
             try
             {
                 string output = File.ReadAllText(Path.Combine(destination, ObjectName + ".json"));
-                Debug_SMissions.Log("SubMissions: Loaded WorldObject.json for " + ObjectName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded WorldObject.json for " + ObjectName + " from file.");
                 return output;
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, "SubMissions: Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
                     "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, "SubMissions: Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
                     "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, "SubMissions: Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
                     "\n - File MissionTree.json is not at destination", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, "SubMissions: Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
+                SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
                     "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
@@ -338,7 +454,7 @@ namespace Sub_Missions
 
 
         // ETC
-        internal override void LoadTreePNGs(ref Dictionary<int, Texture> dictionary)
+        internal override void LoadTreePNGs(ref Dictionary<string, Texture> dictionary)
         {
             dictionary.Clear();
             try
@@ -351,34 +467,35 @@ namespace Sub_Missions
                     {
                         try
                         {
-                            dictionary.Add(name.GetHashCode(), FileUtils.LoadTexture(str));
+                            dictionary.Add(name, FileUtils.LoadTexture(str));
+                            Debug_SMissions.Log("Loaded " + name + " as a Tech");
                             foundAny = true;
                         }
                         catch (UnauthorizedAccessException e)
                         {
-                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
                                 "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
                         }
                         catch (PathTooLongException e)
                         {
-                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
                                 "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
                                 " for the OS to navigate correctly", e);
                         }
                         catch (DirectoryNotFoundException e)
                         {
-                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
                                 "\n - Path to place Folder \"" + name + "\" is incomplete (there are missing folders in" +
                                 " the target folder hierachy)", e);
                         }
                         catch (FileNotFoundException e)
                         {
-                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                            SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
                                 "\n - File MissionTree.json is not at destination", e);
                         }
                         catch (IOException e)
                         {
-                            SMUtil.Assert(false, "Mission Tree Textures (Loading) ~ " + TreeName, "SubMissions: Could not load " + name + ".png for " + TreeName + "." +
+                            SMUtil.Assert(false, "Mission Tree Textures (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
                                 "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
                         }
                         catch (Exception e)
@@ -389,18 +506,18 @@ namespace Sub_Missions
                 }
                 if (foundAny)
                 {
-                    Debug_SMissions.Log("SubMissions: Loaded " + dictionary.Count + " PNG files for " + TreeName + " successfully.");
+                    Debug_SMissions.Log(KickStart.ModID + ": Loaded " + dictionary.Count + " PNG files for " + TreeName + " successfully.");
                 }
                 else
-                    Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any PNG files to load.");
+                    Debug_SMissions.Log(KickStart.ModID + ": " + TreeName + " does not have any PNG files to load.");
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "Mission Tree Textures (Loading) ~ " + TreeName, "SubMissions: CASCADE FAILIURE ~ Could not load PNG files for " + TreeName +
+                SMUtil.Assert(false, "Mission Tree Textures (Loading) ~ " + TreeName, KickStart.ModID + ": CASCADE FAILIURE ~ Could not load PNG files for " + TreeName +
                     ".  \n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
-        internal override void LoadTreeMeshes(ref Dictionary<int, Mesh> dictionary)
+        internal override void LoadTreeMeshes(ref Dictionary<string, Mesh> dictionary)
         {
             dictionary.Clear();
             try
@@ -411,25 +528,25 @@ namespace Sub_Missions
                 {
                     if (SMissionJSONLoader.GetName(str, out string name) && str.EndsWith(".obj"))
                     {
-                        dictionary.Add(name.GetHashCode(), LoadMesh(str));
+                        dictionary.Add(name, LoadMesh(str));
                         foundAny = true;
                     }
                 }
                 if (foundAny)
                 {
-                    Debug_SMissions.Log("SubMissions: Loaded " + dictionary.Count + " .obj files for " + TreeName + " successfully.");
+                    Debug_SMissions.Log(KickStart.ModID + ": Loaded " + dictionary.Count + " .obj files for " + TreeName + " successfully.");
                 }
                 else
-                    Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any .obj files to load.");
+                    Debug_SMissions.Log(KickStart.ModID + ": " + TreeName + " does not have any .obj files to load.");
             }
             catch (NotImplementedException e)
             {
-                SMUtil.Assert(false, "Mission Tree Meshes (Loading) ~ " + TreeName, "SubMissions: Could not load .obj files for " + TreeName +
+                SMUtil.Assert(false, "Mission Tree Meshes (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load .obj files for " + TreeName +
                     ".  \n   You need the mod \"LegacyBlockLoader\" to import non-AssetBundle models.", e);
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "Mission Tree Meshes (Loading) ~ " + TreeName, "SubMissions: Could not load .obj files for " + TreeName +
+                SMUtil.Assert(false, "Mission Tree Meshes (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load .obj files for " + TreeName +
                     ".  \n   This could be due to a bug with this mod or file permissions.", e);
             }
         }
@@ -465,54 +582,190 @@ namespace Sub_Missions
         {
             return LegacyBlockLoader.FastObjImporter.Instance.ImportFileFromPath(TreeDirectory);
         }
-        internal override void LoadTreeTechs(ref Dictionary<string, SpawnableTech> dictionary)
+        internal override void LoadTreeTerrains(ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> dictionary)
         {
             dictionary.Clear();
             try
             {
-                string[] outputs = Directory.GetFiles(TreeDirectory + "Techs");
+                bool foundAny = false;
+                string[] outputs;
+                if (Directory.Exists(Path.Combine(TreeDirectory, "Terrain")))
+                {
+                    outputs = Directory.GetFiles(Path.Combine(TreeDirectory, "Terrain"));
+                    foreach (string str in outputs)
+                    {
+                        if (SMissionJSONLoader.GetName(str, out string name) && str.EndsWith(".json"))
+                        {
+                            if (dictionary.ContainsKey(name))
+                            {
+                                SMUtil.Error(false, "Mission Tree Terrain (Loading) ~ " + TreeName + ", terrain " + name,
+                                    "Terrain of name " + name + " already is assigned to the tree.  Cannot add " +
+                                    "multiple terrains of same name!");
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    dictionary.Add(name, JsonConvert.DeserializeObject<Dictionary<IntVector2, TerrainModifier>>(
+                                        File.ReadAllText(str)));
+                                }
+                                catch (Exception e)
+                                {
+                                    SMUtil.Error(false, "Mission Tree Terrain (Loading) ~ " + TreeName + ", terrain " + name,
+                                        "Terrain of name " + name + " is corrupted, unable to load! - " + e);
+                                }
+                            }
+                            foundAny = true;
+                        }
+                    }
+                }
+                if (foundAny)
+                {
+                    Debug_SMissions.Log(KickStart.ModID + ": Loaded " + dictionary.Count + " Terrains for " + TreeName + " successfully.");
+                }
+                else
+                    Debug_SMissions.Log(KickStart.ModID + ": " + TreeName + " does not have any terrain to load.");
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(false, "Mission Tree Techs (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load Techs for " + TreeName +
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
+            }
+        }
+        internal override void LoadTreeTechs(ref Dictionary<string, Texture> dictTexs, ref Dictionary<string, SpawnableTech> dictionary)
+        {
+            foreach (var item in dictionary)
+            {
+                dictTexs.Remove(item.Key);
+            }
+            dictionary.Clear();
+            try
+            {
+                bool foundAny = false;
+                string[] outputs;
+                if (Directory.Exists(Path.Combine(TreeDirectory, "Techs")))
+                {
+                    outputs = Directory.GetFiles(Path.Combine(TreeDirectory, "Techs"));
+                    foreach (string str in outputs)
+                    {
+                        if (SMissionJSONLoader.GetName(str, out string name) && str.EndsWith(".png"))
+                        {
+                            if (dictionary.ContainsKey(name))
+                            {
+                                SMUtil.Error(false, "Mission Tree SnapTechs (Loading) ~ " + TreeName + ", tech " + name,
+                                    "Tech of name " + name + " already is assigned to the tree.  Cannot add " +
+                                    "multiple Techs of same name!");
+                            }
+                            else
+                            {
+                                if (dictTexs.ContainsKey(name))
+                                    SMUtil.Error(false, "Mission Tree SnapTechs (Loading) ~ " + TreeName + ", tech " + name,
+                                        "Tech of name " + name + " tried to be added to the tree but a Texture of the same name" +
+                                        " is already assigned!  Cannot add multiple Textures of same name!");
+                                else
+                                {
+                                    dictionary.Add(name, new SpawnableTechSnapshot(name));
+                                    dictTexs.Add(name, FileUtils.LoadTexture(str));
+                                }
+                            }
+                            foundAny = true;
+                        }
+                    }
+                }
+                if (Directory.Exists(Path.Combine(TreeDirectory, "Raw Techs")))
+                {
+                    outputs = Directory.GetFiles(Path.Combine(TreeDirectory, "Raw Techs"));
+                    foreach (string str in outputs)
+                    {
+                        if (SMissionJSONLoader.GetName(str, out string name) && (name.EndsWith(".json") || name.EndsWith(".RAWTECH")))
+                        {
+                            if (dictionary.ContainsKey(name))
+                            {
+                                SMUtil.Error(false, "Mission Tree RawTechs (Loading) ~ " + TreeName + ", tech " + name,
+                                    "Tech of name " + name + " already is assigned to the tree.  Cannot add " +
+                                    "multiple Techs of same name!");
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    string fileData = File.ReadAllText(str);
+                                    RawTechTemplate temp = JsonConvert.DeserializeObject<RawTechTemplate>(fileData);
+                                    if (temp.techName == "!!!!null!!!!")
+                                    { // Convert to the correct format 
+                                        RawTechTemplateFast temp2 = JsonConvert.DeserializeObject<RawTechTemplateFast>(fileData);
+
+                                        temp.techName = name.Replace(".json", string.Empty).Replace(".RAWTECH", string.Empty);
+                                        temp.savedTech = temp2.Blueprint;
+                                        if (temp2.Blueprint == null)
+                                        {
+                                            SMUtil.Log(false, "Tech of name " + name + " could not be converted from \"Fast\" RawTech format - " +
+                                                "JsonConvert failed to fetch Blueprint");
+                                        }
+                                        else
+                                        {
+                                            File.WriteAllText(str, JsonConvert.SerializeObject(temp));
+                                            SMUtil.Log(false, "Tech of name " + name + " has been converted from \"Fast\" RawTech format.");
+                                        }
+                                    }
+                                    dictionary.Add(name, new SpawnableTechRAW(name));
+                                }
+                                catch (Exception)
+                                {
+                                    SMUtil.Error(false, "Mission Tree RawTechs (Loading) ~ " + TreeName + ", tech " + name,
+                                        "Tech of name " + name + " Is corrupted or in invalid format.  Cannot load!");
+                                }
+                            }
+                            foundAny = true;
+                        }
+                    }
+                }
+                if (foundAny)
+                {
+                    Debug_SMissions.Log(KickStart.ModID + ": Loaded " + dictionary.Count + " Techs for " + TreeName + " successfully.");
+                }
+                else
+                    Debug_SMissions.Log(KickStart.ModID + ": " + TreeName + " does not have any Techs to load.");
+            }
+            catch (Exception e)
+            {
+                SMUtil.Assert(false, "Mission Tree Techs (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load Techs for " + TreeName +
+                    ".  \n   This could be due to a bug with this mod or file permissions.", e);
+            }
+        }
+        internal override void LoadTreeWorldObjects(ref List<string> entries)
+        {
+            entries.Clear();
+            try
+            {
+                string[] outputs = Directory.GetFiles(Path.Combine(TreeDirectory, "Pieces"));
                 bool foundAny = false;
                 foreach (string str in outputs)
                 {
-                    if (SMissionJSONLoader.GetName(str, out string name) && str.EndsWith(".png"))
+                    if (SMissionJSONLoader.GetName(str, out string name) && str.EndsWith(".json"))
                     {
-                        if (dictionary.ContainsKey(name))
+                        if (entries.Contains(name))
                         {
-                            SMUtil.Error(false, "Mission Tree SnapTechs (Loading) ~ " + TreeName + ", tech " + name,
-                                "Tech of name " + name + " already is assigned to the tree.  Cannot add " +
-                                "multiple Techs of same name!");
+                            SMUtil.Error(false, "Mission Tree WorldObjects (Loading) ~ " + TreeName + ", piece " + name,
+                                "Piece of name " + name + " already is assigned to the tree.  Cannot add " +
+                                "multiple Pieces of same name!");
                         }
                         else
-                            dictionary.Add(name, new SpawnableTechSnapshot(name));
-                        foundAny = true;
-                    }
-                }
-                outputs = Directory.GetFiles(TreeDirectory + "Raw Techs");
-                foreach (string str in outputs)
-                {
-                    if (SMissionJSONLoader.GetName(str, out string name) && (str.EndsWith(".json") || str.EndsWith(".RAWTECH")))
-                    {
-                        if (dictionary.ContainsKey(name))
-                        {
-                            SMUtil.Error(false, "Mission Tree RawTechs (Loading) ~ " + TreeName + ", tech " + name,
-                                "Tech of name " + name + " already is assigned to the tree.  Cannot add " +
-                                "multiple Techs of same name!");
-                        }
-                        else
-                            dictionary.Add(name, new SpawnableTechRAW(name));
+                            entries.Add(name);
+
                         foundAny = true;
                     }
                 }
                 if (foundAny)
                 {
-                    Debug_SMissions.Log("SubMissions: Loaded " + dictionary.Count + " Techs for " + TreeName + " successfully.");
+                    Debug_SMissions.Log(KickStart.ModID + ": Loaded " + entries.Count + " Pieces for " + TreeName + " successfully.");
                 }
                 else
-                    Debug_SMissions.Log("SubMissions: " + TreeName + " does not have any Techs to load.");
+                    Debug_SMissions.Log(KickStart.ModID + ": " + TreeName + " does not have any Pieces to load.");
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "Mission Tree Techs (Loading) ~ " + TreeName, "SubMissions: Could not load Techs for " + TreeName +
+                SMUtil.Assert(false, "Mission Tree WorldObjects (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load Pieces for " + TreeName +
                     ".  \n   This could be due to a bug with this mod or file permissions.", e);
             }
         }

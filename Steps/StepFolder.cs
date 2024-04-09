@@ -41,7 +41,7 @@ namespace Sub_Missions.Steps
                     {1, new KeyValuePair<string, ESMSFields>("Tech Name", ESMSFields.InputStringAux_Tech) },
                 }
             );
-            AddField(ESMSFields.FolderEventList, "Contents");
+            //AddField(ESMSFields.FolderEventList, "Contents");
         }
         public override void OnInit() {
             SMission.ProgressID = SubMission.alwaysRunValue;
@@ -54,7 +54,7 @@ namespace Sub_Missions.Steps
         }
         public override void FirstSetup()
         {
-            SMission.ProgressID = SubMission.alwaysRunValue;
+            //SMission.ProgressID = SubMission.alwaysRunValue;
             if (SMission.FolderEventList == null)
                 SMission.FolderEventList = new List<SubMissionStep>();
         }
@@ -71,14 +71,14 @@ namespace Sub_Missions.Steps
                     }
                     catch
                     {
-                        Debug_SMissions.Log("SubMissions: Error on attempting step lerp (In Folder named " + (SMission.InputString != null ? SMission.InputString  : "unnamed") + ") " + position + " in relation to " + Mission.CurrentProgressID + " of mission " + Mission.Name + " in tree " + Mission.Tree.TreeName);
+                        Debug_SMissions.Log(KickStart.ModID + ": Error on attempting step lerp (In Folder named " + (SMission.InputString != null ? SMission.InputString  : "unnamed") + ") " + position + " in relation to " + Mission.CurrentProgressID + " of mission " + Mission.Name + " in tree " + Mission.Tree.TreeName);
                         try
                         {
-                            Debug_SMissions.Log("SubMissions: Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
+                            Debug_SMissions.Log(KickStart.ModID + ": Type of " + step.StepType.ToString() + " ProgressID " + step.ProgressID + " | Is connected to a mission: " + (step.Mission != null).ToString());
                         }
                         catch
                         {
-                            Debug_SMissions.Log("SubMissions: Confirmed null");
+                            Debug_SMissions.Log(KickStart.ModID + ": Confirmed null");
                         }
                     }
                 }

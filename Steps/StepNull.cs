@@ -25,7 +25,7 @@ namespace Sub_Missions.Steps
         public override void FirstSetup()
         {
             SMUtil.Error(false, SMission.LogName, 
-                "SubMissions: Mission " + Mission.Name + 
+                KickStart.ModID + ": Mission " + Mission.Name + 
                 " has a SubMissionStep error at ProgressID " + SMission.ProgressID + 
                 ", Type !NULL!, and will not be able to execute. \nStepType is empty or " +
                 "contains an invalid/mispelled value!");
@@ -33,7 +33,7 @@ namespace Sub_Missions.Steps
         public override void Trigger()
         {
             SMUtil.Error(true, SMission.LogName, 
-                "SubMissions: NULL SubMissionStep.StepType in " + Mission.Name + 
+                KickStart.ModID + ": NULL SubMissionStep.StepType in " + Mission.Name + 
                 " |  There should NEVER be a null StepType in a mission.  \n  Watch your typing and syntax!");
         }
     }

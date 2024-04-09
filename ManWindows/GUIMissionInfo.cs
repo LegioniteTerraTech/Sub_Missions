@@ -5,29 +5,29 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIMissionInfo : IGUIFormat
+    public class GUIMissionInfo : GUIMiniMenu<GUIMissionInfo>
     {
-        public GUIPopupDisplay Display { get; set; }
         public static SubMission currentMission { get { return ManSubMissions.Selected; } }
         public string CurrentMissionName = "Loading...";
 
         private int maxObjectivesToDisplay = 3;
 
 
-        public void Setup(GUIPopupDisplay display)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
             ManSubMissions.SideUI = Display;
             Display.alpha = 0.795f;
         }
-        public void OnOpen()
+        public override void OnOpen()
         {
         }
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
             BuildDescGUI();
 
@@ -35,10 +35,10 @@ namespace Sub_Missions.ManWindows
             WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
         }
         public void BuildDescGUI()
@@ -79,6 +79,6 @@ namespace Sub_Missions.ManWindows
                 Display.context = "<b>Not Selected</b>";
             GUILayout.Label("New Sub Missions\nAvailable", WindowManager.styleLabelLargerFont);
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

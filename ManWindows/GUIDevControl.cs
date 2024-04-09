@@ -9,22 +9,22 @@ using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIDevControl : IGUIFormat
+    public class GUIDevControl : GUIMiniMenu<GUIDevControl>
     {
-        public GUIPopupDisplay Display { get; set; }
         public string buttonMessage;
 
-        public void Setup(GUIPopupDisplay display)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
+            buttonMessage = (string)stats2.val1;
         }
-        public void OnOpen()
+        public override void OnOpen()
         {
             Display.Window.width = 340;
         }
 
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("<b>Missions</b>", AltUI.ButtonBlueLarge))
@@ -42,14 +42,14 @@ namespace Sub_Missions.ManWindows
             WindowManager.KeepWithinScreenBounds(Display);
         }
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
             Display.Window.width = 340;
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
             this.UpdateTransparency(0.2f);
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

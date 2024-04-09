@@ -5,6 +5,7 @@ using System.IO;
 using System.Reflection;
 using UnityEngine;
 using Newtonsoft.Json;
+using TerraTechETCUtil;
 
 #if !STEAM
 using Nuterra.BlockInjector;
@@ -68,7 +69,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug_SMissions.Log("SubMissions: GetAllSMCCorps - Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Log(KickStart.ModID + ": GetAllSMCCorps - Tried to fetch value but corpsStored is null!?  ");
             }
             return new List<SMCCorpLicense>();
         }
@@ -80,7 +81,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug_SMissions.Log("SubMissions: GetAllSMCCorps - Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Log(KickStart.ModID + ": GetAllSMCCorps - Tried to fetch value but corpsStored is null!?  ");
             }
             return new List<FactionSubTypes>();
         }
@@ -92,7 +93,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug_SMissions.Log("SubMissions: GetSMCCorpsCount - Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Log(KickStart.ModID + ": GetSMCCorpsCount - Tried to fetch value but corpsStored is null!?  ");
             }
             return 0;
         }
@@ -106,7 +107,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug_SMissions.Log("SubMissions: Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Log(KickStart.ModID + ": Tried to fetch value but corpsStored is null!?  ");
             }
             return false;
         }
@@ -119,7 +120,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug_SMissions.Assert("SubMissions: GetSMCCorp - Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Assert(KickStart.ModID + ": GetSMCCorp - Tried to fetch value but corpsStored is null!?  ");
             }
             return null;
         }
@@ -132,7 +133,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug_SMissions.Assert("SubMissions: GetSMCCorp - Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Assert(KickStart.ModID + ": GetSMCCorp - Tried to fetch value but corpsStored is null!?  ");
             }
             return null;
         }
@@ -145,7 +146,7 @@ namespace Sub_Missions
             }
             catch
             {
-                Debug_SMissions.Assert("SubMissions: GetSMCCorpBlocks - Tried to fetch value but corpsStored is null!?  ");
+                Debug_SMissions.Assert(KickStart.ModID + ": GetSMCCorpBlocks - Tried to fetch value but corpsStored is null!?  ");
             }
             return null;
         }
@@ -185,7 +186,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: TryFindSMCCorpLicense - error " + e);
+                Debug_SMissions.Log(KickStart.ModID + ": TryFindSMCCorpLicense - error " + e);
             }
             CL = null;
             return false;
@@ -201,14 +202,14 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: COULD NOT PUSH CORPS TO CORP POOL!!! " + e);
+                Debug_SMissions.Log(KickStart.ModID + ": COULD NOT PUSH CORPS TO CORP POOL!!! " + e);
             }
         }
         internal static void ReloadAllOfficialIfApplcable()
         {   //
             try
             {
-                Debug_SMissions.Log("SubMissions: SetupLicenses - Injecting Official corps...");
+                Debug_SMissions.Log(KickStart.ModID + ": SetupLicenses - Injecting Official corps...");
                 if (!ManMods.inst.HasPendingLoads())
                 {
                     corpsStoredOfficial.Clear();
@@ -220,12 +221,12 @@ namespace Sub_Missions
                         if (OfficialCorpLoader(sName, FST, out SMCCorpLicense License))
                         {
                             corpsStoredOfficial.Add(corpID, License);
-                            Debug_SMissions.Log("SubMissions: Added Corp " + sName);
+                            Debug_SMissions.Log(KickStart.ModID + ": Added Corp " + sName);
                         }
                         else
                         {
                             corpsStoredOfficial.Add(corpID, new SMCCorpLicense(FST, ManMods.inst.GetCorpDefinition(FST)));
-                            Debug_SMissions.Log("SubMissions: Added Corp " + sName + " with no MissionCorp.json present.");
+                            Debug_SMissions.Log(KickStart.ModID + ": Added Corp " + sName + " with no MissionCorp.json present.");
                         }
                     }
                 }
@@ -236,7 +237,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: COULD NOT ReloadAllOfficialIfApplcable!!! " + e);
+                Debug_SMissions.Log(KickStart.ModID + ": COULD NOT ReloadAllOfficialIfApplcable!!! " + e);
                 Debug_SMissions.FatalError("ReloadAllOfficialIfApplcable (Important trigger) failed somewhere, Sub_Missions may encounter some serious problems later on.  YOU HAVE BEEN WARNED");
             }
         }
@@ -256,6 +257,19 @@ namespace Sub_Missions
             }
         }
 
+        public static string GetCorpLores(FactionSubTypes faction)
+        {
+            if (TryGetSMCCorpLicense((int)faction, out var lice))
+                return lice.Lore;
+            return WikiPageCorp.GetDescriptionDefault(faction);
+        }
+        public static void GetCorpLoresExtended(WikiPageCorp WPC)
+        {
+            if (TryGetSMCCorpLicense(WPC.corpID, out var lice))
+                WPC.infoExtra = lice.GetAdditionalLore;
+        }
+
+
         internal static bool TryMakeNewCorp(SMCCorpLicense CL)
         {   //
             try
@@ -273,7 +287,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: TryMakeNewCorp - Could not make new corp! " + e);
+                Debug_SMissions.Log(KickStart.ModID + ": TryMakeNewCorp - Could not make new corp! " + e);
             }
             return false;
         }
@@ -292,7 +306,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: TryMakeNewCorp - Could not make new corp! " + e);
+                Debug_SMissions.Log(KickStart.ModID + ": TryMakeNewCorp - Could not make new corp! " + e);
             }
             return (FactionSubTypes)RCC;
         }
@@ -310,7 +324,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: TryMakeNewCorpBI (BlockInjector) - Could not make new corp! " + e);
+                Debug_SMissions.Log(KickStart.ModID + ": TryMakeNewCorpBI (BlockInjector) - Could not make new corp! " + e);
             }
             return (FactionSubTypes)CC.CorpID;
         }
@@ -327,15 +341,15 @@ namespace Sub_Missions
             {   // VERY EXPENSIVE but we only need to do this once!
                 if (((List<ManTechMaterialSwap.MatReplacePairs>)skinSwapInsts.GetValue(ManTechMaterialSwap.inst)).Count == 0)
                 {
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - too early!");
+                    Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - too early!");
                     return;
                 }
                 bool criticalerror = false;
-                Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - BUILDING!!!");
+                Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - BUILDING!!!");
                 foreach (KeyValuePair<int, SMCCorpLicense> corpEntry in corpsStoredUnofficial)
                 {
                     int skinCount = corpEntry.Value.importedSkins.Count + corpEntry.Value.registeredSkins.Count;
-                    Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - count " + skinCount);
+                    Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - count " + skinCount);
                     bool worked = false;
                     List<SkinTextures> STs = new List<SkinTextures>();
                     try
@@ -348,17 +362,17 @@ namespace Sub_Missions
                     catch (Exception e)
                     {
                         criticalerror = true;
-                        SMUtil.Assert(false, corpEntry.Value.GetLogName("Skins"), "SubMissions: BuildUnofficialCustomCorpArrayTextures - COULD NOT " +
+                        SMUtil.Assert(false, corpEntry.Value.GetLogName("Skins"), KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - COULD NOT " +
                             "COMPILE FOR " + corpEntry.Value.Faction, e);
                         continue;
                     }
-                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 1");
+                    //Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - 1");
                     ManTechMaterialSwap.MatReplacePairs MPP = new ManTechMaterialSwap.MatReplacePairs();
                     List<ManTechMaterialSwap.MatReplacePairs> stuff = (List<ManTechMaterialSwap.MatReplacePairs>)skinSwapInsts.GetValue(ManTechMaterialSwap.inst);
                     List<Material> mats = new List<Material>();
                     Material newMat = new Material(stuff.First().m_Materials.First());
 
-                    Debug_SMissions.Log("SubMissions: Size Alb: "
+                    Debug_SMissions.Log(KickStart.ModID + ": Size Alb: "
                         + newMat.GetTexture("_MainTex").width
                         + " Size Met: "
                         + newMat.GetTexture("_MetallicGlossMap").width
@@ -374,21 +388,21 @@ namespace Sub_Missions
                         mats.Add(newMat);
                     }
                     /*
-                    Debug_SMissions.Log("SubMissions: new Size Alb: " 
+                    Debug_SMissions.Log(KickStart.ModID + ": new Size Alb: " 
                         + newMat.GetTexture("_MainTex").width
                         + " Size Met: "
                         + newMat.GetTexture("_MetallicGlossMap").width
                         + " Size Emissive: " + 
                         newMat.GetTexture("_EmissionMap").width);
                     */
-                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - skin count " + skinCount);
+                    //Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - skin count " + skinCount);
                     if (skinCount < 2)
                     {
                         criticalerror = true;
                         SMUtil.Error(false, corpEntry.Value.GetLogName("Skins"), "Minimum allowed skins for any Unofficial corp is 2. Unofficial faction " + 
                             corpEntry.Value.Faction + " does NOT have enough skins for this operation!");
                     }
-                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 2");
+                    //Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - 2");
                     MPP.m_Materials = mats.ToArray();
                     List<bool> bools = new List<bool>();
                     for (int step = 0; step < skinCount; step++)
@@ -404,7 +418,7 @@ namespace Sub_Missions
                     for (int step = 0; step < skinCount; step++)
                         MSIL.Add(MSI);
                     MSG.m_Materials = MSIL.ToArray();
-                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - 3");
+                    //Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - 3");
 
                     skinSwapInsts.SetValue(ManTechMaterialSwap.inst, stuff);
                     ManTechMaterialSwap.inst.m_MaterialsToSwap.Add(MSG);
@@ -413,8 +427,8 @@ namespace Sub_Missions
                         // pending...
                     }
 
-                    SMUtil.Info(false, corpEntry.Value.GetLogName("Skins"), "SubMissions: BuildUnofficialCustomCorpArrayTextures - Compiled for " + corpEntry.Value.Faction);
-                    //Debug_SMissions.Log("SubMissions: BuildUnofficialCustomCorpArrayTextures - new " + stuff.Count + " | " + ManTechMaterialSwap.inst.m_MaterialsToSwap.Count);
+                    SMUtil.Info(false, corpEntry.Value.GetLogName("Skins"), KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - Compiled for " + corpEntry.Value.Faction);
+                    //Debug_SMissions.Log(KickStart.ModID + ": BuildUnofficialCustomCorpArrayTextures - new " + stuff.Count + " | " + ManTechMaterialSwap.inst.m_MaterialsToSwap.Count);
                 }
                 if (criticalerror)
                 {
@@ -483,10 +497,10 @@ namespace Sub_Missions
                     if (corpsStoredUnofficial.ContainsKey(CL.ID))
                     {
                         corpsStoredUnofficial.Remove(CL.ID);
-                        SMUtil.Log(false, "SubMissions: Reloaded Unofficial Corp " + name);
+                        SMUtil.Log(false, KickStart.ModID + ": Reloaded Unofficial Corp " + name);
                     }
                     else
-                        SMUtil.Log(false, "SubMissions: Added Unofficial Corp " + name);
+                        SMUtil.Log(false, KickStart.ModID + ": Added Unofficial Corp " + name);
                     corpsStoredUnofficial.Add(CL.ID, CL);
                     AllCorpNamesDirty = true;
                 }
@@ -516,7 +530,7 @@ namespace Sub_Missions
                 toClean = Directory.GetFiles(search);
             else
                 toClean = Directory.GetDirectories(search);
-            //Debug_SMissions.Log("SubMissions: Cleaning " + toClean.Count);
+            //Debug_SMissions.Log(KickStart.ModID + ": Cleaning " + toClean.Count);
             Cleaned.Clear();
             foreach (string cleaning in toClean)
             {
@@ -565,7 +579,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "Corp (Unofficial) ~ " + CorpName, "SubMissions: Check your Corp file for errors in syntax, cases where you " +
+                SMUtil.Assert(false, "Corp (Unofficial) ~ " + CorpName, KickStart.ModID + ": Check your Corp file for errors in syntax, cases where you " +
                     "referenced the names and make sure they match!", e);
                 License = null;
                 return false;
@@ -602,7 +616,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "Corp (Unofficial) ~ " + CorpShortName, "SubMissions: Check your Corp file for errors in syntax, cases where you " +
+                SMUtil.Assert(false, "Corp (Unofficial) ~ " + CorpShortName, KickStart.ModID + ": Check your Corp file for errors in syntax, cases where you " +
                     "referenced the names and make sure they match!", e);
                 License = null;
                 return false;
@@ -616,12 +630,12 @@ namespace Sub_Missions
             try
             {
                 string output = File.ReadAllText(Path.Combine(destination, "MissionCorp.json"));
-                Debug_SMissions.Log("SubMissions: Loaded MissionCorp.json for " + corpName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionCorp.json for " + corpName + " successfully.");
                 return output;
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "Corp ~ " + corpName, "SubMissions: Could not read MissionCorp.json for " + corpName + 
+                SMUtil.Assert(false, "Corp ~ " + corpName, KickStart.ModID + ": Could not read MissionCorp.json for " + corpName + 
                     ".  \n   This could be due to a bug with this mod or file permissions.", e);
                 return null;
             }
@@ -638,18 +652,18 @@ namespace Sub_Missions
                 /*
                 if (CL.importedSkins != null)
                 {
-                    Debug_SMissions.Log("SubMissions: SkinLoader - Already exported...");
+                    Debug_SMissions.Log(KickStart.ModID + ": SkinLoader - Already exported...");
                     return true;
                 }
                 */
                 CL.importedSkins.Clear();
-                Debug_SMissions.Log("SubMissions: Searching Custom Corp " + CL.Faction + " Folder for skins...");
+                Debug_SMissions.Log(KickStart.ModID + ": Searching Custom Corp " + CL.Faction + " Folder for skins...");
                 if (CL.GetDirectory(out string directory))
                 {
                     string directorySkins = Path.Combine(directory, "Skins");
                     SMissionJSONLoader.ValidateDirectory(directorySkins);
                     List<string> names = GetNameListUnofficial(Path.Combine(CL.Faction, "Skins"));
-                    Debug_SMissions.Log("SubMissions: Found " + names.Count + " skins...");
+                    Debug_SMissions.Log(KickStart.ModID + ": Found " + names.Count + " skins...");
                     CL.TexturesCache.Clear();
                     List<CorporationSkinInfo> CSISort = new List<CorporationSkinInfo>();
                     foreach (string name in names)
@@ -657,7 +671,7 @@ namespace Sub_Missions
                         CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
                         if (LoadSkinForCorp(CL, name, Path.Combine(directorySkins, name), ref CSI))
                         {
-                            Debug_SMissions.Log("SubMissions: Added Skin " + name);
+                            Debug_SMissions.Log(KickStart.ModID + ": Added Skin " + name);
                             CL.importedSkins.Add(CSI.m_SkinUniqueID);
                             CSISort.Add(CSI);
                         }
@@ -670,7 +684,7 @@ namespace Sub_Missions
                         CorporationSkinInfo CSI = ScriptableObject.CreateInstance<CorporationSkinInfo>();
                         if (LoadSkinForCorp(CL, name, Path.Combine(directorySkins, name), ref CSI, true))
                         {
-                            Debug_SMissions.Log("SubMissions: Added Skin " + name);
+                            Debug_SMissions.Log(KickStart.ModID + ": Added Skin " + name);
                             CL.importedSkins.Add(CSI.m_SkinUniqueID);
                             CSISort.Add(CSI);
                         }
@@ -685,7 +699,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, CL.GetLogName("Skins"), "SubMissions: Check your Skins file names for corp " + CL.Faction + 
+                SMUtil.Assert(false, CL.GetLogName("Skins"), KickStart.ModID + ": Check your Skins file names for corp " + CL.Faction + 
                     "!  Some may be invalid!", e);
                 return false;
             }
@@ -712,7 +726,7 @@ namespace Sub_Missions
                             IDFind++;
                         SID.UniqueID = IDFind;
                         File.WriteAllText(skinJSON, JsonConvert.SerializeObject(SID, Formatting.Indented));
-                        SMUtil.Info(false, "Official Corp (Skins) ~ " + CL.Faction, "SubMissions: \nMade a new Skin.json for " + folderName + 
+                        SMUtil.Info(false, "Official Corp (Skins) ~ " + CL.Faction, KickStart.ModID + ": \nMade a new Skin.json for " + folderName + 
                             " with ID " + IDFind + " - use this to set your skin information " +
                             "\n Only change UniqueID if ABSOLUETLY NESSEARY " +
                             "(There can only be one skin to one UniqueID)");
@@ -724,21 +738,21 @@ namespace Sub_Missions
                     }
                     if (SID.UniqueID < 0)
                     {
-                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: Skin UniqueID for skin " + folderName + " (is below 1) is out of range!!");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), KickStart.ModID + ": Skin UniqueID for skin " + folderName + " (is below 1) is out of range!!");
                         return false;
                     }
                     else if (CL.registeredSkins.Contains(SID.UniqueID))
                     {
-                        SMUtil.Log(false, "SubMissions: Skin " + folderName + "'s UniqueID was already registered at a referenced skin.  Overwriting the reference!");
+                        SMUtil.Log(false, KickStart.ModID + ": Skin " + folderName + "'s UniqueID was already registered at a referenced skin.  Overwriting the reference!");
                     }
                     if (CL.importedSkins.Contains(SID.UniqueID) )// FindAll(delegate (CorporationSkinInfo cand) { return cand.m_SkinUniqueID == SID.UniqueID; }).Count > 1)
                     {
-                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: Skin " + folderName + "'s UniqueID was already registered before by another respective Skin.json corp skin!  Unable to import!");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), KickStart.ModID + ": Skin " + folderName + "'s UniqueID was already registered before by another respective Skin.json corp skin!  Unable to import!");
                         return false;
                     }
                     if (SID.UniqueID < AdvisedCorpSkinIDStartRef && CL.SkinReferenceFaction != FactionSubTypes.NULL)
                     {
-                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: Skin UniqueID for skin " + folderName + ".  is below 128, the advised start range for Unofficial Custom Corps with a Skin reference corp. \n  This can cause compatability issues later on with Official and Unofficial mods.");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), KickStart.ModID + ": Skin UniqueID for skin " + folderName + ".  is below 128, the advised start range for Unofficial Custom Corps with a Skin reference corp. \n  This can cause compatability issues later on with Official and Unofficial mods.");
                     }
 
                     CorporationSkinUIInfo UII = new CorporationSkinUIInfo();
@@ -782,7 +796,7 @@ namespace Sub_Missions
                         }
                         else
                         {
-                            Debug_SMissions.Log("SubMissions: LoadSkinForCorp(SMCCorpLicense) - RenderTechImage is queued");
+                            Debug_SMissions.Log(KickStart.ModID + ": LoadSkinForCorp(SMCCorpLicense) - RenderTechImage is queued");
                             SMCCorpLicense.CSIBacklogRender.Add(CSI);
                             T2D = TryGetPNG(destination, SID.Preview);
                             UII.m_PreviewImage = Sprite.Create(T2D, new Rect(0, 0, T2D.width, T2D.height), Vector2.zero);
@@ -810,22 +824,22 @@ namespace Sub_Missions
 
                     if (ST.m_Emissive == null)
                     {
-                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: skin " + SID.Name + " Emissive IS NULL");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), KickStart.ModID + ": skin " + SID.Name + " Emissive IS NULL");
                     }
                     if (ST.m_Metal == null)
                     {
-                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: skin " + SID.Name + " Metal IS NULL");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), KickStart.ModID + ": skin " + SID.Name + " Metal IS NULL");
                     }
                     if (ST.m_Albedo == null)
                     {
-                        SMUtil.Error(false, CL.GetLogName("Skins"), "SubMissions: skin " + SID.Name + " Albedo IS NULL");
+                        SMUtil.Error(false, CL.GetLogName("Skins"), KickStart.ModID + ": skin " + SID.Name + " Albedo IS NULL");
                     }
                 }
                 return true;
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, CL.GetLogName("Skins"), "SubMissions: Could not read Skin.  \n   This could be due to a bug with " +
+                SMUtil.Assert(false, CL.GetLogName("Skins"), KickStart.ModID + ": Could not read Skin.  \n   This could be due to a bug with " +
                     "this mod or file permissions.", e);
                 return false;
             }
@@ -836,12 +850,12 @@ namespace Sub_Missions
             {
                 return (Texture2D)FileUtils.LoadTexture(Path.Combine(destination, FileName));
             }
-            SMUtil.Error(false, "Load PNG ~ " + FileName, "SubMissions: Could not read Skin texture " + FileName + ".  " +
+            SMUtil.Error(false, "Load PNG ~ " + FileName, KickStart.ModID + ": Could not read Skin texture " + FileName + ".  " +
                 "\n   This could be due to a bug with this mod or file permissions.");
             return ManUI.inst.GetModernCorpIcon(FactionSubTypes.GSO).texture;
         }
 
-        internal static void ReloadSkins()
+        internal static void ReloadUnofficialSkins()
         {
             foreach (var SMCCL in corpsStoredUnofficial)
             {
@@ -874,7 +888,7 @@ namespace Sub_Missions
         public static void Initiate()
         {
             inst = Instantiate(new GameObject("ManSMCCorps")).AddComponent<ManSMCCorps>();
-            Debug_SMissions.Log("SubMissions: ManSMCCorps initated");
+            Debug_SMissions.Log(KickStart.ModID + ": ManSMCCorps initated");
         }
         public static void Subscribe()
         {
@@ -889,7 +903,7 @@ namespace Sub_Missions
             if (!inst)
                 return;
             Singleton.Manager<ManPauseGame>.inst.PauseEvent.Unsubscribe(inst.OnPause);
-            Debug_SMissions.Log("SubMissions: ManSMCCorps De-Init");
+            Debug_SMissions.Log(KickStart.ModID + ": ManSMCCorps De-Init");
         }
         public void OnPause(bool paused)
         {
@@ -946,7 +960,7 @@ namespace Sub_Missions
                     enemyID = enemyVisID;
                     currentVolPercent = 0.01f;
                     ForceReboot();
-                    Debug_SMissions.Log("SubMissions: ManSMCCorps Playing danger music (Transition) for " + CL.Faction);
+                    Debug_SMissions.Log(KickStart.ModID + ": ManSMCCorps Playing danger music (Transition) for " + CL.Faction);
                     ManMusic.inst.SetMusicMixerVolume(0);
                     queuedChange = false;
                 }
@@ -959,7 +973,7 @@ namespace Sub_Missions
                 {
                     if (!queuedChange)
                     {
-                        Debug_SMissions.Log("SubMissions: ManSMCCorps Transitioning danger music...");
+                        Debug_SMissions.Log(KickStart.ModID + ": ManSMCCorps Transitioning danger music...");
                         queuedChange = true;
                     }
                 }
@@ -972,7 +986,7 @@ namespace Sub_Missions
                     enemyID = enemyVisID;
                     currentVolPercent = 0.01f;
                     ForceReboot();
-                    Debug_SMissions.Log("SubMissions: ManSMCCorps Playing danger music for " + CL.Faction);
+                    Debug_SMissions.Log(KickStart.ModID + ": ManSMCCorps Playing danger music for " + CL.Faction);
                     ManMusic.inst.SetMusicMixerVolume(0);
                 }
             }
@@ -1000,7 +1014,7 @@ namespace Sub_Missions
                 inst.enemyBlockCountCurrent = 0;
                 inst.enemyID = -1;
                 inst.ActiveMusic.stop();
-                Debug_SMissions.Log("SubMissions: ManSMCCorps Stopping danger music");
+                Debug_SMissions.Log(KickStart.ModID + ": ManSMCCorps Stopping danger music");
                 ManProfile.Profile Prof = ManProfile.inst.GetCurrentUser();
                 ManMusic.inst.SetMusicMixerVolume(ManPauseGame.inst.IsPaused ? 0 : Prof.m_SoundSettings.m_MusicVolume);
             }
@@ -1016,7 +1030,7 @@ namespace Sub_Missions
                     ManProfile.Profile Prof = ManProfile.inst.GetCurrentUser();
                     sys.playSound(sound, CG, false, out ActiveMusic);
                     ActiveMusic.setVolume(Prof.m_SoundSettings.m_MusicVolume);
-                    Debug_SMissions.Log("SubMissions: ManSMCCorps Playing danger music at " + Prof.m_SoundSettings.m_MusicVolume);
+                    Debug_SMissions.Log(KickStart.ModID + ": ManSMCCorps Playing danger music at " + Prof.m_SoundSettings.m_MusicVolume);
                 }
                 catch { }
             }

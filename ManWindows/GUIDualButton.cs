@@ -5,12 +5,12 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using Sub_Missions.Steps;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIDualButton : IGUIFormat
+    public class GUIDualButton : GUIMiniMenu<GUIDualButton>
     {
-        public GUIPopupDisplay Display { get; set; }
         public string buttonMessage;
         public StepActOptions options;
         public bool DestroyOnPress = false;
@@ -18,29 +18,29 @@ namespace Sub_Missions.ManWindows
         public bool ConnectedToMission = false;
 
 
-        public void Setup(GUIPopupDisplay display, string buttonLabel, bool removeOnPress, object ActionName)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
-            buttonMessage = buttonLabel;
-            DestroyOnPress = removeOnPress;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
+            buttonMessage = (string)stats2.val1;
+            DestroyOnPress = (bool)stats2.val2;
 
             try
             {
-                options = (StepActOptions)ActionName;
+                options = (StepActOptions)stats2.val3;
                 ConnectedToMission = true;
-                Debug_SMissions.Log("SubMissions: Hooked up a GUIDualButton to StepActOptions of mission " + options.Mission.Name);
+                Debug_SMissions.Log(KickStart.ModID + ": Hooked up a GUIDualButton to StepActOptions of mission " + options.Mission.Name);
             }
             catch
             {
-                InvokeAction = (string)ActionName;
+                InvokeAction = (string)stats2.val3;
             }
         }
-        public void OnOpen()
+        public override void OnOpen()
         {
         }
 
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
             if (GUI.Button(new Rect(15, 30, (Display.Window.width / 2) - 30, Display.Window.height - 45), "<b>" + buttonMessage + "</b>", ConnectedToMission ? WindowManager.styleButtonGinormusFont : WindowManager.styleButtonHugeFont))
             {
@@ -72,12 +72,12 @@ namespace Sub_Missions.ManWindows
             WindowManager.KeepWithinScreenBounds(Display);
         }
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

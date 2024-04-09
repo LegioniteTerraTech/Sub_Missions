@@ -9,6 +9,10 @@ using Sub_Missions.ManWindows;
 using Sub_Missions.Steps;
 using Sub_Missions.ModularMonuments;
 using Newtonsoft.Json;
+using System.Reflection;
+using static HarmonyLib.Code;
+using System.IO;
+using TerraTechETCUtil;
 #if !STEAM
 using Nuterra.BlockInjector;
 #endif
@@ -86,15 +90,16 @@ namespace Sub_Missions
         internal static List<SubMissionTree> SubMissionTrees = new List<SubMissionTree>();
 
 
-        internal static List<SubMission> activeSubMissions = new List<SubMission>();
-        internal static List<SubMission> ActiveSubMissions
+        internal static List<SubMission> activeSubMissionsCached = new List<SubMission>();
+        internal static List<SubMission> GetActiveSubMissions
         {
             get
             {
-                activeSubMissions.Clear();
+                activeSubMissionsCached.Clear();
                 foreach (SubMissionTree tree in SubMissionTrees)
-                    activeSubMissions.AddRange(tree.ActiveMissions);
-                return activeSubMissions;
+                    if (tree.ActiveMissions != null)
+                        activeSubMissionsCached.AddRange(tree.ActiveMissions);
+                return activeSubMissionsCached;
             }
         }
 
@@ -117,6 +122,8 @@ namespace Sub_Missions
         public static Event<SubMission> MissionStartedEvent = new Event<SubMission>();
         public static Event<SubMission, ManEncounter.FinishState> MissionFinishedEvent = new Event<SubMission, ManEncounter.FinishState>();
 
+        public static Dictionary<string, KeyValuePair<Texture2D, ManOnScreenMessages.Speaker>> Speakers = 
+            new Dictionary<string, KeyValuePair<Texture2D, ManOnScreenMessages.Speaker>>();
 
         public const float MinLoadedSpawnDist = 250;
         public const float MaxLoadedSpawnDist = 400;
@@ -124,13 +131,112 @@ namespace Sub_Missions
         public const float MaxUnloadedSpawnDist = 1250;
 
 
+        private static FieldInfo speakersMain = typeof(ManOnScreenMessages).GetField("m_SpeakerData",
+            BindingFlags.NonPublic | BindingFlags.Instance);
+        private static Localisation.GlyphInfo[] emptyGlyphs = new Localisation.GlyphInfo[0];
+
+        internal static ManOnScreenMessages.Speaker LeftCustomSpeaker = (ManOnScreenMessages.Speaker)
+            Enum.GetValues(typeof(ManOnScreenMessages.Speaker)).Length;
+        internal static ManOnScreenMessages.Speaker RightCustomSpeaker = (ManOnScreenMessages.Speaker)
+            (Enum.GetValues(typeof(ManOnScreenMessages.Speaker)).Length + 1);
+        private static ManOnScreenMessages.SpeakerData[] AllSpeakers = null;
+
+        internal static void ExtendSpeakers()
+        {
+            if (AllSpeakers == null)
+            {
+                try
+                {
+                    AllSpeakers = (ManOnScreenMessages.SpeakerData[])speakersMain.GetValue(ManOnScreenMessages.inst);
+
+                    int defaultIndex = (int)ManOnScreenMessages.Speaker.GSOGeneric;
+                    for (int step = defaultIndex; step < AllSpeakers.Length; step++)
+                    {
+                        string name = ((ManOnScreenMessages.Speaker)step).ToString();
+                        Speakers.Add(name, new KeyValuePair<Texture2D, ManOnScreenMessages.Speaker>(
+                                AllSpeakers[step].m_SpeakerImage.texture, (ManOnScreenMessages.Speaker)step));
+                        Debug_SMissions.Log(KickStart.ModID + ": Fetched speaker " + name);
+                    }
+
+                    Array.Resize(ref AllSpeakers, (int)RightCustomSpeaker + 1);
+                    AllSpeakers[(int)LeftCustomSpeaker] = new ManOnScreenMessages.SpeakerData
+                    {
+                        m_BehindSpeakerImage = AllSpeakers[defaultIndex].m_BehindSpeakerImage,
+                        m_InFrontOfSpeakerImage = AllSpeakers[defaultIndex].m_InFrontOfSpeakerImage,
+                        m_SpeakerTitle = new LocalisedString
+                        {
+                            m_Bank = "NULL",
+                            m_Id = "MOD",
+                            m_GUIExpanded = true,
+                            m_InlineGlyphs = emptyGlyphs,
+                        },
+                        m_SpeakerImage = AllSpeakers[defaultIndex].m_SpeakerImage,
+                    };
+                    AllSpeakers[(int)RightCustomSpeaker] = new ManOnScreenMessages.SpeakerData
+                    {
+                        m_BehindSpeakerImage = AllSpeakers[defaultIndex].m_BehindSpeakerImage,
+                        m_InFrontOfSpeakerImage = AllSpeakers[defaultIndex].m_InFrontOfSpeakerImage,
+                        m_SpeakerTitle = new LocalisedString
+                        {
+                            m_Bank = "NULL",
+                            m_Id = "MOD",
+                            m_GUIExpanded = true,
+                            m_InlineGlyphs = emptyGlyphs,
+                        },
+                        m_SpeakerImage = AllSpeakers[defaultIndex].m_SpeakerImage,
+                    };
+
+                    speakersMain.SetValue(ManOnScreenMessages.inst, AllSpeakers);
+                }
+                catch (Exception e)
+                {
+                    Debug_SMissions.FatalError(e.ToString());
+                }
+            }
+        }
+
+        public static ManOnScreenMessages.Speaker GenerateSpeaker(string name, Texture2D image, bool rightSide)
+        {
+            int selector;
+            if (rightSide)
+                selector = (int)RightCustomSpeaker;
+            else
+                selector = (int)LeftCustomSpeaker;
+
+            var speak = AllSpeakers[selector];
+
+            speak.m_SpeakerTitle.m_Bank = name;
+            speak.m_SpeakerImage = Sprite.Create(image, 
+                new Rect(0, 0, image.width, image.height), Vector2.zero);
+
+            AllSpeakers[selector] = speak;
+
+            return (ManOnScreenMessages.Speaker)selector;
+        }
+
+        static void AddHooksToActiveGameInterop()
+        {
+            if (ActiveGameInterop.OnRecieve.ContainsKey("OpenMissionEditor"))
+                return;
+            ActiveGameInterop.OnRecieve.Add("OpenMissionEditor", (string x) =>
+            {
+                /*
+                ActiveGameInterop.TryTransmit("RetreiveTechPop", Path.Combine(RawTechsDirectory,
+                    "Bundled", "RawTechs.RTList"));
+                */
+            });
+        }
+
         // Setup
         internal static void Initiate()
         {
             if (!inst)
             {
                 inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
-                Debug_SMissions.Log("SubMissions: ManSubMissions initated");
+                Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions initated");
+                TerraTechETCUtil.ResourcesHelper.PostBlocksLoadEvent.Subscribe(ExtendSpeakers);
+                TerraTechETCUtil.WikiPageCorp.GetCorpDescription = ManSMCCorps.GetCorpLores;
+                TerraTechETCUtil.WikiPageCorp.OnWikiPageMade.Subscribe(ManSMCCorps.GetCorpLoresExtended);
             }
             Active = true;
         }
@@ -145,14 +251,16 @@ namespace Sub_Missions
                 Singleton.Manager<ManWorld>.inst.TileManager.TilePopulatedEvent.Subscribe(OnTileLoaded);
                 Singleton.Manager<ManWorld>.inst.TileManager.TileDepopulatedEvent.Subscribe(OnTileUnloaded);
                 Singleton.Manager<ManWorldTreadmill>.inst.AddListener(inst);
-                Debug_SMissions.Log("SubMissions: Core module hooks launched");
-                WindowManager.LateInitiate();
+                Debug_SMissions.Log(KickStart.ModID + ": Core module hooks launched");
+                //WindowManager.LateInitiate();
 
                 //WindowManager.AddPopupButton("", "<b>SMissions</b>", false, "Master", windowOverride: WindowManager.MicroWindow);
                 WindowManager.AddPopupMissionsDEVControl();
 
                 if (KickStart.Debugger)
                     WindowManager.ShowPopup(new Vector2(0.8f, 1));
+
+                //TerraTechETCUtil.DebugExtUtilities.AllowEnableDebugGUIMenu_KeypadEnter = KickStart.Debugger;
 
                 Button = WindowManager.GetCurrentPopup();
 
@@ -166,7 +274,7 @@ namespace Sub_Missions
 
                 SideUI = WindowManager.GetCurrentPopup();
 
-                Debug_SMissions.Log("SubMissions: ManSubMissions subscribed");
+                Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions subscribed");
                 ManSMCCorps.Subscribe();
                 Subscribed = true;
             }
@@ -177,7 +285,7 @@ namespace Sub_Missions
             {
                 PurgeAllTrees();
                 ManSMCCorps.DeInit();
-                WindowManager.DeInit();
+                //WindowManager.DeInit();
                 Singleton.Manager<ManWorldTreadmill>.inst.RemoveListener(inst);
                 Singleton.Manager<ManGameMode>.inst.ModeStartEvent.Unsubscribe(ModeLoad);
                 Singleton.Manager<ManGameMode>.inst.ModeFinishedEvent.Unsubscribe(ModeFinished);
@@ -185,21 +293,24 @@ namespace Sub_Missions
                 Singleton.Manager<ManWorld>.inst.TileManager.TilePopulatedEvent.Unsubscribe(OnTileLoaded);
                 Singleton.Manager<ManWorld>.inst.TileManager.TileDepopulatedEvent.Unsubscribe(OnTileUnloaded);
                 KickStart.FullyLoadedGame = false;
-                Debug_SMissions.Log("SubMissions: Core module hooks removed");
+                Debug_SMissions.Log(KickStart.ModID + ": Core module hooks removed");
 
-                Debug_SMissions.Log("SubMissions: ManSubMissions De-Init");
+                Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions De-Init");
                 Subscribed = false;
             }
             Active = false;
         }
 
        
-        internal void HarvestAllTrees()
+        internal void ReloadAllMissionTrees()
         {
             if (!Active)
                 return;
-            Debug_SMissions.Log("SubMissions: HARVESTING ALL TREES!!!");
+            Debug_SMissions.Log(KickStart.ModID + ": HARVESTING ALL TREES!!!");
             SubMissionTrees.Clear();
+            Selected = null;
+            SelectedAnon = null;
+            SelectedIsAnon = true;
             List<SubMissionTree> trees = SMissionJSONLoader.LoadAllTrees();
             foreach (SubMissionTree tree in trees)
             {
@@ -207,11 +318,33 @@ namespace Sub_Missions
                 {
                     tree.CompileMissionTree(out SubMissionTree treeOut);
                     SubMissionTrees.Add(treeOut);
-                    Debug_SMissions.Log("SubMissions: Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
+                    Debug_SMissions.Log(KickStart.ModID + ": Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
                 }
                 catch (Exception e)
                 {
-                    SMUtil.Assert(false, "Mission Tree (Startup) ~ " + tree.TreeName, "SubMissions: Failed to compress tree " + tree.TreeName + " properly, unable to push to ManSubMissions...", e);
+                    SMUtil.Assert(false, "Mission Tree (Startup) ~ " + tree.TreeName, KickStart.ModID + ": Failed to compress tree " + tree.TreeName + " properly, unable to push to ManSubMissions...", e);
+                }
+            }
+            MM_JSONLoader.BuildAllWorldObjects(trees);
+            GetAllPossibleMissions();
+        }
+        internal void ReloadMissionTree(SubMissionTree treeC)
+        {
+            if (!Active)
+                return;
+            SubMissionTrees.Remove(treeC);
+            List<SubMissionTree> trees = SMissionJSONLoader.LoadAllTrees();
+            foreach (SubMissionTree tree in trees)
+            {
+                try
+                {
+                    tree.CompileMissionTree(out SubMissionTree treeOut);
+                    SubMissionTrees.Add(treeOut);
+                    Debug_SMissions.Log(KickStart.ModID + ": Missions count " + tree.Missions.Count + " | " + tree.RepeatMissions.Count);
+                }
+                catch (Exception e)
+                {
+                    SMUtil.Assert(false, "Mission Tree (Startup) ~ " + tree.TreeName, KickStart.ModID + ": Failed to compress tree " + tree.TreeName + " properly, unable to push to ManSubMissions...", e);
                 }
             }
             MM_JSONLoader.BuildAllWorldObjects(trees);
@@ -219,7 +352,7 @@ namespace Sub_Missions
         }
         internal void GetAllPossibleMissions()
         {
-            Debug_SMissions.Assert(true, "SubMissions: Fetching available missions...");
+            Debug_SMissions.Assert(true, KickStart.ModID + ": Fetching available missions...");
             anonSubMissions.Clear();
             foreach (SubMissionTree tree in SubMissionTrees)
             {
@@ -232,20 +365,20 @@ namespace Sub_Missions
         {
             if (KickStart.OverrideRestrictions)
                 return;
-            Debug_SMissions.Log("SubMissions: Fetching available ImmediateMissions...");
+            Debug_SMissions.Log(KickStart.ModID + ": Fetching available ImmediateMissions...");
             foreach (SubMissionTree tree in SubMissionTrees)
             {
                 foreach (SubMissionStandby nM in tree.GetImmediateMissions())
                 {
-                    Debug_SMissions.Log("SubMissions: Forcing mission " + nM.AltName + " to active");
-                    tree.AcceptTreeMission(nM);
+                    Debug_SMissions.Log(KickStart.ModID + ": Forcing mission " + nM.AltName + " to active");
+                    tree.AcceptTreeMission(nM, false);
                 }
             }
         }
 
         public void OnMoveWorldOrigin(IntVector3 moveDist)
         {
-            foreach (SubMission step in activeSubMissions)
+            foreach (SubMission step in GetActiveSubMissions)
             {
                 step.OnMoveWorldOrigin(moveDist);
             }
@@ -253,7 +386,7 @@ namespace Sub_Missions
         internal static void OnTileLoaded(WorldTile WT)
         {
             ManModularMonuments.LoadAllAtTile(WT.Coord);
-            foreach (SubMission step in activeSubMissions)
+            foreach (SubMission step in GetActiveSubMissions)
             {
                 if (step.ActiveState == SubMissionLoadState.NeedsFirstInit)
                 {
@@ -266,7 +399,7 @@ namespace Sub_Missions
         }
         internal static void OnTileUnloaded(WorldTile WT)
         {
-            foreach (SubMission step in activeSubMissions)
+            foreach (SubMission step in GetActiveSubMissions)
             {
                 if (WT.Coord == step.TilePos)
                     if (step.IsActive && !step.IgnorePlayerProximity)
@@ -279,12 +412,12 @@ namespace Sub_Missions
         {
             if (treeName == null)
             {
-                SMUtil.Error(false, "Mission Tree ~ NULL", "SubMissions: GetTree given null treeName");
+                SMUtil.Error(false, "Mission Tree ~ NULL", KickStart.ModID + ": GetTree given null treeName");
                 return null;
             }
             SubMissionTree tree = SubMissionTrees.Find(delegate (SubMissionTree cand) { return cand.TreeName == treeName; });
             if (tree == default(SubMissionTree))
-                SMUtil.Error(false, "Mission Tree ~ " + treeName, "SubMissions: Failed to fetch tree - Was it removed!?");
+                SMUtil.Error(false, "Mission Tree ~ " + treeName, KickStart.ModID + ": Failed to fetch tree - Was it removed!?");
             return tree;
         }
 
@@ -301,7 +434,7 @@ namespace Sub_Missions
         }
         internal static void ReSyncSubMissions()
         {
-            foreach (SubMission sub in ActiveSubMissions)
+            foreach (SubMission sub in GetActiveSubMissions)
             {
                 sub.CheckForReSync();
             }
@@ -312,7 +445,7 @@ namespace Sub_Missions
         internal static bool IsTooCloseToOtherMission(IntVector2 tileWorld)
         {  
             IntVector2 tWIU = tileWorld + (IntVector2.one * 2);
-            foreach (SubMission sub in ActiveSubMissions)
+            foreach (SubMission sub in GetActiveSubMissions)
             {
                 IntVector2 tWI = sub.TilePos;
                 if (tWI.x <= tWIU.x && tWI.x >= -tWIU.x && tWI.y <= tWIU.y && tWI.y >= -tWIU.y)
@@ -332,7 +465,7 @@ namespace Sub_Missions
         }
         internal static bool IsSubMissionActive(string name)
         {
-            foreach (SubMission sub in ActiveSubMissions)
+            foreach (SubMission sub in GetActiveSubMissions)
             {
                 if (sub.Name.CompareTo(name) == 0)
                     return true;
@@ -342,7 +475,7 @@ namespace Sub_Missions
         public static List<Encounter> GetAllFakeEncounters()
         {
             List<Encounter> Encs = new List<Encounter>();
-            foreach (SubMission sub in ActiveSubMissions)
+            foreach (SubMission sub in GetActiveSubMissions)
             {
                 if (sub.FakeEncounter != null)
                     Encs.Add(sub.FakeEncounter);
@@ -360,6 +493,18 @@ namespace Sub_Missions
             return SMSCache;
         }
 
+
+        public static void RecycleAllDataForMissionsAndRefresh()
+        {
+            SaveManSubMissions.PurgeALL_SAVEDATA();
+            while (GetActiveSubMissions.Any())
+            {
+                activeSubMissionsCached.First().Finish(true);
+            }
+            Selected = null;
+            SelectedAnon = null;
+            SelectedIsAnon = true;
+        }
 
         // 
         internal static void ToggleList()
@@ -390,14 +535,15 @@ namespace Sub_Missions
             {
                 if (Input.GetKey(KeyCode.LeftControl))
                 {
-                    Debug_SMissions.Log("SubMissions: Key combination pressed!!");
+                    Debug_SMissions.Log(KickStart.ModID + ": Key combination pressed!!  Reload Missions");
                     //ManSMCCorps.ReloadAllCorps(); // Disabled as it's broken... for now.
-                    HarvestAllTrees();
-                    LoadSubMissionsFromSave();
-                    ManSMCCorps.ReloadSkins();
+                    ReloadAllMissionTrees();
+                    LoadSubMissionSaveData();
+                    ManSMCCorps.ReloadUnofficialSkins();
                 }
                 if (Input.GetKey(KeyCode.LeftShift))
                 {
+                    Debug_SMissions.Log(KickStart.ModID + ": Key combination pressed!!  All Errors Logged");
                     SMUtil.PushErrors();
                 }
             }
@@ -422,10 +568,10 @@ namespace Sub_Missions
                         UpdateAllSubMissionsStep(1);
                     timer = 0;
 
-                    foreach (SubMission step in activeSubMissions)
+                    foreach (SubMission step in GetActiveSubMissions)
                         step.UpdateDistance();
 
-                    if (!ActiveSubMissions.Contains(Selected))
+                    if (!GetActiveSubMissions.Contains(Selected))
                         Selected = null;
                     if (!AnonSubMissions.Contains(SelectedAnon))
                         SelectedAnon = null;
@@ -434,32 +580,37 @@ namespace Sub_Missions
             }
             catch (MandatoryException e)
             {
-                throw new Exception("SubMissions: Critical Error within ManSubMissions.Update() hierachy!", e);
+                SMUtil.Error(true, "ManSubMissions - Entire System(EPIC FAILIURE)", "CATASTROPHIC FAILIURE: " + e);
+                throw new Exception(KickStart.ModID + ": Critical Error within ManSubMissions.Update() hierachy!", e);
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: Minor Error within ManSubMissions.Update() hierachy! \n This is the mod developer's issue, please report it! " + e.StackTrace);
+                Debug_SMissions.Log(KickStart.ModID + ": Minor Error within ManSubMissions.Update() hierachy! \n This is the mod developer's issue, please report it! " + e);
             }
         }
         private void UpdateAllSubMissions()
         {
             try
             {
-                foreach (SubMission sub in ActiveSubMissions)
+                for (int i = 0; i < GetActiveSubMissions.Count; i++)
                 {
+                    SubMission sub = GetActiveSubMissions[i];
                     try
                     {
-                        sub.TriggerUpdate(int.MaxValue);
+                        sub.TriggerUpdate(Time.deltaTime, int.MaxValue);
                     }
                     catch (MandatoryException e)
                     {
-                        throw new MandatoryException("SubMissions: Critical Error within ManSubMissions.UpdateAllSubMissions() hierachy for mission sub!", e);
+                        throw new MandatoryException(KickStart.ModID + ": Critical Error within ManSubMissions.UpdateAllSubMissions() hierachy for mission sub!", e);
                     }
                     catch (WarningException e)
                     {
-                        Debug_SMissions.Log("SubMissions: Error for SubMission of name " + (sub.Name.NullOrEmpty() ? "NULL NAME?!?" : sub.Name) + 
-                            ", of Tree " + (sub.Tree != null ? (sub.Tree.TreeName.NullOrEmpty() ? "NULL NAME?!?" : sub.Name) : "ENTIRE TREE NULL?!?") +
-                            ".  " + e.StackTrace);
+                        Debug_SMissions.Log(KickStart.ModID + ": Error for SubMission of name " + (sub.Name.NullOrEmpty() ? "NULL NAME?!?" : sub.Name) +
+                        ", of Tree " + (sub.Tree != null ? (sub.Tree.TreeName.NullOrEmpty() ? "NULL NAME?!?" : sub.Name) : "ENTIRE TREE NULL?!?") +
+                        ".  " + e.StackTrace);
+                        SMUtil.PushErrors();
+                        enabled = false;
+
                     } //Probably just a mission cleaning up...
                 }
             }
@@ -467,6 +618,7 @@ namespace Sub_Missions
             {
                 enabled = false;
                 GC.Collect();
+                SMUtil.PushErrors();
                 throw new MandatoryException("SubMissions Cascade failiure within ManSubMissions.UpdateAllSubMissions() hierachy! " +
                     "\n Some articles may have been corrupted!  \n  Shutting down ManSubMissions to prevent memory leak!", e);
             }
@@ -474,17 +626,18 @@ namespace Sub_Missions
             {
                 enabled = false;
                 GC.Collect();
-                throw new Exception("SubMissions: Catastrophic Failiure within ManSubMissions.UpdateAllSubMissions() hierachy! " +
-                    "\n This is the mod developer's issue, please report it! \n  Shutting down ManSubMissions to prevent memory leak!" + e.StackTrace);
+                SMUtil.PushErrors();
+                throw new MandatoryException(KickStart.ModID + ": Catastrophic Failiure within ManSubMissions.UpdateAllSubMissions() hierachy! " +
+                    "\n This is the mod developer's issue, please report it! \n  Shutting down ManSubMissions to prevent memory leak!", e);
             } //Probably just a mission cleaning up...
         }
         private void UpdateAllSubMissionsStep(int speed)
         {
             try
             {
-                foreach (SubMission sub in ActiveSubMissions)
+                foreach (SubMission sub in GetActiveSubMissions)
                 {
-                    sub.TriggerUpdate(speed);
+                    sub.TriggerUpdate(1, speed);
                 }
             }
             catch { } //Probably just a mission cleaning up...
@@ -493,9 +646,9 @@ namespace Sub_Missions
         {
             try
             {
-                foreach (SubMission sub in ActiveSubMissions)
+                foreach (SubMission sub in GetActiveSubMissions)
                 {
-                    sub.TriggerUpdate(speed);
+                    sub.TriggerUpdate(1, speed);
                 }
             }
             catch { } //Probably just a mission cleaning up...
@@ -516,7 +669,7 @@ namespace Sub_Missions
         }
         internal static void BroadcastTechDeath(Tank techIn, ManDamage.DamageInfo oof)
         {
-            //Debug_SMissions.Log("SubMissions: Tech " + techIn.name + " of ID " + techIn.visible.ID + " was destroyed");
+            //Debug_SMissions.Log(KickStart.ModID + ": Tech " + techIn.name + " of ID " + techIn.visible.ID + " was destroyed");
             foreach (SubMissionTree tree in SubMissionTrees)
             {
                 foreach (SubMission mission in tree.ActiveMissions)
@@ -562,29 +715,23 @@ namespace Sub_Missions
         //Saving
         private static void ClearAllActiveSubMissionsForUnload()
         {
-            foreach (SubMission SM in activeSubMissions)
+            foreach (SubMission SM in GetActiveSubMissions)
             {
                 SM.Cleanup(true);
             }
-            activeSubMissions.Clear();
+            foreach (SubMissionTree SMT in SubMissionTrees)
+            {
+                SMT.ActiveMissions.Clear();
+            }
         }
         public static List<SubMission> GetAllActiveSubMissions()
         {
-            return activeSubMissions;
+            return GetActiveSubMissions;
         }
-        private static void ModeLoad(Mode mode)
+        internal static void UpdateButtonState()
         {
-            if ((mode is ModeMain && KickStart.Debugger) || mode is ModeMisc)
+            if (SubMissionsWiki.inst.ShowButtons)
             {
-                IgnoreSaveThisSession = false;
-                Debug_SMissions.Log("SubMissions: ManSubMissions Loading from save!");
-                Debug_SMissions.Assert(inst == null, "ManSubMissions IS NULL");
-                ManSMCCorps.ReloadAllOfficialIfApplcable();
-                PurgeAllTrees();
-                SaveManSubMissions.LoadDataAutomaticLegacy();
-                ForceCreateNewLicences();
-                LoadModdedLicencesInst();
-                inst.GetAllPossibleMissions();
                 Debug_SMissions.Assert(Button == null, "UI Mission menu Button is null");
                 WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
                 Debug_SMissions.Assert(SideUI == null, "UI Mission side panel is null");
@@ -592,7 +739,34 @@ namespace Sub_Missions
             }
             else
             {
-                if (!KickStart.Debugger)
+                WindowManager.HidePopup(Button);
+                WindowManager.HidePopup(SideUI);
+            }
+        }
+        private static void ModeLoad(Mode mode)
+        {
+            if ((mode is ModeMain && KickStart.Debugger) || mode is ModeMisc)
+            {
+                IgnoreSaveThisSession = false;
+                Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions Loading from save!");
+                Debug_SMissions.Assert(inst == null, "ManSubMissions IS NULL");
+                ManSMCCorps.ReloadAllOfficialIfApplcable();
+                PurgeAllTrees();
+                SaveManSubMissions.LoadDataAutomaticLegacy();
+                ForceCreateNewLicences();
+                LoadModdedLicencesInst();
+                inst.GetAllPossibleMissions();
+                if (SubMissionsWiki.inst.ShowButtons)
+                {
+                    Debug_SMissions.Assert(Button == null, "UI Mission menu Button is null");
+                    WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                    Debug_SMissions.Assert(SideUI == null, "UI Mission side panel is null");
+                    WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+                }
+            }
+            else
+            {
+                if (!(KickStart.Debugger && SubMissionsWiki.inst.ShowButtons))
                 {
                     WindowManager.HidePopup(Button);
                     WindowManager.HidePopup(SideUI);
@@ -606,7 +780,7 @@ namespace Sub_Missions
                 var saver = Singleton.Manager<ManSaveGame>.inst;
                 if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
                 {
-                    Debug_SMissions.Log("SubMissions: ManSubMissions Saving!");
+                    Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions Saving!");
                     SaveManSubMissions.SaveDataAutomaticLegacy();
                 }
 
@@ -629,19 +803,19 @@ namespace Sub_Missions
                     var saver = Singleton.Manager<ManSaveGame>.inst;
                     if (saver.IsSaveNameAutoSave(saver.GetCurrentSaveName(false)))
                     {
-                        Debug_SMissions.Log("SubMissions: ManSubMissions Saving!");
+                        Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions Saving!");
                         SaveManSubMissions.SaveDataAutomaticLegacy();
                     }
                 }
             }
             catch { }
         }
-        private static void LoadSubMissionsFromSave()
+        private static void LoadSubMissionSaveData()
         {
             if (Singleton.Manager<ManGameMode>.inst.IsCurrent<ModeMain>() && !IgnoreSaveThisSession)
             {
                 IgnoreSaveThisSession = false;
-                Debug_SMissions.Log("SubMissions: ManSubMissions Loading from save!");
+                Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions Loading from save!");
                 PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomaticLegacy();
                 inst.GetAllPossibleMissions();
@@ -662,65 +836,68 @@ namespace Sub_Missions
         }
         private static void LoadModdedLicencesInst()
         {
-            Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Adding modded corp save states...");
+            Debug_SMissions.Log(KickStart.ModID + ": LoadModdedLicencesInst - Adding modded corp save states...");
             try
             {
-                Dictionary<FactionSubTypes, FactionLicense> licences = (Dictionary<FactionSubTypes, FactionLicense>)Patches.licencesAll.GetValue(ManLicenses.inst);
+                Dictionary<FactionSubTypes, FactionLicense> licences = 
+                    (Dictionary<FactionSubTypes, FactionLicense>)ProgressionPatches.m_FactionLicenses.GetValue(ManLicenses.inst);
                 foreach (var item in SavedModLicences)
                 {
-                    Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Loading for " + item);
+                    Debug_SMissions.Log(KickStart.ModID + ": LoadModdedLicencesInst - Loading for " + item);
                     SMCCorpLicense CL = ManSMCCorps.GetSMCCorp(item.Key);
                     if (SubMissionTree.GetTreeCorp(item.Key, out FactionSubTypes FST) && CL != null)
                     {
                         UICCorpLicenses.MakeFactionLicenseOfficialUI(CL);
                         if (licences.TryGetValue(FST, out FactionLicense FL))
                         {
-                            FactionLicense.Progress pog = (FactionLicense.Progress)Patches.progg.GetValue(FL);
+                            FactionLicense.Progress pog = (FactionLicense.Progress)ProgressionPatches.progg.GetValue(FL);
                             pog.m_Discovered = true;
                             pog.m_CurrentLevel = item.Value.Key;
                             pog.m_CurrentXP = item.Value.Value;
                             ManLicenses.inst.AddXP(FST, 0, true);
                             UICCorpLicenses.ShowFactionLicenseOfficialUI((int)FST);
+                            Debug_SMissions.Log(KickStart.ModID + ": LoadModdedLicencesInst - Loaded for " + item);
                         }
                         else
                         {
-                            Debug_SMissions.FatalError("SubMissions: Fired load attempt too early with unofficial mods installed");
+                            Debug_SMissions.FatalError(KickStart.ModID + ": Fired load attempt too early with unofficial mods installed");
                         }
                     }
                 }
             }
             catch
             {
-                Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Entry corrupted");
+                Debug_SMissions.Log(KickStart.ModID + ": LoadModdedLicencesInst - Entry corrupted");
             }
         }
         internal static void ForceCreateNewLicences()
         {
             try
             {
-                Dictionary<FactionSubTypes, FactionLicense> licences = (Dictionary<FactionSubTypes, FactionLicense>)Patches.licencesAll.GetValue(ManLicenses.inst);
-                foreach (var item in SavedModLicences)
+                Dictionary<FactionSubTypes, FactionLicense> licences = 
+                    (Dictionary<FactionSubTypes, FactionLicense>)ProgressionPatches.m_FactionLicenses.GetValue(ManLicenses.inst);
+                foreach (var item in ManSMCCorps.GetAllSMCCorps())
                 {
-                    SMCCorpLicense CL = ManSMCCorps.GetSMCCorp(item.Key);
-                    if (SubMissionTree.GetTreeCorp(item.Key, out FactionSubTypes FST) && CL != null)
+                    if (item != null && SubMissionTree.GetTreeCorp(item.Faction, out FactionSubTypes FST))
                     {
                         if (!licences.TryGetValue(FST, out _))
                         {
-                            licences.Add(FST, new FactionLicense(FST, CL.BuildThresholds(), CL.BuildProgress()));
-                            Debug_SMissions.Log("SubMissions: Added Licence " + CL.Faction);
+                            licences.Add(FST, new FactionLicense(FST, item.BuildThresholds(), item.BuildProgress()));
+                            Debug_SMissions.Log(KickStart.ModID + ": Added Licence " + item.Faction);
+                            ProgressionPatches.LogLicenceReady(FST);
                         }
                     }
                 }
             }
             catch
             {
-                Debug_SMissions.Log("SubMissions: LoadModdedLicencesInst - Entry corrupted");
+                Debug_SMissions.Log(KickStart.ModID + ": LoadModdedLicencesInst - Entry corrupted");
             }
         }
 
         private static void PushFakeEncounters()
         {
-            foreach (var item in activeSubMissions)
+            foreach (var item in GetActiveSubMissions)
             {
                 EncounterShoehorn.SetFakeEncounter(item);
             }

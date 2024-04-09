@@ -41,40 +41,40 @@ namespace Sub_Missions.Steps
                 if (SMission.InputString.NullOrEmpty())
                 {
                     if (Singleton.playerTank)
-                        Mission.VarInts[SMission.SetMissionVarIndex1] = Singleton.playerTank.blockman.blockCount;
+                        Mission.VarIntsActive[SMission.SetMissionVarIndex1] = Singleton.playerTank.blockman.blockCount;
                     else
-                        Mission.VarInts[SMission.SetMissionVarIndex1] = 0;
+                        Mission.VarIntsActive[SMission.SetMissionVarIndex1] = 0;
                 }
                 if (SMUtil.DoesTrackedTechExist(ref SMission, SMission.InputString))
                 {
                     TrackedTech tech = SMUtil.GetTrackedTechBase(ref SMission, SMission.InputString);
                     if (tech.destroyed)
                     {
-                        Mission.VarInts[SMission.SetMissionVarIndex1] = 0;
+                        Mission.VarIntsActive[SMission.SetMissionVarIndex1] = 0;
                     }
                     else if (!tech.TechAuto)
                     {   // unloaded
-                        Mission.VarInts[SMission.SetMissionVarIndex1] = 262145; // max possible Tech Volume + 1
+                        Mission.VarIntsActive[SMission.SetMissionVarIndex1] = 262145; // max possible Tech Volume + 1
                     }
                     else
-                        Mission.VarInts[SMission.SetMissionVarIndex1] = tech.TechAuto.blockman.blockCount;
+                        Mission.VarIntsActive[SMission.SetMissionVarIndex1] = tech.TechAuto.blockman.blockCount;
                 }
                 else
                     SMUtil.Error(true, SMission.LogName, 
-                        "SubMissions: Tech not referenced or missing in " + Mission.Name + 
+                        KickStart.ModID + ": Tech not referenced or missing in " + Mission.Name + 
                         " | Step type " + SMission.StepType.ToString() + " - Check your TrackedTechs, Tech names, " +
                         "and missions for consistancy errors");
             }
             catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
                     "on the list, 1 counts as the second entry, and so on.", e);
             }
             catch (NullReferenceException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
                     " on the step's set VaribleType.", e);

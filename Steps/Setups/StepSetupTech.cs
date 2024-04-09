@@ -35,6 +35,7 @@ namespace Sub_Missions.Steps
                   "\n  \"InputNum\": 0,             // The Team to set the new Tech(s) to" +
                   "\n  \"InputString\": \"TechName\",   // The name of the TrackedTech to spawn." +
                   "\n  \"InputStringAux\": null, // Leave empty to fire on first Mission Spawning" +
+                  "\n  //\"OnStartup\", // Spawn once IMMEDEATELY on mission generation" +
                   "\n  //\"OnTriggerOnce\", // Spawn once when this is triggered and it's SetMissionVarIndex1 is true" +
                   "\n  //\"Infinite\",  // Allow infinite spawning while conditions are true and within the progress ID range" +
                 "\n},";
@@ -49,44 +50,55 @@ namespace Sub_Missions.Steps
             AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
             AddField(ESMSFields.SetMissionVarIndex1, "Success Output");
             AddField(ESMSFields.InputNum, "Team");
-            AddField(ESMSFields.InputString_Tracked_Tech, "Tracked Tech");
-            AddOptions(ESMSFields.InputStringAux, "Tracking: ", new string[]
+            AddField(ESMSFields.InputString_Tech, "Assigned Tech");
+            AddOptions(ESMSFields.InputStringAux, "Spawn This Tech ", new string[]
                 {
+                    "OnStartup",
                     "Trigger Once",
                     "Infinite",
                 }
             );
         }
-        public override void OnInit() { }
+        public override void OnInit() { 
+            
+        }
         public override void OnDeInit() { }
 
         public override void FirstSetup()
-        {   // Spawn target to kill
+        {   // Spawn Tech
             SMission.hasTech = true;
             if (ManNetwork.IsHost)
             {
-                if (SMission.InputStringAux.NullOrEmpty())
-                {
+                if (SMission.InputStringAux.NullOrEmpty() || SMission.InputStringAux == "OnStartup")
+                {   // Spawn once on MISSION FIRST SPAWN
                     try
                     {
-                        SMUtil.SpawnTechTracked(ref Mission, SMission.Position, (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
+                        if (SMission.Mission.Tree.TreeTechs.TryGetValue(SMission.InputString, out var ST))
+                            SMUtil.SpawnTechAddTracked(ref Mission, SMission.Position, (int)SMission.InputNum, 
+                                SMission.Forwards, SMission.InputString);
                     }
                     catch (Exception e)
                     {
                         try
                         {
+                            string msg = "";
+                            foreach (var item in Mission.Tree.TreeTechs)
+                            {
+                                msg += "\n- " +item.Key;
+                            }
                             SMUtil.Error(false, SMission.LogName, 
-                                "SubMissions: StepSetupTech - Failed: " + SMission.InputString + " finding failed.");
+                                KickStart.ModID + ": StepSetupTech - Failed: " + SMission.InputString + " finding failed.\n" +
+                                "existing techs are:" + msg);
                             SMUtil.Error(false, SMission.LogName, 
-                                "SubMissions: StepSetupTech - Team " + SMission.InputNum);
+                                KickStart.ModID + ": StepSetupTech - Team " + SMission.InputNum);
                             SMUtil.Error(false, SMission.LogName, 
-                                "SubMissions: StepSetupTech - Mission " + Mission.Name);
+                                KickStart.ModID + ": StepSetupTech - Mission " + Mission.Name);
                         }
                         catch (Exception e2)
                         {
-                            SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupTech - Failed: COULD NOT FETCH INFORMATION!!!", e2);
+                            SMUtil.Assert(false, SMission.LogName, KickStart.ModID + ": StepSetupTech - Failed: COULD NOT FETCH INFORMATION!!!", e2);
                         }
-                        SMUtil.Assert(false, SMission.LogName, "SubMissions: Error", e);
+                        SMUtil.Assert(false, SMission.LogName, KickStart.ModID + ": Error", e);
                     }
                 }
             }
@@ -104,32 +116,34 @@ namespace Sub_Missions.Steps
                         {
                             try
                             {
-                                SMUtil.SpawnTechAddTracked(ref Mission, SMission.Position + (SMission.VaribleCheckNum * UnityEngine.Random.insideUnitCircle.ToVector3XZ()), (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
+                                SMUtil.SpawnTechAddTracked(ref Mission, SMission.Position + 
+                                    (SMission.VaribleCheckNum * UnityEngine.Random.insideUnitCircle.ToVector3XZ()), 
+                                    (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
                             }
                             catch (Exception e)
                             {
                                 try
                                 {
                                     SMUtil.Error(false, SMission.LogName, 
-                                        "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: " + SMission.InputString + " finding failed.");
+                                        KickStart.ModID + ": StepSetupTech (OnTriggerOnce) - Failed: " + SMission.InputString + " finding failed.");
                                     SMUtil.Error(false, SMission.LogName, 
-                                        "SubMissions: StepSetupTech (OnTriggerOnce) - Team " + SMission.InputNum);
+                                        KickStart.ModID + ": StepSetupTech (OnTriggerOnce) - Team " + SMission.InputNum);
                                     SMUtil.Error(true, SMission.LogName, 
-                                        "SubMissions: StepSetupTech (OnTriggerOnce) - Mission " + Mission.Name);
+                                        KickStart.ModID + ": StepSetupTech (OnTriggerOnce) - Mission " + Mission.Name);
                                 }
                                 catch (Exception e2)
                                 {
-                                    SMUtil.Assert(true, SMission.LogName, "SubMissions: StepSetupTech (OnTriggerOnce) - Failed: COULD NOT " +
+                                    SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": StepSetupTech (OnTriggerOnce) - Failed: COULD NOT " +
                                         "FETCH INFORMATION!!!", e2);
                                 }
-                                //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                                Debug_SMissions.Log("SubMissions: Error - " + e);
+                                //Debug_SMissions.Log(KickStart.ModID + ": Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                                Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
                             }
                             SMission.SavedInt = 1;
                         }
                     }
                     else if (SMission.InputStringAux == "Infinite")
-                    {   // we spawn infinite techs every second while this is active
+                    {   // we spawn a tech every MissionUpdate while this is active
                         try
                         {
                             SMUtil.SpawnTechAddTracked(ref Mission, SMission.Position + (SMission.VaribleCheckNum * UnityEngine.Random.insideUnitCircle.ToVector3XZ()), (int)SMission.InputNum, SMission.Forwards, SMission.InputString);
@@ -139,19 +153,19 @@ namespace Sub_Missions.Steps
                             try
                             {
                                 SMUtil.Error(false, SMission.LogName, 
-                                    "SubMissions: StepSetupTech (Infinite) - Failed: " + SMission.InputString + " finding failed.");
+                                    KickStart.ModID + ": StepSetupTech (Infinite) - Failed: " + SMission.InputString + " finding failed.");
                                 SMUtil.Error(false, SMission.LogName, 
-                                    "SubMissions: StepSetupTech (Infinite) - Team " + SMission.InputNum);
+                                    KickStart.ModID + ": StepSetupTech (Infinite) - Team " + SMission.InputNum);
                                 SMUtil.Error(true, SMission.LogName, 
-                                    "SubMissions: StepSetupTech (Infinite) - Mission " + Mission.Name);
+                                    KickStart.ModID + ": StepSetupTech (Infinite) - Mission " + Mission.Name);
                             }
                             catch (Exception e2)
                             {
-                                SMUtil.Assert(true, SMission.LogName, "SubMissions: StepSetupTech (Infinite) - Failed: COULD NOT " +
+                                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": StepSetupTech (Infinite) - Failed: COULD NOT " +
                                     "FETCH INFORMATION!!!", e2);
                             }
-                            //Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                            Debug_SMissions.Log("SubMissions: Error - " + e);
+                            //Debug_SMissions.Log(KickStart.ModID + ": Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                            Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
                         }
                     }
                 }

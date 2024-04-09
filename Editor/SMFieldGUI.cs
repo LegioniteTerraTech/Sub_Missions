@@ -23,6 +23,7 @@ namespace Sub_Missions.Editor
                 SetupField(ESMFields.MinProgressX, "DynamicX"),
                 SetupField(ESMFields.MinProgressY, "DynamicY"),
                 SetupField(ESMFields.SinglePlayerOnly, "Only Single-Player"),
+                SetupField(ESMFields.SpawnPosition, "Spawn Position"),
                 SetupField(ESMFields.IgnorePlayerProximity, "Active Anywhere"),
                 SetupField(ESMFields.ClearSceneryOnSpawn, "Remove Scenery on Start"),
                 SetupField(ESMFields.ClearTechsOnClear, "Remove Techs on End"),
@@ -59,6 +60,9 @@ namespace Sub_Missions.Editor
                     return new SMFieldByteYGUI(name, type);
                 case ESMFields.SinglePlayerOnly:
                     return new SMFieldBoolGUI(name, type);
+                case ESMFields.SpawnPosition:
+                    return new SMFieldOptionsStringGUI(name, type, 
+                        Enum.GetNames(typeof(SubMissionPosition)).ToList());
                 case ESMFields.IgnorePlayerProximity:
                     return new SMFieldBoolGUI(name, type);
                 case ESMFields.ClearTechsOnClear:
@@ -114,6 +118,8 @@ namespace Sub_Missions.Editor
                     return runData.MinProgressY;
                 case ESMFields.SinglePlayerOnly:
                     return runData.SinglePlayerOnly;
+                case ESMFields.SpawnPosition:
+                    return runData.SpawnPosition.ToString();
                 case ESMFields.IgnorePlayerProximity:
                     return runData.IgnorePlayerProximity;
                 case ESMFields.ClearTechsOnClear:
@@ -158,6 +164,12 @@ namespace Sub_Missions.Editor
                         return;
                     case ESMFields.SinglePlayerOnly:
                         runData.SinglePlayerOnly = (bool)input;
+                        return;
+                    case ESMFields.SpawnPosition:
+                        if (Enum.TryParse((string)input, true, out SubMissionPosition resu))
+                            runData.SpawnPosition = resu;
+                        else
+                            runData.SpawnPosition = SubMissionPosition.FarFromPlayer;
                         return;
                     case ESMFields.IgnorePlayerProximity:
                         runData.IgnorePlayerProximity = (bool)input;

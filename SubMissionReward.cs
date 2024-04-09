@@ -55,8 +55,7 @@ namespace Sub_Missions
                 }
                 catch { }
             }
-            FactionSubTypes FST = tree.GetTreeCorp();
-            if ((int)FST != 0 && EXPGain > 0)
+            if (SubMissionTree.GetTreeCorp(mission.Faction, out FactionSubTypes FST) && EXPGain > 0)
             {
                 try
                 {
@@ -68,38 +67,43 @@ namespace Sub_Missions
                         {
                             if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out SMCCorpLicense CL))
                             {
-                                Debug_SMissions.Log("SubMissions: Unlocking corp ID " + FST + ", name: " + CL.FullName);
+                                Debug_SMissions.Log(KickStart.ModID + ": Unlocking corp ID " + FST + ", name: " + CL.FullName);
                                 Singleton.Manager<ManLicenses>.inst.UnlockCorp(FST, true);
                                 UICCorpLicenses.ShowFactionLicenseOfficialUI((int)FST);
                             }
                             else
-                                Debug_SMissions.Log("SubMissions: Could not unlock corp ID " + FST + ", name: NOT_REGISTERED");
+                                Debug_SMissions.Log(KickStart.ModID + ": Could not unlock corp ID " + FST + ", name: NOT_REGISTERED");
                         }
                     }
                     else
                     {
-                        FST = SubMissionTree.GetTreeCorp(CorpToGiveEXP);
-                        if (Singleton.Manager<ManLicenses>.inst.IsLicenseDiscovered(FST))
-                            Singleton.Manager<ManLicenses>.inst.AddXP(FST, EXPGain, true);
-                        else
+                        if (SubMissionTree.GetTreeCorp(CorpToGiveEXP, out FST))
                         {
-                            if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out SMCCorpLicense CL))
-                                Debug_SMissions.Log("SubMissions: Unlocking corp ID " + FST + ", name: " + CL.FullName);
+                            if (Singleton.Manager<ManLicenses>.inst.IsLicenseDiscovered(FST))
+                                Singleton.Manager<ManLicenses>.inst.AddXP(FST, EXPGain, true);
                             else
-                                Debug_SMissions.Log("SubMissions: Unlocking corp ID " + FST + ", name: NOT_REGISTERED");
-                            Singleton.Manager<ManLicenses>.inst.UnlockCorp(FST, true);
+                            {
+                                if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out SMCCorpLicense CL))
+                                    Debug_SMissions.Log(KickStart.ModID + ": Unlocking corp ID " + FST + ", name: " + CL.FullName);
+                                else
+                                    Debug_SMissions.Log(KickStart.ModID + ": Unlocking corp ID " + FST + ", name: NOT_REGISTERED");
+                                Singleton.Manager<ManLicenses>.inst.UnlockCorp(FST, true);
+                            }
                         }
+                        else
+                            Debug_SMissions.Exception(KickStart.ModID + ": Corp ID " + CorpToGiveEXP + " is not loaded.  Cannot give rewards!");
                     }
+                    Debug_SMissions.Log(KickStart.ModID + ": Gave EXP " + FST);
                 }
                 catch (Exception e)
                 {
-                    SMUtil.Assert(false, "Mission (Reward) ~ " + mission.Name, "SubMissions: Tried to add EXP to a faction " + tree.Faction + 
+                    SMUtil.Assert(false, "Mission (Reward) ~ " + mission.Name, KickStart.ModID + ": Tried to add EXP to a faction " + tree.Faction + 
                         " that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + 
                         mission.Name, e);
                     try
                     {
                         FactionLicense FL = Singleton.Manager<ManLicenses>.inst.GetLicense(FST);
-                        Debug_SMissions.Log("instance? " + FL);
+                        Debug_SMissions.Log("instance? " + (FL != null));
                         Debug_SMissions.Log("instance? " + FL.Corporation);
                         Debug_SMissions.Log("instance? " + FL.IsDiscovered);
                         Debug_SMissions.Log("instance? " + FL.CurrentAbsoluteXP);
@@ -109,65 +113,79 @@ namespace Sub_Missions
             }
             if (RandomBlocksToSpawn > 0 || BlocksToSpawn.Count > 0)
             {
-                SMCCorpLicense CL;
-                itemsCached.AddRange(BlockTypesToSpawnIterate);
-                //if (ManSMCCorps.IsUnofficialSMCCorpLicense(FST))
-                //{
-                if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))
+                Debug_SMissions.Log(KickStart.ModID + ": Giving Blocks EXP " + FST);
+                try
                 {
-                    itemsCached.AddRange(CL.GetRandomBlocks(Singleton.Manager<ManLicenses>.inst.GetCurrentLevel((FactionSubTypes)CL.ID), RandomBlocksToSpawn));
-                }
+                    SMCCorpLicense CL;
+                    itemsCached.AddRange(BlockTypesToSpawnIterate);
+                    //if (ManSMCCorps.IsUnofficialSMCCorpLicense(FST))
+                    //{
+                    if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))
+                    {
+                        itemsCached.AddRange(CL.GetRandomBlocks(Singleton.Manager<ManLicenses>.inst.GetCurrentLevel((FactionSubTypes)CL.ID), RandomBlocksToSpawn));
+                    }
                     /*
-                }
-                else
-                {
+                    else
+                    {
+                        try
+                        {
+                            items.AddRange(Singleton.Manager<ManLicenses>.inst.GetRewardPoolTable().GetRewardBlocks((FactionSubTypes)Enum.Parse(typeof(FactionSubTypes), mission.Faction), RandomBlocksToSpawn).ToList());
+                        }
+                        catch
+                        {
+                            SMUtil.Assert(false, KickStart.ModID + ": Tried to fetch blocks from a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + mission.Name);
+                        }
+                    }*/
+                    Vector3 landingPos;
                     try
                     {
-                        items.AddRange(Singleton.Manager<ManLicenses>.inst.GetRewardPoolTable().GetRewardBlocks((FactionSubTypes)Enum.Parse(typeof(FactionSubTypes), mission.Faction), RandomBlocksToSpawn).ToList());
+                        landingPos = Singleton.playerPos + (Vector3.forward * Singleton.playerTank.blockBounds.size.magnitude);
                     }
                     catch
                     {
-                        SMUtil.Assert(false, "SubMissions: Tried to fetch blocks from a faction that doesn't exist!  SubMissionReward of Tree " + tree.TreeName + ", mission " + mission.Name);
+                        landingPos = Singleton.cameraTrans.position;
                     }
-                }*/
+                    int fireCount = itemsCached.Count;
 
-                Vector3 landingPos;
-                try
-                {
-                    landingPos = Singleton.playerPos + (Vector3.forward * Singleton.playerTank.blockBounds.size.magnitude);
-                }
-                catch 
-                {
-                    landingPos = Singleton.cameraTrans.position;
-                }
-                int fireCount = itemsCached.Count;
-
-                for (int step = 0; step < fireCount; step++)
-                {   // filter and remove broken blocks
-                    if (!ManSpawn.inst.IsBlockAllowedInCurrentGameMode(itemsCached.ElementAt(step)))
-                    {
-                        itemsCached.RemoveAt(step);
-                        fireCount--;
-                        step--;
+                    for (int step = 0; step < fireCount; step++)
+                    {   // filter and remove broken blocks
+                        if (!ManSpawn.inst.IsBlockAllowedInCurrentGameMode(itemsCached.ElementAt(step)))
+                        {
+                            itemsCached.RemoveAt(step);
+                            fireCount--;
+                            step--;
+                        }
                     }
-                }
-                if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))
-                {
-                    if (CL.HasCratePrefab)
+                    if (ManSMCCorps.TryGetSMCCorpLicense((int)FST, out CL))
                     {
-                        Debug_SMissions.Log("Spawning Set Crate");
-                        ManSpawn.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, FST);
+                        if (CL.HasCratePrefab)
+                        {
+                            Debug_SMissions.Log("Spawning Set Crate");
+                            ManSpawn.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, FST);
+                        }
+                        else
+                        {
+                            Debug_SMissions.Log("Spawning " + CL.CrateReferenceFaction + " Crate");
+                            Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, CL.CrateReferenceFaction);
+                        }
+                        return;
+                    }
+                    if (FST > FactionSubTypes.BF || FST < FactionSubTypes.GSO || FST == FactionSubTypes.SPE)
+                    {
+                        Debug_SMissions.Log("Spawning Default Crate");
+                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, FactionSubTypes.GSO);
                     }
                     else
                     {
-                        Debug_SMissions.Log("Spawning " + CL.CrateReferenceFaction + " Crate");
-                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, CL.CrateReferenceFaction);
+                        Debug_SMissions.Log("Spawning Corp " + FST.ToString() + " Crate");
+                        Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, FST);
                     }
-                    return;
                 }
-                Debug_SMissions.Log("Spawning Default Crate");
-                Singleton.Manager<ManSpawn>.inst.RewardSpawner.RewardBlocksByCrate(itemsCached.ToArray(), landingPos, FactionSubTypes.GSO);
-                itemsCached.Clear();
+                finally
+                {
+                    Debug_SMissions.Log(KickStart.ModID + ": Gave Blocks EXP " + FST);
+                    itemsCached.Clear();
+                }
             }
         }
     }

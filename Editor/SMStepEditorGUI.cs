@@ -27,10 +27,19 @@ namespace Sub_Missions.Editor
             heldTemp = null;
             return temp;
         }
+
+        private static SMissionStep curStep = null;
         private static SMStepGUI GetGUI(SMissionStep step)
         {
             if (GUILoaded.TryGetValue(step.SMission.StepType, out SMStepGUI GUIOut))
+            {
+                if (curStep != step)
+                {
+                    GUIOut.RefreshFields(step.SMission);
+                    curStep = step;
+                }
                 return GUIOut;
+            }
             else
             {
                 if (currentList != null)
@@ -40,6 +49,7 @@ namespace Sub_Missions.Editor
                 var newGUI = new SMStepGUI(step, currentList);
                 GUILoaded.Add(step.SMission.StepType, newGUI);
                 currentList = null;
+                curStep = step;
                 return newGUI;
             }
         }
@@ -134,11 +144,11 @@ namespace Sub_Missions.Editor
                 case ESMSFields.InputStringAux_Tech:
                     return new SMSFieldTechSelectGUI(name, ESMSFields.InputStringAux);
                 case ESMSFields.InputString_Tracked_Tech:
-                    return new SMSFieldWIPGUI(name, ESMSFields.InputString);
+                    return new SMSFieldTechSelectGUI(name, ESMSFields.InputString);
                 case ESMSFields.InputStringAux_Tracked_Tech:
-                    return new SMSFieldWIPGUI(name, ESMSFields.InputStringAux);
+                    return new SMSFieldTechSelectGUI(name, ESMSFields.InputStringAux);
                 case ESMSFields.InputString_MM:
-                    return new SMSFieldWIPGUI(name, ESMSFields.InputString);
+                    return new SMSFieldMonumentSelectGUI(name, ESMSFields.InputString);
                 case ESMSFields.SpawnOnly:
                     return new SMSFieldNullGUI(name, type);
                 default:

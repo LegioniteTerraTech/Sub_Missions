@@ -5,27 +5,27 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIMessage : IGUIFormat
+    public class GUIMessage : GUIMiniMenu<GUIMessage>
     {
-        public GUIPopupDisplay Display { get; set; }
         public string Message;
         private Vector2 scroll = Vector2.zero;
 
 
-        public void Setup(GUIPopupDisplay display, string message)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
-            Message = message;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
+            Message = (string)stats2.val1;
         }
-        public void OnOpen()
+        public override void OnOpen()
         {
         }
 
 
-        public void RunGUI(int ID)
+        public override void RunGUI(int ID)
         {
             scroll = GUILayout.BeginScrollView(scroll, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             GUILayout.Label(Message, WindowManager.styleLabelLargerFont, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
@@ -42,12 +42,12 @@ namespace Sub_Missions.ManWindows
             WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

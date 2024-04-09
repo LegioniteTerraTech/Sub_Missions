@@ -9,6 +9,8 @@ using HarmonyLib;
 using Nuterra.NativeOptions;
 using Sub_Missions.ManWindows;
 using TerraTechETCUtil;
+using System.IO;
+
 
 #if !STEAM
 using ModHelper.Config;
@@ -23,7 +25,8 @@ namespace Sub_Missions
     /// </summary>
     public class KickStart
     {
-        public const string ModName = "Sub_Missions";
+        internal const string ModID = "Mod Missions";
+        public const string ModName = "Mod Missions";
         
         public static bool Debugger = false;
         public static bool ExportPrefabExample = false;
@@ -43,12 +46,13 @@ namespace Sub_Missions
             }
         }
 
-        public static Harmony harmonyInstance;
+        public static Harmony harmonyInstance = new Harmony("legioniteterratech.sub_missions");
         private static bool patched = false;
+
 
         public static void Main()
         {
-            Debug_SMissions.Log("SubMissions: MAIN (TTMM Version) startup");
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (TTMM Version) startup");
             if (!VALIDATE_MODS())
                 return;
             if (isSteamManaged)
@@ -57,7 +61,6 @@ namespace Sub_Missions
                 return;
             }
             SMissionJSONLoader.SetupWorkingDirectories();
-            harmonyInstance = new Harmony("legioniteterratech.sub_missions");
             try
             {
                 if (!patched)
@@ -68,7 +71,7 @@ namespace Sub_Missions
                     }
                     catch (Exception e)
                     {
-                        Debug_SMissions.Log("SubMissions: Error on mass patch");
+                        Debug_SMissions.Log(KickStart.ModID + ": Error on mass patch");
                         Debug_SMissions.Log(e);
                     }
                     foreach (MethodBase MB in harmonyInstance.GetPatchedMethods())
@@ -77,18 +80,18 @@ namespace Sub_Missions
                         {
                             if (isBlockInjectorPresent)
                             {
-                                Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
+                                Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
                                 //harmonyInstance.Patch(Patches.);
                             }
                             else
                             {
-                                Debug_SMissions.Log("SubMissions: UnPatching " + MB.Name);
+                                Debug_SMissions.Log(KickStart.ModID + ": UnPatching " + MB.Name);
                                 harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
                             }
                         }
                         else
                         {
-                            Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
+                            Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
                             //harmonyInstance.Patch(MB);
                         }
                     }
@@ -97,10 +100,9 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: Error on patch");
+                Debug_SMissions.Log(KickStart.ModID + ": Error on patch");
                 Debug_SMissions.Log(e);
             };
-            WindowManager.Initiate();
             ManSubMissions.Initiate();
             ButtonAct.Initiate();
 
@@ -108,8 +110,13 @@ namespace Sub_Missions
             {
                 TACAIRequiredWarning();
             }
+            else
 
-            ManSubMissions.inst.HarvestAllTrees();
+            ManSubMissions.inst.ReloadAllMissionTrees();
+        }
+        public static void IncreaseAIHeightRange()
+        {
+            TAC_AI.KickStart.TerrainHeight = TerrainOperations.TileHeightRescaled;
         }
         public static void DelayedInit()
         {
@@ -119,23 +126,42 @@ namespace Sub_Missions
 
         public static void MainOfficialInit()
         {
-            Debug_SMissions.Log("SubMissions: MAIN (Steam Workshop Version) startup");
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (Steam Workshop Version) startup");
             if (!VALIDATE_MODS())
                 return;
+            DebugExtUtilities.AllowEnableDebugGUIMenu_KeypadEnter = true;
             SMissionJSONLoader.SetupWorkingDirectories();
-            harmonyInstance = new Harmony("legioniteterratech.sub_missions");
+
+            LegModExt.InsurePatches();
+            CursorChanger.AddNewCursors();
+
+            WorldTerraformer.Init();
+
+            SubMissionsWiki.InitWiki();
+
             try
             {
                 if (!patched)
                 {
                     try
                     {
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(GlobalPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching GlobalPatches");
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(ProgressionPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching ProgressionPatches");
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(UIPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching UIPatches");
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(TerrainPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching TerrainPatches");
+
                         harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                        Debug_SMissions.Log(KickStart.ModID + ": Patched");
                     }
                     catch (Exception e)
                     {
-                        Debug_SMissions.Log("SubMissions: Error on mass patch");
+                        Debug_SMissions.Log(KickStart.ModID + ": Error on mass patch");
                         Debug_SMissions.Log(e);
+                        Debug_SMissions.FatalError("Error on patching base game");
                     }
                     foreach (MethodBase MB in harmonyInstance.GetPatchedMethods())
                     {
@@ -143,18 +169,18 @@ namespace Sub_Missions
                         {
                             if (isBlockInjectorPresent)
                             {
-                                Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
+                                Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
                                 //harmonyInstance.Patch(Patches.);
                             }
                             else
                             {
-                                Debug_SMissions.Log("SubMissions: UnPatching " + MB.Name);
+                                Debug_SMissions.Log(KickStart.ModID + ": UnPatching " + MB.Name);
                                 harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
                             }
                         }
                         else
                         {
-                            Debug_SMissions.Log("SubMissions: Patching " + MB.Name);
+                            Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
                             //harmonyInstance.Patch(MB);
                         }
                     }
@@ -163,7 +189,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: Error on patch");
+                Debug_SMissions.Log(KickStart.ModID + ": Error on patch");
                 Debug_SMissions.Log(e);
             }
             try
@@ -172,14 +198,14 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: Error on RegisterSaveSystem");
+                Debug_SMissions.Log(KickStart.ModID + ": Error on RegisterSaveSystem");
                 Debug_SMissions.Log(e);
             }
-            WindowManager.Initiate();
             ButtonAct.Initiate();
             ManSubMissions.Initiate();
             ManSubMissions.Subscribe();
             BlockIndexer.ConstructBlockLookupListDelayed();
+            ManModGUI.RequestInit(KickStartSubMissions.mInst);
 
             if (!isTACAIPresent)
             {
@@ -193,15 +219,15 @@ namespace Sub_Missions
             { 
             }
 
-            ManSubMissions.inst.HarvestAllTrees();
+            ManSubMissions.inst.ReloadAllMissionTrees();
         }
 
         public static void MainOfficialDeInit()
         {
-            Debug_SMissions.Log("SubMissions: MAIN (Steam Workshop Version) shutdown");
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (Steam Workshop Version) shutdown");
+            ManModGUI.DeInit(KickStartSubMissions.mInst);
             ManSubMissions.DeInit();
             ButtonAct.DeInit();
-            WindowManager.DeInit();
             BlockIndexer.ResetBlockLookupList();
 
             try
@@ -210,18 +236,22 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                Debug_SMissions.Log("SubMissions: Error on UnregisterSaveSystem");
+                Debug_SMissions.Log(KickStart.ModID + ": Error on UnregisterSaveSystem");
                 Debug_SMissions.Log(e);
             }
             if (patched)
             {
                 try
                 {
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(TerrainPatches), "SubMissions");
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(UIPatches), "SubMissions");
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(ProgressionPatches), "SubMissions");
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(GlobalPatches), "SubMissions");
                     harmonyInstance.UnpatchAll("legioniteterratech.sub_missions");
                 }
                 catch (Exception e)
                 {
-                    Debug_SMissions.Log("SubMissions: Error on mass un-patch");
+                    Debug_SMissions.Log(KickStart.ModID + ": Error on mass un-patch");
                     Debug_SMissions.Log(e);
                 }
                 patched = false;
@@ -284,7 +314,7 @@ namespace Sub_Missions
         }
         public static void TACAIRequiredWarning()
         {
-            SMUtil.Log(false, "SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
+            SMUtil.Log(false, KickStart.ModID + ": This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
         }
         public static bool LookForMod(string name)
         {
@@ -398,7 +428,7 @@ namespace Sub_Missions
             exportTemplate.onValueSaved.AddListener(() =>
             {
                 KickStart.ExportPrefabExample = exportTemplate.SavedValue;
-                SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
+                SimpleSMissions.MakePrefabMissionTreeToFile("Template");
             });
             //if (ExportPrefabExample)
             //    SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
@@ -414,7 +444,8 @@ namespace Sub_Missions
 #if STEAM
     public class KickStartSubMissions : ModBase
     {
-        internal static KickStartSubMissions oInst = null;
+        internal static ModDataHandle oInst;
+        internal static KickStartSubMissions mInst;
 
         bool isInit = false;
         public override bool HasEarlyInit()
@@ -427,15 +458,15 @@ namespace Sub_Missions
         }
         public override void Init()
         {
-            Debug_SMissions.Log("SubMissions: CALLED INIT");
+            Debug_SMissions.Log(KickStart.ModID + ": CALLED INIT");
             if (isInit)
                 return;
-            if (oInst == null)
-                oInst = this;
-
             try
             {
-                TerraTechETCUtil.ModStatusChecker.EncapsulateSafeInit("Mod Missions",
+                mInst = this;
+                oInst = new ModDataHandle(KickStart.ModID);
+                oInst.DebugLogModContents();
+                TerraTechETCUtil.ModStatusChecker.EncapsulateSafeInit(KickStart.ModID,
                     KickStart.MainOfficialInit, KickStart.MainOfficialDeInit);
             }
             catch { }
@@ -443,7 +474,7 @@ namespace Sub_Missions
         }
         public override void DeInit()
         {
-            Debug_SMissions.Log("SubMissions: CALLED DE-INIT");
+            Debug_SMissions.Log(KickStart.ModID + ": CALLED DE-INIT");
             if (!isInit)
                 return;
             KickStart.MainOfficialDeInit();

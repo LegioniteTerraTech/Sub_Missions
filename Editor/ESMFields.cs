@@ -17,6 +17,7 @@ namespace Sub_Missions.Editor
         MinProgressX,
         MinProgressY,
         SinglePlayerOnly,
+        SpawnPosition,
         IgnorePlayerProximity,
         ClearSceneryOnSpawn,
         ClearTechsOnClear,

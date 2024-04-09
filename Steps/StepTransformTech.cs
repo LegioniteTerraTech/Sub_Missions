@@ -102,7 +102,7 @@ namespace Sub_Missions.Steps
                             if (SMission.SavedInt < 1)
                             {
                                 tTech.TechAuto.SetTeam((int)SMission.InputNum);
-                                Debug_SMissions.Log("SubMissions: Changed team of tech " + tTech.TechAuto.name + " to " + tTech.TechAuto.Team);
+                                Debug_SMissions.Log(KickStart.ModID + ": Changed team of tech " + tTech.TechAuto.name + " to " + tTech.TechAuto.Team);
                             }
                         }
                         else if (SMission.InputStringAux != null && SMission.InputStringAux != "")
@@ -110,26 +110,26 @@ namespace Sub_Missions.Steps
                             if (SMission.SavedInt < SMission.InputNum)
                             {
                                 Tank techCur = tTech.TechAuto;
-                                Debug_SMissions.Log("SubMissions: More than meets the eye");
+                                Debug_SMissions.Log(KickStart.ModID + ": More than meets the eye");
                                 tTech.TechAuto = RawTechLoader.TechTransformer(techCur, SMission.InputStringAux);
                             }
                         }
                         else
                         {
                             SMUtil.Error(true, SMission.LogName,
-                                "SubMissions: TransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
+                                KickStart.ModID + ": TransformTech - Failed: InputStringAux does not contain a valid RAWTechJSON Blueprint.  Mission " + Mission.Name);
                         }
                     }
                     catch (Exception e)
                     {   // Cannot work without TACtical_AI
                         if (KickStart.isTACAIPresent)
                         {
-                            SMUtil.Assert(true, SMission.LogName, "SubMissions: TransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!", e);
-                            Debug_SMissions.Log("SubMissions: Stack trace - " + StackTraceUtility.ExtractStackTrace());
-                            Debug_SMissions.Log("SubMissions: Error - " + e);
+                            SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": TransformTech  - Failed: COULD NOT FETCH TECH INFORMATION!!!", e);
+                            Debug_SMissions.Log(KickStart.ModID + ": Stack trace - " + StackTraceUtility.ExtractStackTrace());
+                            Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
                         }
                         else
-                            Debug_SMissions.Log("SubMissions: TransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
+                            Debug_SMissions.Log(KickStart.ModID + ": TransformTech  - Failed: TACticial_AIs is not installed ~ Unable to execute");
                     }
                     //SMission.SavedInt++;
                 }

@@ -6,6 +6,8 @@ using System.ComponentModel;
 using UnityEngine;
 using Newtonsoft.Json;
 using Sub_Missions.ManWindows;
+using TerraTechETCUtil;
+using UnityEngine.UI;
 
 namespace Sub_Missions.Steps
 {
@@ -97,6 +99,44 @@ namespace Sub_Missions.Steps
         [JsonIgnore]
         public string LogName => (Mission.Name.NullOrEmpty() ? "[NULL MISSION]" : Mission.Name) + " ~ " + StepType + " - " + ProgressID;
 
+
+        internal SubMissionStep CloneDeep()
+        {
+            var clone = new SubMissionStep()
+            {
+                Mission = Mission,
+                StepType = StepType,
+                ProgressID = ProgressID,
+                AssignedWaypoint = AssignedWaypoint,
+                AssignedWindow = AssignedWindow,
+                RevProgressIDOffset = RevProgressIDOffset,
+                AssignedTracked = AssignedTracked,
+                EulerAngles = EulerAngles,
+                FolderEventList = FolderEventList,
+                Forwards = Forwards,
+                hasBlock = hasBlock,
+                hasTech = hasTech,
+                InputStringAux = InputStringAux,
+                InitPosition = InitPosition,
+                InputNum = InputNum,
+                InputString = InputString,
+                Position = Position,
+                SavedInt = SavedInt,
+                SetMissionVarIndex1 = SetMissionVarIndex1,
+                SetMissionVarIndex2 = SetMissionVarIndex2,
+                SetMissionVarIndex3 = SetMissionVarIndex3,
+                stepGenerated = null,
+                SuccessProgressID = SuccessProgressID,
+                TerrainHandling = TerrainHandling,
+                VaribleCheckNum = VaribleCheckNum,
+                VaribleType = VaribleType,
+            };
+            clone.TrySetupOnType();
+
+            return clone;
+        }
+
+
         /// <summary>
         /// Upkeeps this Step's position in Scene when the Worldtreadmill does it's treadmill
         /// </summary>
@@ -121,7 +161,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + 
+                SMUtil.Assert(false, LogName, KickStart.ModID + ": Mission " + Mission.Name + 
                     " Has a TrySetup error at ProgressID " + ProgressID + ", Type " + StepType.ToString() + 
                     ", and will not be able to execute. \nCheck your referenced Techs as there may be errors " +
                     "or inconsistancies in there.", e);
@@ -143,7 +183,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + " Has a LoadStep error at ProgressID " +
+                SMUtil.Assert(false, LogName, KickStart.ModID + ": Mission " + Mission.Name + " Has a LoadStep error at ProgressID " +
                     "" + ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. " +
                     "\nCheck your referenced Techs as there may be errors or inconsistancies in there.", e);
                 Debug_SMissions.Log(e);
@@ -157,7 +197,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + 
+                SMUtil.Assert(false, LogName, KickStart.ModID + ": Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + 
                     ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. " +
                     "\nCheck your referenced Techs as there may be errors or inconsistancies in there.", e);
             }
@@ -194,7 +234,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, LogName, "SubMissions: Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + 
+                SMUtil.Assert(false, LogName, KickStart.ModID + ": Mission " + Mission.Name + " Has a UnloadStep error at ProgressID " + 
                     ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute. " +
                     "\nCheck your referenced Techs as there may be errors or inconsistancies in there.", e);
             }
@@ -207,7 +247,7 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(true, LogName, "SubMissions: Mission " + Mission.Name + " Has invalid syntax at ProgressID " + 
+                SMUtil.Assert(true, LogName, KickStart.ModID + ": Mission " + Mission.Name + " Has invalid syntax at ProgressID " + 
                     ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute.", e); 
             }
         }
@@ -235,6 +275,9 @@ namespace Sub_Missions.Steps
                     break;
                 case SMStepType.ActBoost:
                     stepGenerated = new StepActBoost();
+                    break;
+                case SMStepType.ActDrive:
+                    stepGenerated = new StepActDrive();
                     break;
                 case SMStepType.ActRemove:
                     stepGenerated = new StepActRemove();
@@ -284,7 +327,7 @@ namespace Sub_Missions.Steps
                 case SMStepType.ChangeAI:
                     stepGenerated = new StepChangeAI();
                     break;
-                case SMStepType.TransformTech:
+                case SMStepType.ChangeTech:
                     stepGenerated = new StepTransformTech();
                     break;
                 case SMStepType.CheckPlayerDist:
@@ -296,6 +339,24 @@ namespace Sub_Missions.Steps
             }
         }
 
+        internal static void ShowStringColorGUI(SMStepType type, string num)
+        {
+            GUILayout.Space(-20);
+            if (type == SMStepType.NULL)
+                GUILayout.Label("<color=#DB0C00>" + num + "</color>", AltUI.LabelWhiteTitle, GUILayout.Width(60), GUILayout.Height(40));
+            else if (type == SMStepType.Folder)
+                GUILayout.Label("<color=#E4E6D1>" + num + "</color>", AltUI.LabelWhiteTitle, GUILayout.Width(60), GUILayout.Height(40));
+            else if (type < SMStepType.CheckLogic)
+                GUILayout.Label("<color=#E6D900>" + num + "</color>", AltUI.LabelWhiteTitle, GUILayout.Width(60), GUILayout.Height(40));
+            else if (type < SMStepType.ChangeAI)
+                GUILayout.Label("<color=#09E605>" + num + "</color>", AltUI.LabelWhiteTitle, GUILayout.Width(60), GUILayout.Height(40));
+            else if (type < SMStepType.SetupTech)
+                GUILayout.Label("<color=#E600DE>" + num + "</color>", AltUI.LabelWhiteTitle, GUILayout.Width(60), GUILayout.Height(40));
+            else if (type < SMStepType.OutOfBounds)
+                GUILayout.Label("<color=#1FC27B>" + num + "</color>", AltUI.LabelWhiteTitle, GUILayout.Width(60), GUILayout.Height(40));
+            else
+                GUILayout.Label("<color=#DB0C00>" + num + "</color>", AltUI.LabelWhiteTitle, GUILayout.Width(60), GUILayout.Height(40));
+        }
 
         internal static string GetALLStepDocumentations()
         {
@@ -345,6 +406,7 @@ namespace Sub_Missions.Steps
         ActShifter,
         ActRemove,
         ActBoost,
+        ActDrive,
         ActTimer,
         ActOptions,
         ActMessagePurge,
@@ -361,6 +423,7 @@ namespace Sub_Missions.Steps
 
         // CHANGERS
         ChangeAI,
+        ChangeTech, // TRANSFORMERS/TRANSMUTATORS
 
         // SPAWNS
         SetupTech,
@@ -368,7 +431,7 @@ namespace Sub_Missions.Steps
         SetupMM, // ModularMonuments
         SetupWaypoint,
 
-        // TRANSFORMERS/TRANSMUTATORS
-        TransformTech,
+        // Error
+        OutOfBounds,
     }
 }

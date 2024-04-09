@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
 using TAC_AI.Templates;
+using TAC_AI.AI;
 
 namespace Sub_Missions.Steps
 {
@@ -37,14 +38,14 @@ namespace Sub_Missions.Steps
             AddField(ESMSFields.VaribleType, "Condition Mode");
             AddField(ESMSFields.VaribleCheckNum, "Conditional Constant");
             AddGlobal(ESMSFields.SetMissionVarIndex1, "Active Condition", EVaribleType.Int);
-            AddOptions(ESMSFields.InputStringAux, "Change: ", new string[]
+            AddOptions(ESMSFields.InputString, "Change: ", new string[]
                 {
                     "Position",
                     "Tech",
                 },
                 new Dictionary<int, KeyValuePair<string, ESMSFields>>()
                 {
-                    {1, new KeyValuePair<string, ESMSFields>("Tech Name", ESMSFields.InputStringAux_Tech) },
+                    {1, new KeyValuePair<string, ESMSFields>("Tech Name", ESMSFields.InputString_Tech) },
                 }
             );
         }
@@ -68,7 +69,7 @@ namespace Sub_Missions.Steps
                     }
                     else
                     {
-                        if (!SMission.InputString.NullOrEmpty())
+                        if (!SMission.InputString.NullOrEmpty() && SMission.InputString != "Position")
                         {   // Keep updating the waypoint to follow the target
                             try
                             {
@@ -77,8 +78,8 @@ namespace Sub_Missions.Steps
                             }
                             catch //(Exception e)
                             {   // the tech isn't ready yet
-                                //SMUtil.Assert(false, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not upkeep waypoint!");
-                                //Debug_SMissions.Log("SubMissions: Error - " + e);
+                                //SMUtil.Assert(false, KickStart.ModID + ": StepSetupWaypoint (Tech) - Failed: Could not upkeep waypoint!");
+                                //Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
                             }
                         }
                     }
@@ -114,7 +115,7 @@ namespace Sub_Missions.Steps
                 }
                 if (!SpawnWaypoint())
                     SMUtil.Error(false, SMission.LogName, 
-                        "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not find/spawn waypoint!");
+                        KickStart.ModID + ": StepSetupWaypoint (Tech) - Failed: Could not find/spawn waypoint!");
                 return;
             }
             foreach (Visible vis in Singleton.Manager<ManVisible>.inst.VisiblesTouchingRadius(SMission.Position, 8, new Bitfield<ObjectTypes>()))
@@ -128,7 +129,7 @@ namespace Sub_Missions.Steps
             }
             if (!SpawnWaypoint())
                 SMUtil.Error(false, SMission.LogName, 
-                    "SubMissions: StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
+                    KickStart.ModID + ": StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
         }
         private void TryFetchWaypoint()
         {
@@ -160,7 +161,7 @@ namespace Sub_Missions.Steps
                 }
             }
             SMUtil.Error(false, SMission.LogName, 
-                "SubMissions: StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
+                KickStart.ModID + ": StepSetupWaypoint - Failed: Could not find/spawn waypoint!");
         }
         private bool SpawnWaypoint()
         {
@@ -173,26 +174,26 @@ namespace Sub_Missions.Steps
                         //UIBouncingArrow.BouncingArrowContext arrow = default;
                         //arrow.targetTransform = SMUtil.GetTrackedTech(ref Mission, SMission.InputString).CentralBlock.trans;
                         CreateNewWaypoint();
-                        Debug_SMissions.Log("SubMissions: StepSetupWaypoint (Tech) - Attached Waypoint to Tech " + SMission.InputString);
+                        Debug_SMissions.Log(KickStart.ModID + ": StepSetupWaypoint (Tech) - Attached Waypoint to Tech " + SMission.InputString);
                         return true;
                     }
                     catch (Exception e)
                     {
-                        SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupWaypoint (Tech) - Failed: Could not setup waypoint!", e);
-                        Debug_SMissions.Log("SubMissions: Error - " + e);
+                        SMUtil.Assert(false, SMission.LogName, KickStart.ModID + ": StepSetupWaypoint (Tech) - Failed: Could not setup waypoint!", e);
+                        Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
                     }
                 }
                 else
                 {
                     CreateNewWaypoint();
-                    Debug_SMissions.Log("SubMissions: StepSetupWaypoint - Placed Waypoint at " + SMission.Position);
+                    Debug_SMissions.Log(KickStart.ModID + ": StepSetupWaypoint - Placed Waypoint at " + SMission.Position);
                     return true;
                 }
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupWaypoint - Failed: Could not setup waypoint!", e);
-                Debug_SMissions.Log("SubMissions: Error - " + e);
+                SMUtil.Assert(false, SMission.LogName, KickStart.ModID + ": StepSetupWaypoint - Failed: Could not setup waypoint!", e);
+                Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
             }
             return false;
         }
@@ -215,8 +216,8 @@ namespace Sub_Missions.Steps
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, SMission.LogName, "SubMissions: StepSetupWaypoint - Failed: Could not despawn waypoint!", e);
-                Debug_SMissions.Log("SubMissions: Error - " + e);
+                SMUtil.Assert(false, SMission.LogName, KickStart.ModID + ": StepSetupWaypoint - Failed: Could not despawn waypoint!", e);
+                Debug_SMissions.Log(KickStart.ModID + ": Error - " + e);
             }
             return false;
         }

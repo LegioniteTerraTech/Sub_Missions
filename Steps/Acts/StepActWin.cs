@@ -33,7 +33,12 @@ namespace Sub_Missions.Steps
 
         public override void FirstSetup()
         {
+            triggered = false;
         }
+        /// <summary>
+        /// Prevent ENDLESS LOOP from happening!
+        /// </summary>
+        private bool triggered = false;
         public override void Trigger()
         {
             try
@@ -41,13 +46,13 @@ namespace Sub_Missions.Steps
                 switch (SMission.VaribleType)
                 {
                     case EVaribleType.True: // when set global is true
-                        if (Mission.VarTrueFalse[SMission.SetMissionVarIndex1])
+                        if (Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1])
                         {
                             Mission.Finish();
                         }
                         break;
                     case EVaribleType.False: // when set global is false
-                        if (!Mission.VarTrueFalse[SMission.SetMissionVarIndex1])
+                        if (!Mission.VarTrueFalseActive[SMission.SetMissionVarIndex1])
                         {
                             Mission.Finish();
                         }
@@ -60,14 +65,14 @@ namespace Sub_Missions.Steps
             }
             catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
                     "on the list, 1 counts as the second entry, and so on.", e);
             }
             catch (NullReferenceException e)
             {
-                SMUtil.Assert(true, SMission.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
+                SMUtil.Assert(true, SMission.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Mission.Name +
                     " | Step type " + SMission.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
                     " on the step's set VaribleType.", e);

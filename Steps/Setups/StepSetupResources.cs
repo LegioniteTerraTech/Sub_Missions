@@ -51,7 +51,7 @@ namespace Sub_Missions.Steps
             else
             {
                 SMUtil.Error(false, SMission.LogName, 
-                    "SubMissions: StepSetupResources - Failed: Input SceneryType not valid or " +
+                    KickStart.ModID + ": StepSetupResources - Failed: Input SceneryType not valid or " +
                     "InputNum below 1.  Mission " + Mission.Name);
             }
         }

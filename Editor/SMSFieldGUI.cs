@@ -7,6 +7,7 @@ using UnityEngine;
 using TerraTechETCUtil;
 using Sub_Missions.Steps;
 using Sub_Missions.ManWindows;
+using static LocalisationEnums;
 
 namespace Sub_Missions.Editor
 {
@@ -18,7 +19,8 @@ namespace Sub_Missions.Editor
 
         void Display(SubMissionStep runData);
         void DoDisplay(SubMissionStep runData);
-        void Update(SubMissionStep runData);
+        void RefreshGUI(SubMissionStep runData);
+        void UpdateScene(SubMissionStep runData);
     }
     public class SMSFieldGUI<T> : SMAutoFill<SubMissionStep, T, ESMSFields>, SMSFieldGUI
     {
@@ -76,10 +78,20 @@ namespace Sub_Missions.Editor
                 case ESMSFields.VaribleType:
                     return runData.VaribleType;
                 case ESMSFields.InputNum:
+                case ESMSFields.InputNum_int:
+                case ESMSFields.InputNum_radius:
                     return runData.InputNum;
                 case ESMSFields.InputString:
+                case ESMSFields.InputString_float:
+                case ESMSFields.InputString_large:
+                case ESMSFields.InputString_Tech:
+                case ESMSFields.InputString_Tracked_Tech:
                     return runData.InputString;
                 case ESMSFields.InputStringAux:
+                case ESMSFields.InputStringAux_float:
+                case ESMSFields.InputStringAux_large:
+                case ESMSFields.InputStringAux_Tech:
+                case ESMSFields.InputStringAux_Tracked_Tech:
                     return runData.InputStringAux;
                 case ESMSFields.FolderEventList:
                     return runData.FolderEventList;
@@ -129,12 +141,22 @@ namespace Sub_Missions.Editor
                         runData.VaribleType = (EVaribleType)input;
                         break;
                     case ESMSFields.InputNum:
+                    case ESMSFields.InputNum_int:
+                    case ESMSFields.InputNum_radius:
                         runData.InputNum = (float)input;
                         break;
                     case ESMSFields.InputString:
+                    case ESMSFields.InputString_float:
+                    case ESMSFields.InputString_large:
+                    case ESMSFields.InputString_Tech:
+                    case ESMSFields.InputString_Tracked_Tech:
                         runData.InputString = (string)input;
                         break;
                     case ESMSFields.InputStringAux:
+                    case ESMSFields.InputStringAux_float:
+                    case ESMSFields.InputStringAux_large:
+                    case ESMSFields.InputStringAux_Tech:
+                    case ESMSFields.InputStringAux_Tracked_Tech:
                         runData.InputStringAux = (string)input;
                         break;
                     case ESMSFields.FolderEventList:
@@ -201,20 +223,27 @@ namespace Sub_Missions.Editor
             if (DisplayInt(settable, ref setCache, out int newSet))
                 settable = newSet;
         }
+        public override void RefreshGUI(SubMissionStep runData) 
+        {
+            setCache = settable.ToString();
+        }
     }
     public class SMSFieldFloatGUI : SMSFieldGUI<float>
     {
-        private string setCache = "";
+        protected string setCache = "";
         internal SMSFieldFloatGUI(string name, ESMSFields type) : base(name, type) { }
         public override void Display(SubMissionStep runData)
         {
             if (DisplayFloat(settable, ref setCache, out var newSet))
                 settable = newSet;
         }
+        public override void RefreshGUI(SubMissionStep runData)
+        {
+            setCache = settable.ToString();
+        }
     }
     public class SMSFieldRadiusGUI : SMSFieldFloatGUI
     {
-        private string setCache = "";
         private bool isSelecting = false;
         internal SMSFieldRadiusGUI(string name, ESMSFields type) : base(name, type) { }
         public override void Display(SubMissionStep runData)
@@ -233,7 +262,7 @@ namespace Sub_Missions.Editor
             }
             catch { }
         }
-        public override void Update(SubMissionStep runData)
+        public override void UpdateScene(SubMissionStep runData)
         {
             Color dispColor = SMMissionGUI.PositioningColor[runData.StepType];
             if (isSelecting)
@@ -247,6 +276,7 @@ namespace Sub_Missions.Editor
                 UpdateSphereDisp(runData.InitPosition, dispColor, settable);
             }
         }
+
     }
     public class SMSFieldFloatIntGUI : SMSFieldGUI<float>
     {
@@ -256,6 +286,10 @@ namespace Sub_Missions.Editor
         {
             if (DisplayFloatRounded(settable, ref setCache, out var newSet))
                 settable = newSet;
+        }
+        public override void RefreshGUI(SubMissionStep runData)
+        {
+            setCache = settable.ToString("F");
         }
     }
     public class SMSFieldVector3GUI : SMSFieldGUI<Vector3>
@@ -268,6 +302,12 @@ namespace Sub_Missions.Editor
         {
             if (DisplayVec3(settable, ref setCache1, ref setCache2, ref setCache3, out Vector3 newSet))
                 settable = newSet;
+        }
+        public override void RefreshGUI(SubMissionStep runData)
+        {
+            setCache1 = settable.x.ToString();
+            setCache2 = settable.y.ToString();
+            setCache3 = settable.z.ToString();
         }
     }
     public class SMSFieldStringGUI : SMSFieldGUI<string>
@@ -337,23 +377,31 @@ namespace Sub_Missions.Editor
         {
             if (lookup != null)
             {
-                var batcher = new Dictionary<int, int>();
+                var invBatcher = new Dictionary<int, int>();
                 for (int i = 0; i < lookup.Length; i++)
                 {
-                    batcher.Add(lookup[i], i);
+                    invBatcher.Add(lookup[i], i);
                 }
-                lookupInv = batcher;
+                lookupInv = invBatcher;
             }
         }
         public override void Display(SubMissionStep runData)
         {
-            if (DisplayFixedOptions(settable, ref scroller, ref opened, options, lookup, lookupInv, out var newSet))
-                settable = newSet;
+            try
+            {
+                if (DisplayFixedOptions(settable, ref scroller, ref opened, options, lookup, lookupInv, out var newSet))
+                    settable = newSet;
+            }
+            catch (Exception e)
+            {
+                throw new Exception("Error in " + GetType().Name, e);
+            }
         }
     }
     public class SMSFieldPositionGUI : SMSFieldVector3GUI
     {
         private bool isSelecting = false;
+        private bool isShowing = false;
         internal SMSFieldPositionGUI(string name, ESMSFields type) : base(name, type) { }
         public override void Display(SubMissionStep runData)
         {
@@ -372,24 +420,30 @@ namespace Sub_Missions.Editor
             {
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Enter);
                 isSelecting = !isSelecting;
+                isShowing = true;
             }
         }
         public void DelayedHide()
         {
             try
             {
-                isSelecting = false;
+                isShowing = false;
             }
             catch { }
         }
-        public override void Update(SubMissionStep runData)
+        public override void UpdateScene(SubMissionStep runData)
         {
             Color dispColor = SMMissionGUI.PositioningColor[runData.StepType];
             if (isSelecting)
             {
                 if (UpdatePosDispSelect(settable, dispColor, out var hit))
                 {
-                    settable = hit;
+                    var posS = hit - runData.Mission.ScenePosition;
+                    if (posS.ApproxZero())
+                        settable = Vector3.zero;
+                    else
+                        settable = posS;
+                    isSelecting = false;
                     InvokeHelper.InvokeSingle(DelayedHide, SMMissionGUI.PositioningHighlightStopDelay);
                 }
             }
@@ -556,11 +610,11 @@ namespace Sub_Missions.Editor
         protected override string[] options => optionsSet;
 
         private static readonly int[] lookupSet = {
-            0,
-            1,
-            2,
-            3,
-            6,
+            (int)EVaribleType.None,
+            (int)EVaribleType.True,
+            (int)EVaribleType.False,
+            (int)EVaribleType.Int,
+            (int)EVaribleType.DoSuccessID,
         };
         protected override int[] lookup => lookupSet;
         internal SMSFieldVarConditionsGUI(string name, ESMSFields type) : base(name, type) { }
@@ -742,10 +796,10 @@ namespace Sub_Missions.Editor
                     DisplayInt(runData);
                     break;
                 case EVaribleType.IntGreaterThan:
-                    if (settable >= 0 && settable < runData.Mission.VarInts.Count)
+                    if (settable >= 0 && settable < runData.Mission.VarIntsActive.Count)
                     {
                         DisplayInt(runData);
-                        if (runData.Mission.VarInts[settable] > runData.VaribleCheckNum)
+                        if (runData.Mission.VarIntsActive[settable] > runData.VaribleCheckNum)
                             GUILayout.Label("<color=green>></color>", GUILayout.Width(25));
                         else
                             GUILayout.Label("<color=red>></color>", GUILayout.Width(25));
@@ -755,10 +809,10 @@ namespace Sub_Missions.Editor
                         GUILayout.Label("<color=yellow>True - Disabled</color>");
                     break;
                 case EVaribleType.IntLessThan:
-                    if (settable >= 0 && settable < runData.Mission.VarInts.Count)
+                    if (settable >= 0 && settable < runData.Mission.VarIntsActive.Count)
                     {
                         DisplayInt(runData);
-                        if (runData.Mission.VarInts[settable] < runData.VaribleCheckNum)
+                        if (runData.Mission.VarIntsActive[settable] < runData.VaribleCheckNum)
                             GUILayout.Label("<color=green><</color>", GUILayout.Width(25));
                         else
                             GUILayout.Label("<color=red><</color>", GUILayout.Width(25));
@@ -770,6 +824,8 @@ namespace Sub_Missions.Editor
                 case EVaribleType.DoSuccessID:
                     GUILayout.Label("Change Progress ID to: ");
                     GUILayout.Label(runData.SuccessProgressID.ToString());
+                    if (DisplayInt(runData.SuccessProgressID, ref setCache, out int newSet))
+                        runData.SuccessProgressID = newSet;
                     break;
                 default:
                     break;
@@ -777,9 +833,9 @@ namespace Sub_Missions.Editor
         }
         protected void DisplayBool(SubMissionStep runData, bool invertOutput)
         {
-            if (settable > -1 && settable < runData.Mission.VarTrueFalse.Count)
-                GUILayout.Label(invertOutput ? (!runData.Mission.VarTrueFalse[settable]).ToString() :
-                    runData.Mission.VarTrueFalse[settable].ToString());
+            if (settable > -1 && settable < runData.Mission.VarTrueFalseActive.Count)
+                GUILayout.Label(invertOutput ? (!runData.Mission.VarTrueFalseActive[settable]).ToString() :
+                    runData.Mission.VarTrueFalseActive[settable].ToString());
             else
                 GUILayout.Label("N/A");
 
@@ -797,12 +853,13 @@ namespace Sub_Missions.Editor
                         settable = ClampInt(val2);
                     }
                 }
-                else if (settable >= runData.Mission.VarTrueFalse.Count)
+                else if (settable >= runData.Mission.VarTrueFalseActive.Count)
                 {
                     GUILayout.Button("<color=blue>–</color>");
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
-                    settable = runData.Mission.VarTrueFalse.Count;
-                    setCache = runData.Mission.VarTrueFalse.Count.ToString();
+                    settable = runData.Mission.VarTrueFalseActive.Count;
+                    setCache = runData.Mission.VarTrueFalseActive.Count.ToString();
+                    runData.Mission.VarTrueFalseActive.Add(false);
                     runData.Mission.VarTrueFalse.Add(false);
                 }
                 else
@@ -837,8 +894,8 @@ namespace Sub_Missions.Editor
         }
         protected void DisplayInt(SubMissionStep runData)
         {
-            if (settable > -1 && settable < runData.Mission.VarInts.Count)
-                GUILayout.Label(runData.Mission.VarInts[settable].ToString());
+            if (settable > -1 && settable < runData.Mission.VarIntsActive.Count)
+                GUILayout.Label(runData.Mission.VarIntsActive[settable].ToString());
             else
                 GUILayout.Label("N/A");
 
@@ -856,12 +913,13 @@ namespace Sub_Missions.Editor
                         settable = ClampInt(val2);
                     }
                 }
-                else if (settable >= runData.Mission.VarInts.Count)
+                else if (settable >= runData.Mission.VarIntsActive.Count)
                 {
                     GUILayout.Button("<color=blue>–</color>");
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
-                    settable = runData.Mission.VarInts.Count;
-                    setCache = runData.Mission.VarInts.Count.ToString();
+                    settable = runData.Mission.VarIntsActive.Count;
+                    setCache = runData.Mission.VarIntsActive.Count.ToString();
+                    runData.Mission.VarIntsActive.Add(0);
                     runData.Mission.VarInts.Add(0);
                 }
                 else
@@ -926,47 +984,41 @@ namespace Sub_Missions.Editor
 
     public class SMSFieldTechSelectGUI : SMSFieldGUI<string>
     {
-        private Texture2D cachedTechPicture;
-        private string cachedTechName = null;
-        private UIScreenTechLoader loader;
+        private Texture2D displayTechPicture;
+        private string displayTechName = null;
+        //private UIScreenTechLoader loader;
+        private static SubMission LastSelected = null;
         internal SMSFieldTechSelectGUI(string name, ESMSFields type) : base(name, type) { }
         public override void Display(SubMissionStep runData)
         {
-            if (cachedTechPicture != null)
-                GUILayout.Label(cachedTechPicture);
-            if (cachedTechName != null)
-            {
-                settable = cachedTechName;
-                cachedTechName = null;
-            }
-            GUILayout.Label(settable == null ? "<color=red>NULL</color>" : settable);
+            GUILayout.Label(displayTechName == null ? "<color=red>NULL</color>" : displayTechName);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            if (displayTechPicture != null)
+                GUILayout.Label(displayTechPicture, AltUI.TextfieldBordered, GUILayout.Height(180), GUILayout.Width(210));
+            else
+                GUILayout.Label("Not Selected", AltUI.TextfieldBordered, GUILayout.Height(180), GUILayout.Width(210));
             if (GUILayout.Button("Select"))
             {
-                if (loader == null)
-                {
-                    loader = (UIScreenTechLoader)ManUI.inst.GetScreen(ManUI.ScreenType.TechLoaderScreen);
-                    if (loader.SelectorCallback != null)
-                        throw new Exception("SMSFieldTechSelectGUI called while UIScreenTechLoader was already busy in an operation");
-
-                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Button);
-                    loader.SelectorCallback = OnTechSet;
-                    loader.Show(true);
-                }
+                LastSelected = ManSubMissions.Selected;
+                SMTreeGUI.GUITechSelectorSet(settable);
+                SMTreeGUI.JumpToTechSelector(true, () => {
+                    if (SMTreeGUI.lastSelectedName != null)
+                    {
+                        Debug_SMissions.Log("Set tech to  " + SMTreeGUI.lastSelectedName);
+                        settable = SMTreeGUI.lastSelectedName;
+                        SMTreeGUI.lastSelectedName = null;
+                        ManSubMissions.Selected = LastSelected;
+                        RefreshGUI(runData);
+                    }
+                    else
+                        Debug_SMissions.Log("Set tech false, no lastSelectedTechName");
+                });
+                ManSubMissions.Selected = null;
             }
         }
-        private void OnTechSet(Snapshot set)
-        {
-            if (loader.SelectorCallback != OnTechSet)
-                throw new Exception("UIScreenTechLoader was altered while SMSFieldTechSelectGUI was busy using it");
-            cachedTechPicture = set.image;
-            cachedTechName = set.techData.Name;
-            loader.SelectorCallback = null;
-            loader.Hide();
-            loader = null;
-            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.LevelUp);
-        }
 
-        public override void Update(SubMissionStep runData)
+        public override void UpdateScene(SubMissionStep runData)
         {
             Color dispColor = SMMissionGUI.PositioningColor[runData.StepType];
             if (runData.Mission.GetTechPosHeading(settable, out Vector3 pos, out Vector3 direction, out int team))//SMUtil.GetTrackedTechBase(ref runData, settable, out var tracked))
@@ -977,6 +1029,85 @@ namespace Sub_Missions.Editor
                     Tank.IsEnemy(ManPlayer.inst.PlayerTeam, team) ? Color.red :
                     Tank.IsFriendly(ManPlayer.inst.PlayerTeam, team) ? Color.green : 
                     Color.yellow);
+            }
+        }
+        public override void RefreshGUI(SubMissionStep runData)
+        {
+            if (settable != null && runData.Mission.Tree.TreeTechs.TryGetValue(settable, out var techD))
+            {
+                displayTechName = settable;
+                displayTechPicture = techD.GetTexture(runData.Mission.Tree);
+            }
+            else
+            {
+                if (!settable.NullOrEmpty())
+                    displayTechName = "<color=red>" + settable + "</color>";
+                else
+                    displayTechName = "<color=red>NULL</color>";
+                displayTechPicture = null;
+            }
+        }
+    }
+    public class SMSFieldMonumentSelectGUI : SMSFieldGUI<string>
+    {
+        private Texture2D displayPicture;
+        private string displayName = null;
+        //private UIScreenTechLoader loader;
+        private static SubMission LastSelected = null;
+        internal SMSFieldMonumentSelectGUI(string name, ESMSFields type) : base(name, type) { }
+        public override void Display(SubMissionStep runData)
+        {
+            GUILayout.Label(displayName == null ? "<color=red>NULL</color>" : displayName);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            if (displayPicture != null)
+                GUILayout.Label(displayPicture, AltUI.TextfieldBordered, GUILayout.Height(180), GUILayout.Width(210));
+            else
+                GUILayout.Label("Not Selected", AltUI.TextfieldBordered, GUILayout.Height(180), GUILayout.Width(210));
+            if (GUILayout.Button("Select"))
+            {
+                LastSelected = ManSubMissions.Selected;
+                SMTreeGUI.GUIMMSelectorSet(settable);
+                SMTreeGUI.JumpToMMSelector(() => {
+                    if (SMTreeGUI.lastSelectedName != null)
+                    {
+                        Debug_SMissions.Log("Set Piece to  " + SMTreeGUI.lastSelectedName);
+                        settable = SMTreeGUI.lastSelectedName;
+                        SMTreeGUI.lastSelectedName = null;
+                        ManSubMissions.Selected = LastSelected;
+                        RefreshGUI(runData);
+                    }
+                    else
+                        Debug_SMissions.Log("Set Piece false, no lastSelectedName");
+                });
+                ManSubMissions.Selected = null;
+            }
+        }
+
+        public override void UpdateScene(SubMissionStep runData)
+        {
+            Color dispColor = SMMissionGUI.PositioningColor[runData.StepType];
+            if (runData.Mission.GetPiecePosHeading(settable, out Vector3 pos, out Vector3 direction))
+            {
+                DebugExtUtilities.DrawDirIndicatorSphere(pos, 5, dispColor);
+                DebugExtUtilities.DrawDirIndicatorRecPriz(pos, Quaternion.LookRotation(direction, Vector3.up),
+                    new Vector3(4, 4, 6), Color.magenta);
+            }
+        }
+        public override void RefreshGUI(SubMissionStep runData)
+        {
+            if (settable != null && runData.Mission.Tree.WorldObjects.TryGetValue(settable, out var pieceD))
+            {
+                displayName = settable;
+                displayPicture = SMTreeGUI.GetTexture(pieceD);
+            }
+            else
+            {
+                if (!settable.NullOrEmpty())
+                    displayName = "<color=red>" + settable + "</color>";
+                else
+                    displayName = "<color=red>NULL</color>";
+                displayPicture = null;
             }
         }
     }

@@ -6,15 +6,19 @@ using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public static class IGUIFormatExtenions
+    public static class GUIMiniWindowExtensions
     {
-        public static void UpdateTransparency(this IGUIFormat inst, float lowerLimit)
+        public static void UpdateTransparency(this GUIMiniMenu inst, float lowerLimit)
         {
-            if (UIHelpersExt.MouseIsOverSubMenu(inst.Display.Window))
+            if (inst.Display.CursorWithinWindow)
                 inst.Display.alpha = Mathf.Min(0.95f, inst.Display.alpha + Time.deltaTime * 1.85f);
             else
                 inst.Display.alpha = Mathf.Max(lowerLimit, inst.Display.alpha - Time.deltaTime * 0.475f);
         }
+    }
+
+    public class IGUISetterLegacy
+    { 
     }
 
     public interface IGUIFormat

@@ -10,6 +10,7 @@ using Sub_Missions.ManWindows;
 using System.IO;
 using Snapshots;
 using TerraTechETCUtil;
+using TAC_AI.AI.Enemy;
 
 namespace Sub_Missions
 {
@@ -68,6 +69,9 @@ namespace Sub_Missions
         private static bool spamLog = true;
 
         public static bool errorQueued = false;
+        public static bool collectedErrors = false;
+        public static bool collectedLogs = false;
+        public static bool collectedInfos = false;
         private static ErrorQueue errorList = new ErrorQueue();
         internal static ErrorQueue Errors => errorList;
         public static int countError = 0;
@@ -86,6 +90,10 @@ namespace Sub_Missions
             repeatingLog = false;
             repeatingErrored = false;
             repeatingAssert = false;
+
+            collectedErrors = false;
+            collectedInfos = false;
+            collectedLogs = false;
         }
         public static void PushErrors()
         {
@@ -93,6 +101,7 @@ namespace Sub_Missions
             {
                 if (errorQueued)
                 {
+                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
                     WindowManager.AddPopupMessageError("SubMissions Error", Errors);
                     WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
                     repeatingInfo = false;
@@ -113,6 +122,7 @@ namespace Sub_Missions
             {
                 try
                 {
+                    collectedInfos = true;
                     if (input.NullOrEmpty())
                     {
                         input = "Sub_Missions.SMUtil.Info has no information set for this edge case error, please notify Legionite (or some SubMissions maintainer) to add an assert. " +
@@ -123,10 +133,10 @@ namespace Sub_Missions
                     }
                     else
                     {
-                        if (input.Contains("SubMissions: "))
+                        if (input.Contains(KickStart.ModID + ": "))
                         {
                             countError++;
-                            input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                            input.Replace(KickStart.ModID + ": ", "<b>Error " + countError + "</b>: ");
                         }
                     }
                     if (logSpammer)
@@ -153,6 +163,7 @@ namespace Sub_Missions
             {
                 try
                 {
+                    collectedLogs = true;
                     if (input.NullOrEmpty())
                     {
                         input = "Sub_Missions.SMUtil.Log has no information set for this edge case error, please notify Legionite (or some SubMissions maintainer) to add an assert. " +
@@ -185,6 +196,7 @@ namespace Sub_Missions
             {
                 try
                 {
+                    collectedErrors = true;
                     if (input.NullOrEmpty())
                     {
                         input = "Sub_Missions.SMUtil.Error has no information set for this edge case error, please notify Legionite (or some SubMissions maintainer) to add an assert. " +
@@ -195,10 +207,10 @@ namespace Sub_Missions
                     }
                     else
                     {
-                        if (input.Contains("SubMissions: "))
+                        if (input.Contains(KickStart.ModID + ": "))
                         {
                             countError++;
-                            input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                            input.Replace(KickStart.ModID + ": ", "<b>Error " + countError + "</b>: ");
                         }
                     }
                     if (logSpammer)
@@ -237,10 +249,10 @@ namespace Sub_Missions
                     }
                     else
                     {
-                        if (input.Contains("SubMissions: "))
+                        if (input.Contains(KickStart.ModID + ": "))
                         {
                             countError++;
-                            input.Replace("SubMissions: ", "<b>Error " + countError + "</b>: ");
+                            input.Replace(KickStart.ModID + ": ", "<b>Error " + countError + "</b>: ");
                         }
                     }
                     if (logSpammer)
@@ -250,7 +262,10 @@ namespace Sub_Missions
                     }
                     SB.AppendLine(input);
                     if (spamLog)
+                    {
                         Debug_SMissions.Log(input);
+                        Debug_SMissions.Log(ex);
+                    }
                     errorList += new ErrorElementAssert(name, SB.ToString(), ex);
                     SB.Clear();
                 }
@@ -398,7 +413,7 @@ namespace Sub_Missions
         public static void ProceedID(ref SubMissionStep Step)
         {
             Step.Mission.CurrentProgressID = Step.SuccessProgressID;
-            Debug_SMissions.Log("SubMissions: ProceedID - Mission " + Step.Mission.Name + " has moved on to ID " + Step.Mission.CurrentProgressID);
+            Debug_SMissions.Log(KickStart.ModID + ": ProceedID - Mission " + Step.Mission.Name + " has moved on to ID " + Step.Mission.CurrentProgressID);
             if (ManNetwork.IsNetworked && ManNetwork.IsHost)
             {
                 //NetworkHandler
@@ -415,14 +430,14 @@ namespace Sub_Missions
             }
             catch (IndexOutOfRangeException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
                     "on the list, 1 counts as the second entry, and so on.", e);
             }
             catch (NullReferenceException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
                     " on the step's set VaribleType.", e);
@@ -443,14 +458,14 @@ namespace Sub_Missions
             }
             catch (IndexOutOfRangeException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
                     "on the list, 1 counts as the second entry, and so on.", e);
             }
             catch (NullReferenceException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex2] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
                     " on the step's set VaribleType.", e);
@@ -471,14 +486,14 @@ namespace Sub_Missions
             }
             catch (IndexOutOfRangeException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
                     "on the list, 1 counts as the second entry, and so on.", e);
             }
             catch (NullReferenceException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex3] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
                     " on the step's set VaribleType.", e);
@@ -495,17 +510,17 @@ namespace Sub_Missions
                 case EVaribleType.Int: //
                     if (setVal < 0)
                         return; // that means it's not being used
-                    Step.Mission.VarInts[setVal] = (int)Step.VaribleCheckNum;
+                    Step.Mission.VarIntsActive[setVal] = (int)Step.VaribleCheckNum;
                     break;
                 case EVaribleType.False: //
                     if (setVal < 0)
                         return; // that means it's not being used
-                    Step.Mission.VarTrueFalse[setVal] = false;
+                    Step.Mission.VarTrueFalseActive[setVal] = false;
                     break;
                 case EVaribleType.True: //
                     if (setVal < 0)
                         return; // that means it's not being used
-                    Step.Mission.VarTrueFalse[setVal] = true;
+                    Step.Mission.VarTrueFalseActive[setVal] = true;
                     break;
                 case EVaribleType.DoSuccessID: // 
                     ProceedID(ref Step);
@@ -534,15 +549,15 @@ namespace Sub_Missions
                 switch (Step.VaribleType)
                 {
                     case EVaribleType.Int: //
-                        return Step.Mission.VarInts[GlobalIndex] == (int)Step.VaribleCheckNum;
+                        return Step.Mission.VarIntsActive[GlobalIndex] == (int)Step.VaribleCheckNum;
                     case EVaribleType.IntGreaterThan: //
-                        return Step.Mission.VarInts[GlobalIndex] > (int)Step.VaribleCheckNum;
+                        return Step.Mission.VarIntsActive[GlobalIndex] > (int)Step.VaribleCheckNum;
                     case EVaribleType.IntLessThan: //
-                        return Step.Mission.VarInts[GlobalIndex] < (int)Step.VaribleCheckNum;
+                        return Step.Mission.VarIntsActive[GlobalIndex] < (int)Step.VaribleCheckNum;
                     case EVaribleType.False: //
-                        return Step.Mission.VarTrueFalse[GlobalIndex] == false;
+                        return Step.Mission.VarTrueFalseActive[GlobalIndex] == false;
                     case EVaribleType.True: //
-                        return Step.Mission.VarTrueFalse[GlobalIndex] == true;
+                        return Step.Mission.VarTrueFalseActive[GlobalIndex] == true;
                     case EVaribleType.None: // 
                     default:
                         return true;
@@ -550,7 +565,7 @@ namespace Sub_Missions
             }
             catch (IndexOutOfRangeException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
                     "[SetMissionVarIndex3] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing is Zero-Indexed, meaning that 0 counts as the first entry " +
@@ -558,7 +573,7 @@ namespace Sub_Missions
             }
             catch (NullReferenceException e)
             {
-                Assert(true, Step.LogName, "SubMissions: Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
+                Assert(true, Step.LogName, KickStart.ModID + ": Error in output [SetMissionVarIndex1] or [SetMissionVarIndex2] or " +
                     "[SetMissionVarIndex3] in mission " + Step.Mission.Name +
                     " | Step type " + Step.StepType.ToString() + " - Check your assigned Vars (VarInts or varTrueFalse) " +
                     "\n and make sure your referencing an entry you have declared in VarInts or varTrueFalse, depending" +
@@ -580,12 +595,13 @@ namespace Sub_Missions
         /// <param name="pos"></param>
         /// <param name="Team"></param>
         /// <param name="facingDirect"></param>
-        /// <param name="TechName"></param>
+        /// <param name="FileTechName"></param>
         /// <returns></returns>
-        public static Tank SpawnTechAuto(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName)
+        public static Tank SpawnTechAuto(ref SubMission mission, Vector3 pos, int Team, 
+            Vector3 facingDirect, string FileTechName)
         {
             // Load from folder
-            if (mission.Tree.TreeTechs.TryGetValue(TechName, out SpawnableTech val))
+            if (mission.Tree.TreeTechs.TryGetValue(FileTechName, out SpawnableTech val))
             {   // Supports normal snapshots
                 Tank tech = val.Spawn(mission, pos, facingDirect, Team);
                 if (Team == ManSpawn.NeutralTeam)
@@ -597,28 +613,29 @@ namespace Sub_Missions
         }
 
 
-        public static string SpawnTechTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName, bool instant = false)
+        public static string SpawnTechTracked(ref SubMission mission, Vector3 pos, int Team, 
+            Vector3 facingDirect, string FileTechName, bool instant = false)
         {   // We pull these from MissionTechs.json
             Tank tech;
             if (instant)
             {
-                if (mission.Tree.TreeTechs.TryGetValue(TechName, out SpawnableTech val))
+                if (mission.Tree.TreeTechs.TryGetValue(FileTechName, out SpawnableTech val))
                 {   // Supports normal snapshots
                     tech = val.Spawn(mission, pos, facingDirect, Team);
                     SetTrackedTech(ref mission, tech);
                     if (Team == ManSpawn.NeutralTeam)
                         tech.SetInvulnerable(true, true);
-                    return TechName;
+                    return FileTechName;
                 }
             }
             else
             {
-                TrackedTech techCase = GetTrackedTechBase(ref mission, TechName);
+                TrackedTech techCase = GetTrackedTechBase(ref mission, FileTechName);
                 techCase.delayedSpawn = ManSpawn.inst.SpawnDeliveryBombNew(pos, DeliveryBombSpawner.ImpactMarkerType.Tech);
                 techCase.delayedSpawn.BombDeliveredEvent.Subscribe(techCase.SpawnTech);
                 techCase.DeliQueued = true;
             }
-            return TechName;
+            return FileTechName;
         }
         /// <summary>
         /// Makes a FRESH NEW TrackedTech entry for the mission
@@ -629,16 +646,19 @@ namespace Sub_Missions
         /// <param name="facingDirect"></param>
         /// <param name="TechName"></param>
         /// <param name="instant"></param>
-        public static void SpawnTechAddTracked(ref SubMission mission, Vector3 pos, int Team, Vector3 facingDirect, string TechName, bool instant = false)
+        public static void SpawnTechAddTracked(ref SubMission mission, Vector3 pos, int Team, 
+            Vector3 facingDirect, string FileTechName, bool instant = false)
         {   // We pull these from MissionTechs.json
-            TrackedTech tech = new TrackedTech(TechName, true);
+            if (FileTechName.NullOrEmpty())
+                throw new NullReferenceException("The tech name is not valid.  It must be specified");
+            if (!mission.Tree.TreeTechs.TryGetValue(FileTechName, out var ST))
+                throw new NullReferenceException("The tech " + FileTechName + " is not in the Mission Tree of the " +
+                    "hosting mission");
+            TrackedTech tech = new TrackedTech(ST.name, FileTechName, true);
             tech.mission = mission;
             if (instant)
             {
-                if (mission.Tree.TreeTechs.TryGetValue(TechName, out SpawnableTech val))
-                {   // Supports normal snapshots
-                    tech.TechAuto = val.Spawn(mission, pos, facingDirect, Team);
-                }
+                tech.TechAuto = ST.Spawn(mission, pos, facingDirect, Team);
             }
             else
             {
@@ -653,51 +673,86 @@ namespace Sub_Missions
         {
             return "error - requires PopulationInjector";
         }
-        public static bool DoesTrackedTechExist(ref SubMissionStep mission, string TechName)
+        public static bool DoesTrackedTechExist(ref SubMissionStep mission, string FileTechName)
         {
-            if (TechName == "Player Tech")
+            if (FileTechName == "Player Tech")
                 return Singleton.playerTank;
-            return mission.Mission.TrackedTechs.Exists(delegate (TrackedTech cand) { return cand.TechName == TechName; });
+            return mission.Mission.TrackedTechs.Exists(delegate (TrackedTech cand) { return cand.FileTechName == FileTechName; });
         }
-        public static bool GetTrackedTech(ref SubMissionStep mission, string TechName, out Tank tech)
+        public static bool GetTrackedTech(ref SubMissionStep mission, string FileTechName, out Tank tech)
         {
-            if (TechName == "Player Tech")
+            if (FileTechName == "Player Tech")
             {
                 tech = Singleton.playerTank;
                 return Singleton.playerTank;
             }
-            tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).TechAuto;
+            tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.FileTechName == FileTechName; }).TechAuto;
             if (tech == null)
                 return false;
             return true;
         }
-        public static TrackedTech GetTrackedTechBase(ref SubMissionStep mission, string TechName)
+        public static TrackedTech GetTrackedTechBase(ref SubMissionStep mission, string FileTechName)
         {
-            if (TechName == "Player Tech")
+            if (FileTechName == "Player Tech")
             {
                 Error(true, "Mission(TrackedTech) ~ " + mission.Mission.Name + ", Step " + mission.StepType + " ~ " + 
-                    mission.ProgressID,  "SubMissions: GetTrackedTechBase - Called for \"Player Tech\", but the player tech is not trackable!");
+                    mission.ProgressID,  KickStart.ModID + ": GetTrackedTechBase - Called for \"Player Tech\", but the player tech is not trackable!");
             }
-            return mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; });
+            return mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.FileTechName == FileTechName; });
         }
-        public static bool GetTrackedTechBase(ref SubMissionStep mission, string TechName, out TrackedTech tech)
+        public static bool GetTrackedTechBase(ref SubMissionStep mission, string FileTechName, out TrackedTech tech)
         {
-            tech = GetTrackedTechBase(ref mission, TechName);
+            tech = GetTrackedTechBase(ref mission, FileTechName);
             return tech != null;
         }
-        public static TrackedTech GetTrackedTechBase(ref SubMission mission, string TechName)
+        public static TrackedTech GetTrackedTechBase(ref SubMission mission, string FileTechName)
         {
-            return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; });
+            return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.FileTechName == FileTechName; });
         }
-        public static Tank GetTrackedTech(ref SubMission mission, string TechName)
+        public static Tank GetTrackedTech(ref SubMission mission, string FileTechName)
         {
-            return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == TechName; }).TechAuto;
+            return mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.FileTechName == FileTechName; }).TechAuto;
         }
         public static void SetTrackedTech(ref SubMission mission, Tank tech)
         {
             mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == tech.name; }).TechAuto = tech;
         }
+        public static void EnforceTrackedTech(ref SubMission mission, Tank tech, string FileTechName)
+        {
+            TrackedTech TT = mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == tech.name; });
+            if (TT == null)
+            {
+                mission.TrackedTechs.Add(new TrackedTech(tech.name, FileTechName, tech.IsPopulation));
+            }
+        }
 
+
+        // Visuals
+        public static void ShowModelsApprox(GameObject GO, Vector3 InWorldSpace, Quaternion rot, Vector3 scale)
+        {
+            ShowModels_Internal(GO, Matrix4x4.TRS(InWorldSpace, rot, scale));
+        }
+        private static void ShowModels_Internal(GameObject GO, Matrix4x4 matrix)
+        {
+            MeshFilter MF = GO.GetComponent<MeshFilter>();
+            MeshRenderer MR = GO.GetComponent<MeshRenderer>();
+            if (MF && MR)
+            {
+                Mesh mesh = MF.sharedMesh;
+                Material mat = MR.sharedMaterial;
+                if (mesh && mat)
+                {
+                    Graphics.DrawMesh(mesh, matrix, mat, 0);
+                }
+            }
+            var trans = GO.transform;
+            for (int i = 0; i < trans.childCount; i++)
+            {
+                var child = trans.GetChild(i);
+                ShowModels_Internal(child.gameObject, matrix * Matrix4x4.TRS(child.localPosition,
+                    child.localRotation, child.localScale));
+            }
+        }
 
 
         // ETC
