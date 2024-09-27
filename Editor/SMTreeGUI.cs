@@ -10,12 +10,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Xml.Linq;
 using Newtonsoft.Json;
-using TAC_AI.Templates;
-using static BlockPlacementCollector.Collection;
-using FMOD;
-using System.Reflection;
-using static CameraManager.Camera;
-using Newtonsoft.Json.Linq;
 
 namespace Sub_Missions.Editor
 {
@@ -1164,7 +1158,7 @@ namespace Sub_Missions.Editor
                 {
                     wObject = item;
                     wObjectName = name;
-                    WObjectVis = GetTexture(item);
+                    GetTexture(item, (Texture2D delegater) => { WObjectVis = delegater; });
                     addWObject = false;
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 }
@@ -1305,7 +1299,7 @@ namespace Sub_Missions.Editor
                     {
                         var inst = tree.WorldObjects.Values.ElementAt(indexR);
                         SelectorRendNames[j] = inst.name;
-                        SelectorRendTextures[j] = GetTexture(inst);
+                        GetTexture(inst, (Texture2D delegater) => { SelectorRendTextures[j] = delegater; });
                     }
                 }
             }
@@ -1430,20 +1424,19 @@ namespace Sub_Missions.Editor
             }
         }
 
-        internal static Texture2D GetTexture(SMWorldObject obj)
+        internal static void GetTexture(SMWorldObject obj, Action<Texture2D> callback)
         {
             try
             {
                 obj.gameObject.SetActive(true);
-                return ResourcesHelper.GeneratePreviewForGameObject(obj.gameObject, obj.GetComponent<Collider>().bounds);
+                ResourcesHelper.GeneratePreviewForGameObject((Texture2D delegater) => {
+                    callback(delegater);
+                    obj.gameObject.SetActive(false);
+                }, obj.gameObject, obj.GetComponent<Collider>().bounds);
             }
             catch
             {
-                return null;
-            }
-            finally
-            {
-                obj.gameObject.SetActive(false);
+                
             }
         }
     }

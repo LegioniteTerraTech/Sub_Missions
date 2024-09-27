@@ -38,43 +38,47 @@ namespace Sub_Missions
                 SubMissionHierachyAssetBundle newC = new SubMissionHierachyAssetBundle(tree);
                 foreach (var item in tree.TerrainEdits)
                 {
-                    if (nameCollisionDetector.TryGetValue(item.Key, out string conflict))
+                    string name = item.Key;
+                    if (nameCollisionDetector.TryGetValue(name, out string conflict))
                     {
                         SMUtil.Error(false, "Mission Tree AssetBundle (Building) ~ " + TreeName,
                             "Terrain of name " + item.Key + " clashes with item of same name in - " + conflict);
                         SMUtil.PushErrors();
                         return newC;
                     }
-                    nameCollisionDetector.Add(item.Key, "Terrains");
-                    newC.TerrainNames.Add(item.Key);
+                    nameCollisionDetector.Add(name, "Terrains");
+                    newC.TerrainNames.Add(name);
                 }
                 foreach (var item in tree.TreeTechs)
                 {
-                    if (nameCollisionDetector.TryGetValue(item.Key, out string conflict))
+                    string name = item.Key;
+                    if (nameCollisionDetector.TryGetValue(name, out string conflict))
                     {
                         SMUtil.Error(false, "Mission Tree AssetBundle (Building) ~ " + TreeName,
                             "Tech of name " + item.Key + " clashes with item of same name in - " + conflict);
                         SMUtil.PushErrors();
                         return newC;
                     }
-                    nameCollisionDetector.Add(item.Key, "Techs");
-                    newC.TechNames.Add(item.Key);
+                    nameCollisionDetector.Add(name, "Techs");
+                    newC.TechNames.Add(name);
                 }
                 foreach (var item in tree.WorldObjectFileNames)
                 {
-                    if (nameCollisionDetector.TryGetValue(item, out string conflict))
+                    string name = item;
+                    if (nameCollisionDetector.TryGetValue(name, out string conflict))
                     {
                         SMUtil.Error(false, "Mission Tree AssetBundle (Building) ~ " + TreeName,
                             "WorldObject of name " + item + " clashes with item of same name in - " + conflict);
                         SMUtil.PushErrors();
                         return newC;
                     }
-                    nameCollisionDetector.Add(item, "Pieces");
-                    newC.ObjectNames.Add(item);
+                    nameCollisionDetector.Add(name, "Pieces");
+                    newC.ObjectNames.Add(name);
                 }
                 foreach (var item in tree.MissionNames)
                 {
-                    newC.MissionNames.Add(item);
+                    string name = item;
+                    newC.MissionNames.Add(name);
                 }
                 return newC;
             }
@@ -143,7 +147,7 @@ namespace Sub_Missions
                 LoadTreeMeshes(ref models);
                 LoadTreeTechs(ref album, ref techs);
 
-                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json for " + TreeName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json  for " + TreeName + " successfully.");
             }
             catch (Exception e)
             {
@@ -193,9 +197,10 @@ namespace Sub_Missions
                     {
                         try
                         {
+                            string nameFiltered = item.name.Replace("%", string.Empty);
                             if (!item.text.NullOrEmpty())
                             {
-                                dictionary.Add(item.name, JsonConvert.DeserializeObject<Dictionary<IntVector2, TerrainModifier>>(
+                                dictionary.Add(nameFiltered, JsonConvert.DeserializeObject<Dictionary<IntVector2, TerrainModifier>>(
                                     item.text));
                             }
                         }
@@ -236,7 +241,8 @@ namespace Sub_Missions
                 {
                     if (!item.text.NullOrEmpty())
                     {
-                        dictionary.Add(item.name, new SpawnableTechBundledRAW(item.name, item));
+                        string nameFiltered = item.name.Replace("%", string.Empty);
+                        dictionary.Add(nameFiltered, new SpawnableTechBundledRAW(nameFiltered, item));
                     }
                 }
             }
@@ -250,7 +256,7 @@ namespace Sub_Missions
                 bool foundAny = false;
                 foreach (var item in ResourcesHelper.IterateAssetsInModContainer<Texture2D>(container))
                 {
-                    if (item.name.EndsWith("_P.json"))
+                    if (item.name.EndsWith(SMissionJSONLoader.worldObjectPostFix + ".json"))
                     {
                         if (entries.Contains(item.name))
                         {
@@ -259,7 +265,10 @@ namespace Sub_Missions
                                 "multiple Pieces of same name!");
                         }
                         else
+                        {
+                            string nameFiltered = item.name.Replace("%", string.Empty);
                             entries.Add(item.name);
+                        }
                         foundAny = true;
                     }
                 }
@@ -297,32 +306,32 @@ namespace Sub_Missions
             SMissionJSONLoader.ValidateDirectory(TreeDirectory);
             try
             {
-                string output = File.ReadAllText(Path.Combine(TreeDirectory, "MissionTree.json"));
+                string output = File.ReadAllText(Path.Combine(TreeDirectory, "MissionTree.json "));
 
-                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json trunk for " + TreeName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json  trunk for " + TreeName + " successfully.");
                 return output;
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json  destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - File MissionTree.json  is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - File MissionTree.json is not at destination", e);
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - File MissionTree.json  is not at destination", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - File MissionTree.json  is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
             {
@@ -341,29 +350,29 @@ namespace Sub_Missions
                 LoadTreeMeshes(ref models);
                 LoadTreeTechs(ref album, ref techs);
 
-                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json for " + TreeName + " successfully.");
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json  for " + TreeName + " successfully.");
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json  destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - File MissionTree.json  is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - File MissionTree.json is not at destination", e);
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - File MissionTree.json  is not at destination", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName + "." +
-                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+                SMUtil.Assert(false, "Mission Tree (Loading) ~ " + TreeName, KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName + "." +
+                    "\n - File MissionTree.json  is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
             {
@@ -384,12 +393,12 @@ namespace Sub_Missions
             catch (UnauthorizedAccessException e)
             {
                 SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
-                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json  destination", e);
             }
             catch (PathTooLongException e)
             {
                 SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
-                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                    "\n - File MissionTree.json  is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
@@ -403,7 +412,7 @@ namespace Sub_Missions
             catch (IOException e)
             {
                 SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
-                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+                    "\n - File MissionTree.json  is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
             {
@@ -426,24 +435,24 @@ namespace Sub_Missions
             catch (UnauthorizedAccessException e)
             {
                 SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
-                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json  destination", e);
             }
             catch (PathTooLongException e)
             {
                 SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
-                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                    "\n - File MissionTree.json  is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
                 SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
-                    "\n - File MissionTree.json is not at destination", e);
+                    "\n - File MissionTree.json  is not at destination", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
                 SMUtil.Assert(false, "WorldObject (Loading) ~ " + ObjectName, KickStart.ModID + ": Could not read " + ObjectName + ".json for " + tree.TreeName + "." +
-                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+                    "\n - File MissionTree.json  is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
             {
@@ -474,12 +483,12 @@ namespace Sub_Missions
                         catch (UnauthorizedAccessException e)
                         {
                             SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
-                                "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+                                "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json  destination", e);
                         }
                         catch (PathTooLongException e)
                         {
                             SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
-                                "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                                "\n - File MissionTree.json  is located in a directory that makes it too deep and long" +
                                 " for the OS to navigate correctly", e);
                         }
                         catch (DirectoryNotFoundException e)
@@ -491,12 +500,12 @@ namespace Sub_Missions
                         catch (FileNotFoundException e)
                         {
                             SMUtil.Assert(false, "Mission Tree Texture (Loading) ~ " + name, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
-                                "\n - File MissionTree.json is not at destination", e);
+                                "\n - File MissionTree.json  is not at destination", e);
                         }
                         catch (IOException e)
                         {
                             SMUtil.Assert(false, "Mission Tree Textures (Loading) ~ " + TreeName, KickStart.ModID + ": Could not load " + name + ".png for " + TreeName + "." +
-                                "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+                                "\n - File MissionTree.json  is not accessable because IOException(?) was thrown!", e);
                         }
                         catch (Exception e)
                         {

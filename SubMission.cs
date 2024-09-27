@@ -27,23 +27,51 @@ namespace Sub_Missions
         [JsonIgnore]
         public SubMissionType Type = SubMissionType.Basic;
 
+        [Doc("The DEFAULT name for the mission.  Completely ignored if AltNames is set")]
         public string Name = "Unset";
         [JsonIgnore]
         public string SelectedAltName;
+        [Doc("Alternate names for the mission (advised for repeating missions).  This directly corresponds to AltNames.")]
         public List<string> AltNames;
+        [Doc("The faction that offers this mission offered with.")]
         public string Faction = "GSO";
+        [Doc("The minimum grade required for this mission to be offered")]
         public int GradeRequired = 0;
+        /// <summary> Missions that are COMPLETE </summary>
+        [Doc("Missions that are COMPLETE")]
+        public List<string> MissionsRequired;
+        [Doc("The DEFAULT description of the mission.  Completely ignored if AltDescs is set")]
         public string Description = "ThisIsNotSetCorrectly";
+        [Doc("Alternate descriptions for the mission (advised for repeating missions).  This directly corresponds to AltNames.")]
         public List<string> AltDescs;
+        [Doc("Primary alternate progress type, ranging from [0 - 255]")]
         public byte MinProgressX = 0;
+        [Doc("Secondary alternate progress type, ranging from [0 - 255]")]
         public byte MinProgressY = 0;
+        [Doc("Name of the TerrainMod to use")]
         public string TerrainMod;
+        [Doc("If it does not work in multiplayer.  " +
+            "Note this shall be true regardless for some unsupported functions")]
         public bool SinglePlayerOnly = false;
+        [Doc("If you can do this mission anywhere in the world")]
         public bool IgnorePlayerProximity = false;
+        [Doc("Clears all the respective mission Techs from the world")]
         public bool ClearTechsOnClear = true;
+        [Doc("Clears all the respective mission World Objects from the world")]
         public bool ClearModularMonumentsOnClear = true;
+        [Doc("Clears all the respective mission Scenery from the world")]
         public bool ClearSceneryOnSpawn = true;
+        [Doc("If the mission should not be cancellable")]
         public bool CannotCancel = false;
+        [Doc("The Biomes this mission can spawn in. Note that this should support custom biomes as well")]
+        public List<string> NamesBiomesAllowed = null;
+        [Doc("The position where the mission should be spawned in relation to the player." +
+            "\n  ClassicSelect - Spawns like a traditional mission" +
+            "\n  FixedCoordinate - Spawns at a fixed coordinate relative to world origin.  " +
+            "Handy for missions that must have positional awareness!" +
+            "\n  FarFromPlayer - Spawn far away from the player, out of render distance" +
+            "\n  CloseToPlayer - Spawn close to the player, barely within interaction distance" +
+            "\n  OffsetFromPlayer - Spawn with specific offset from the player's camera position")]
         public SubMissionPosition SpawnPosition = SubMissionPosition.FarFromPlayer;
 
         internal FactionSubTypes FactionType => SubMissionTree.GetTreeCorp(Faction);
@@ -126,6 +154,44 @@ namespace Sub_Missions
         }
         public static string GetDocumentation()
         {
+            StringBuilder SB = new StringBuilder();
+            new AutoDocumentator(typeof(SubMission), "\n*       Every mission starts on the CurrentProgressID of 0." +
+                 "\n*" +
+                 "\n*       EventList - handles the Steps in order from top to bottom, and repeats if nesseary" +
+                 "\n*" +
+                 "\n*       There are variables you can add and reference around the case of the entire mission;" +
+                 "\n*       VarTrueFalse, VarInts, VarFloats can be called and pooled later on" +
+                 "\n*       Proper syntax for this would be:" +
+                 "\n*       \"VarTrueFalse\" :{" +
+                 "\n*          false, // Is Target destroyed?" +
+                 "\n*          false, // PlayerIsAlive" +
+                 "\n*          false, // next bool" +
+                 "\n*          true,  // whatever" +
+                 "\n*       }" +
+                 "\n*" +
+                 "\n*      Variables with \"Global\" attached to the beginning:" +
+                 "\n*       To re-reference these (Entire-SubMission level Varibles), in the step's trigger, make sure to " +
+                 "\n*       reference the Zero-Based-Index in the respective mission slot to reference the variable." +
+                 "\n*       Zero-Based-Index [0,1,2]  (normal is [1,2,3])" +
+                 "\n*" +
+                 "\n*       Each Step has a Progress ID, which tells the SubMission where to iterate to." +
+                 "\n*         When a branch ID is set, the values adjacent of it will still be triggered" +
+                 "\n*         this it to allow some keep features to still work like slightly changing the ProgressID to deal with" +
+                 "\n*         players leaving the mission area" +
+                 "\n*         If the CurrentProgressID is '1', the mission will run the Steps in [0,1,2]" +
+                 "\n*" +
+                 "\n*         Steps with a capital \"S\" at the end can offset Step. It is suggested that you only use one step with" +
+                 "\n*         per ProgressID." +
+                 "\n*" +
+                 "\n*         On success, the CurrentProgressID will be set to -98 and do one last loop." +
+                 "\n*         On fail, the CurrentProgressID will be set to -100 and do one last loop." +
+                 "\n*" +
+                 "\n*         If a Step's ProgressID is set to:" +
+                 "\n*         - alwaysRunValue (" + alwaysRunValue + ") - Update all the time regardless of the CurrentProgressID." +
+                 "\n*         - missionCancelledValue (" + missionCancelledValue + ") - Updated once on Mission Cancelled" +
+                 "\n*         - missionFailedValue (" + missionFailedValue + ") - Updated once on Mission Fail.").StringBuild(null, null, SB);
+            return SB.ToString();
+            /*
             return
                  "*   SubMission Missions Syntax" +
                  "\n*       Every mission starts on the CurrentProgressID of 0." +
@@ -180,9 +246,9 @@ namespace Sub_Missions
                   "\n  \"GradeRequired\": 0,  // The minimum grade required to have this mission appear" +
                   "\n  \"SpawnPosition\": \"FarFromPlayer\",   // The position where the mission should be spawned in relation to the player." +
                   "\n  // Conditions TO CHECK before offering mission" +
-                  "\n  \"MinProgressX\": 0,   // Your SubMissionTree.json's ProgressXName required for this mission." +
+                  "\n  \"MinProgressX\": 0,   // Your SubMissionTree.json 's ProgressXName required for this mission." +
                   "\n  //  If this value is negative, then it checks based on At Most." +
-                  "\n  \"MinProgressX\": 0,   // Your SubMissionTree.json's ProgressXName required for this mission." +
+                  "\n  \"MinProgressX\": 0,   // Your SubMissionTree.json 's ProgressXName required for this mission." +
                   "\n  //   If this value is negative, then it checks based on At Most." +
                   "\n  // Input Parameters" +
                   "\n  \"SinglePlayerOnly\": true,       // Set if it should only be offered in single-player (MP is pending)." +
@@ -193,9 +259,13 @@ namespace Sub_Missions
                   "\n  \"ClearTechsOnClear\": true,      // Clear all the mission techs on successful mission finish." +
                   "\n  \"ClearModularMonumentsOnClear\": true,  // Gets rid of all ModularMonuments in this mission." +
                   "\n  \"ClearSceneryOnSpawn\": true,  // Clears the mission area." +
+                  "\n  \"NamesBiomesAllowed\": {  // Biomes that this mission shall be restricted to.  Leave empty for all." +
+                  "\n     \"Grasslands\"," +
+                  "\n  },             // " +
                  "\n}," +
                  "\n //Note:  Repeating missions do not reserve their position - do not use for missions with persistant elements!";
-    }
+            */
+        }
 
         internal void OnMoveWorldOrigin(IntVector3 moveDist)
         {

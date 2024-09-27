@@ -6,8 +6,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Sub_Missions.ManWindows;
 using TAC_AI.AI;
-using FMOD.Studio;
-using static CompoundExpression.EEInstance;
 using TAC_AI;
 
 namespace Sub_Missions.Steps

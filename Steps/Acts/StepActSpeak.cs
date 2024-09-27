@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Sub_Missions.ManWindows;
 using TAC_AI.AI.Enemy;
-using static Circuits;
 
 namespace Sub_Missions.Steps
 {

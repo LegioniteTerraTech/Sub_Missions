@@ -28,10 +28,10 @@ namespace Sub_Missions
             if (ResourcesHelper.TryGetModContainer("Mod Missions", out ModContainer MC))
             {
                 Cache = CursorChangeHelper.GetCursorChangeCache(SMissionJSONLoader.DLLDirectory, "Terraformer_Icons", MC,
-                    "TerrainToolLevel",
-                    "TerrainToolUp",
-                    "TerrainToolDefault",
-                    "TerrainToolDown"
+                    new KeyValuePair<string, bool>("TerrainToolLevel", false),
+                    new KeyValuePair<string, bool>("TerrainToolUp", false),
+                    new KeyValuePair<string, bool>("TerrainToolDefault", false),
+                    new KeyValuePair<string, bool>("TerrainToolDown", false)
                     );
             }
             else

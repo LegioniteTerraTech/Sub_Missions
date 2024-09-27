@@ -10,7 +10,6 @@ using Sub_Missions.Steps;
 using Sub_Missions.ModularMonuments;
 using Newtonsoft.Json;
 using System.Reflection;
-using static HarmonyLib.Code;
 using System.IO;
 using TerraTechETCUtil;
 #if !STEAM
@@ -234,9 +233,9 @@ namespace Sub_Missions
             {
                 inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
                 Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions initated");
-                TerraTechETCUtil.ResourcesHelper.PostBlocksLoadEvent.Subscribe(ExtendSpeakers);
-                TerraTechETCUtil.WikiPageCorp.GetCorpDescription = ManSMCCorps.GetCorpLores;
-                TerraTechETCUtil.WikiPageCorp.OnWikiPageMade.Subscribe(ManSMCCorps.GetCorpLoresExtended);
+                ResourcesHelper.ModsPostLoadEvent.Subscribe(ExtendSpeakers);
+                WikiPageCorp.GetCorpDescription = ManSMCCorps.GetCorpLores;
+                WikiPageCorp.OnWikiPageMade.Subscribe(ManSMCCorps.GetCorpLoresExtended);
             }
             Active = true;
         }
@@ -766,7 +765,7 @@ namespace Sub_Missions
             }
             else
             {
-                if (!(KickStart.Debugger && SubMissionsWiki.inst.ShowButtons))
+                if (!KickStart.Debugger || !SubMissionsWiki.inst.ShowButtons)
                 {
                     WindowManager.HidePopup(Button);
                     WindowManager.HidePopup(SideUI);
@@ -819,7 +818,7 @@ namespace Sub_Missions
                 PurgeAllTrees();
                 SaveManSubMissions.LoadDataAutomaticLegacy();
                 inst.GetAllPossibleMissions();
-                if (KickStart.Debugger)
+                if (KickStart.Debugger && SubMissionsWiki.inst.ShowButtons)
                 {
                     WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
                     WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
@@ -827,7 +826,7 @@ namespace Sub_Missions
             }
             else
             {
-                if (!KickStart.Debugger)
+                if (!KickStart.Debugger || !SubMissionsWiki.inst.ShowButtons)
                 {
                     WindowManager.HidePopup(Button);
                     WindowManager.HidePopup(SideUI);

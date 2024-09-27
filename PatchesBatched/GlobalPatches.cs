@@ -31,9 +31,9 @@ namespace Sub_Missions
             {
                 if (!CursorChanger.AddedNewCursors)
                     return;
-                if (WorldTerraformer.tool && WorldTerraformer.tool.ToolARMED)
+                if (ManTerraformTool.tool && ManTerraformTool.tool.ToolARMED)
                 {
-                    switch (WorldTerraformer.tool.state)
+                    switch (ManTerraformTool.tool.state)
                     {
                         case TerraformerCursorState.None:
                             break;
@@ -64,48 +64,6 @@ namespace Sub_Missions
             {
                 KickStart.DelayedInit();
                 //ManSubMissions.Subscribe();
-            }
-        }
-
-        internal static class VisiblePatches
-        {
-            internal static Type target = typeof(Visible);
-            //SaveVisiblesAtDefaultHeight
-            private static void SaveForStorage_Postfix(ManSaveGame.StoredVisible sv)
-            {
-                Vector3 pos = sv.m_WorldPosition.TileRelativePos;
-                sv.m_WorldPosition = new WorldPosition(sv.m_WorldPosition.TileCoord,
-                    new Vector3(pos.x, TerrainOperations.LerpToDefault(pos.y), pos.z));
-            }
-        }
-
-        internal static class ManSaveGame_StoredVisiblePatches
-        {
-            internal static Type target = typeof(ManSaveGame.StoredVisible);
-            //LoadVisiblesAtResizedHeight
-            private static void GetBackwardsCompatiblePosition_Postfix(ManSaveGame.StoredVisible __instance, ref Vector3 __result)
-            {
-                __result = __instance.m_Position;
-                if (__instance.m_WorldPosition != default && __instance.m_Position == Vector3.zero)
-                {
-                    __result = __instance.m_WorldPosition.ScenePosition;
-                }
-                __result = __result.SetY(TerrainOperations.LerpToRescaled(__result.y));
-            }
-        }
-        internal static class ManSaveGame_CameraPositionPatches
-        {
-            internal static Type target = typeof(ManSaveGame.CameraPosition);
-            //LoadCamAtResizedHeight
-            private static bool GetBackwardsCompatiblePosition_Prefix(ManSaveGame.CameraPosition __instance, ref Vector3 __result)
-            {
-                __result = __instance.m_Position;
-                if (__instance.m_WorldPosition != default && __instance.m_Position == Vector3.zero)
-                {
-                    __result = __instance.m_WorldPosition.ScenePosition;
-                }
-                __result = __result.SetY(TerrainOperations.LerpToRescaled(__result.y));
-                return false;
             }
         }
 

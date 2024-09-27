@@ -6,8 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions
 {
@@ -730,30 +730,30 @@ namespace Sub_Missions
             TryCopyFile(Path.Combine(DLLDirectory, "ModularBrickCube_6x3x6.obj"), Path.Combine(MissionsDirectory, TreeName, "ModularBrickCube_6x3x6.obj"));
             try
             {
-                File.WriteAllText(Path.Combine(MissionsDirectory, TreeName, "MissionTree.json"), RawTreeJSON);
-                Debug_SMissions.Log(KickStart.ModID + ": Saved MissionTree.json for " + TreeName + " successfully.");
+                File.WriteAllText(Path.Combine(MissionsDirectory, TreeName, "MissionTree.json "), RawTreeJSON);
+                Debug_SMissions.Log(KickStart.ModID + ": Saved MissionTree.json  for " + TreeName + " successfully.");
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName +
-                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json destination", e);
+                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName +
+                    "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json  destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName +
-                    "\n - File MissionTree.json is located in a directory that makes it too deep and long" +
+                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName +
+                    "\n - File MissionTree.json  is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName +
-                    "\n - File MissionTree.json is not at destination", e);
+                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName +
+                    "\n - File MissionTree.json  is not at destination", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json for " + TreeName +
-                    "\n - File MissionTree.json is not accessable because IOException(?) was thrown!", e);
+                SMUtil.Assert(false, "Export Mission Prefabs", KickStart.ModID + ": Could not edit MissionTree.json  for " + TreeName +
+                    "\n - File MissionTree.json  is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
             {

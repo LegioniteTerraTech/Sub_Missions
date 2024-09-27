@@ -20,29 +20,6 @@ namespace Sub_Missions
 
     internal static class Patches
     {
-        [HarmonyPatch(typeof(ManWorld), "TryProjectToGround", 
-            new Type[]{typeof(Vector3), typeof(Vector3), typeof(bool) },
-            new ArgumentType[] { ArgumentType.Ref, ArgumentType.Out, ArgumentType.Normal, })]//
-        private static class InsureGroundHit
-        {
-            private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> collection)
-            {
-                int Ldc_R4Count = 0;
-                foreach (var item in collection)
-                {
-                    if (item.opcode == OpCodes.Ldc_R4)
-                    {
-                        if (item.operand is float floatC && floatC == 250f)
-                        {
-                            Ldc_R4Count++;
-                            Debug_SMissions.Log("Adjusted ground raycasting(" + Ldc_R4Count +")");
-                            item.operand = 550f;
-                        }
-                    }
-                    yield return item;
-                }
-            }
-        }
 
 #if !STEAM
         [HarmonyPatch(typeof(TechAudio))]

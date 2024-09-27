@@ -7,7 +7,6 @@ using UnityEngine;
 using TerraTechETCUtil;
 using Sub_Missions.Steps;
 using Sub_Missions.ManWindows;
-using static LocalisationEnums;
 
 namespace Sub_Missions.Editor
 {
@@ -1099,7 +1098,7 @@ namespace Sub_Missions.Editor
             if (settable != null && runData.Mission.Tree.WorldObjects.TryGetValue(settable, out var pieceD))
             {
                 displayName = settable;
-                displayPicture = SMTreeGUI.GetTexture(pieceD);
+                SMTreeGUI.GetTexture(pieceD, (Texture2D delegater) => { displayPicture = delegater; });
             }
             else
             {

@@ -10,6 +10,7 @@ namespace Sub_Missions
     {
         internal static bool LogAll = false;
         internal static bool ShouldLog = true;
+        internal static bool ShouldLogBiomeGen = false;
         private static bool ShouldLogNet = true;
         private static bool LogDev = false;
 
@@ -28,6 +29,12 @@ namespace Sub_Missions
         internal static void Log(string message)
         {
             if (!ShouldLog)
+                return;
+            UnityEngine.Debug.Log(message);
+        }
+        internal static void LogGen(string message)
+        {
+            if (!ShouldLog || !ShouldLogBiomeGen)
                 return;
             UnityEngine.Debug.Log(message);
         }

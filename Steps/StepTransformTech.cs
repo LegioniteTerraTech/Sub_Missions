@@ -7,6 +7,7 @@ using UnityEngine;
 using TAC_AI.AI;
 using TAC_AI.AI.Enemy;
 using TAC_AI.Templates;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.Steps
 {
@@ -111,7 +112,7 @@ namespace Sub_Missions.Steps
                             {
                                 Tank techCur = tTech.TechAuto;
                                 Debug_SMissions.Log(KickStart.ModID + ": More than meets the eye");
-                                tTech.TechAuto = RawTechLoader.TechTransformer(techCur, SMission.InputStringAux);
+                                tTech.TechAuto = RawTechLoader.TechTransformer(techCur, RawTechBase.JSONToMemoryExternal(SMission.InputStringAux));
                             }
                         }
                         else

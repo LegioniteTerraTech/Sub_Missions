@@ -9,7 +9,6 @@ using HarmonyLib;
 using Nuterra.NativeOptions;
 using Sub_Missions.ManWindows;
 using TerraTechETCUtil;
-using System.IO;
 
 
 #if !STEAM
@@ -110,18 +109,33 @@ namespace Sub_Missions
             {
                 TACAIRequiredWarning();
             }
-            else
+            WorldTerraformer.InsureInit();
+            try
+            {
+                TAC_AI.KickStart.TerrainHeight = TerrainOperations.RescaleFactor * TerrainOperations.TileHeightDefault;
+                TAC_AI.KickStart.TerrainHeightOffset = TerrainOperations.TileHeightRescaled;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
 
             ManSubMissions.inst.ReloadAllMissionTrees();
-        }
-        public static void IncreaseAIHeightRange()
-        {
-            TAC_AI.KickStart.TerrainHeight = TerrainOperations.TileHeightRescaled;
         }
         public static void DelayedInit()
         {
             ManSubMissions.Subscribe();
             BlockIndexer.ConstructBlockLookupListDelayed();
+        }
+        public static void MainOfficialInitEARLY()
+        {
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (Steam Workshop Version) EARLY startup");
+            if (!VALIDATE_MODS())
+                return;
+            DebugExtUtilities.AllowEnableDebugGUIMenu_KeypadEnter = true;
+            SMissionJSONLoader.SetupWorkingDirectories();
+            LegModExt.InsurePatches();
+            ManTerraformTool.Init();
         }
 
         public static void MainOfficialInit()
@@ -129,14 +143,7 @@ namespace Sub_Missions
             Debug_SMissions.Log(KickStart.ModID + ": MAIN (Steam Workshop Version) startup");
             if (!VALIDATE_MODS())
                 return;
-            DebugExtUtilities.AllowEnableDebugGUIMenu_KeypadEnter = true;
-            SMissionJSONLoader.SetupWorkingDirectories();
-
-            LegModExt.InsurePatches();
             CursorChanger.AddNewCursors();
-
-            WorldTerraformer.Init();
-
             SubMissionsWiki.InitWiki();
 
             try
@@ -360,20 +367,20 @@ namespace Sub_Missions
         {
             if (Doing)
             {
-                WorldTerraformer.PrepareForSaving();
+                ManTerraformTool.PrepareForSaving();
                 SaveManSubMissions.PrepareForSaving();
             }
             else
             {
                 SaveManSubMissions.FinishedSaving();
-                WorldTerraformer.FinishedSaving();
+                ManTerraformTool.FinishedSaving();
             }
         }
         public static void OnLoadManagers(bool Doing)
         {
             if (!Doing)
             {
-                WorldTerraformer.FinishedLoading();
+                ManTerraformTool.FinishedLoading();
                 SaveManSubMissions.FinishedLoading();
             }
         }
@@ -411,7 +418,7 @@ namespace Sub_Missions
                 KickStart.Debugger = editor.SavedValue;
                 try
                 {
-                    if (KickStart.Debugger)
+                    if (KickStart.Debugger && SubMissionsWiki.inst.ShowButtons)
                     {
                         WindowManager.ShowPopup(ManSubMissions.Button);
                         WindowManager.ShowPopup(ManSubMissions.SideUI);
@@ -450,11 +457,13 @@ namespace Sub_Missions
         bool isInit = false;
         public override bool HasEarlyInit()
         {
-            return false;
+            return true;//false;
         }
 
         public override void EarlyInit()
         {
+            oInst = new ModDataHandle(KickStart.ModID);
+            TerraTechETCUtil.ModStatusChecker.EncapsulateSafeInit(KickStart.ModID, KickStart.MainOfficialInitEARLY);
         }
         public override void Init()
         {
@@ -464,7 +473,6 @@ namespace Sub_Missions
             try
             {
                 mInst = this;
-                oInst = new ModDataHandle(KickStart.ModID);
                 oInst.DebugLogModContents();
                 TerraTechETCUtil.ModStatusChecker.EncapsulateSafeInit(KickStart.ModID,
                     KickStart.MainOfficialInit, KickStart.MainOfficialDeInit);

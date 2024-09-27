@@ -42,10 +42,10 @@ namespace Sub_Missions
         }
     }
     [AutoSaveManager]
-    public class WorldTerraformer
+    public class ManTerraformTool
     {
         [SSManagerInst]
-        public static WorldTerraformer inst;
+        public static ManTerraformTool inst;
         /// <summary>
         /// This stores EVERY SINGLE Mod Missions terrain modifier active in-scene.
         /// </summary>
@@ -62,186 +62,23 @@ namespace Sub_Missions
             if (inst != null)
                 return;
             Debug_SMissions.Log("Init WorldTerraformer");
-            SetupLowerTerrainClamps();
-            AddOceanicBiomes();
+            //SetupLowerTerrainClamps();
+            if (KickStart.isWaterModPresent)
+            {
+                //AddOceanicBiomes(ManWorld.inst.CurrentBiomeMap);
+            }
             TerrainDirectory = Path.Combine(SMissionJSONLoader.BaseDirectory, "Custom Terrain");
-            inst = new WorldTerraformer();
+            inst = new ManTerraformTool();
             tool = new GameObject("TerrainToolEditor").AddComponent<WorldTerraTool>();
             TerrainModifier.TileHeight = TerrainOperations.TileHeightRescaled;
             tool.Init();
             CurrentTerrainMods = new Dictionary<IntVector2, TerrainModifier>();
-            ManGameMode.inst.ModeStartEvent.Subscribe(OnModeStart);
-        }
-        private static FieldInfo layers = typeof(MapGenerator).GetField("m_Layers", BindingFlags.NonPublic | BindingFlags.Instance);
-        public static HashSet<MapGenerator> RegisteredVanilla = new HashSet<MapGenerator>();
-        private static void SetupLowerTerrainClamps()
-        {
-            foreach (var item in ManWorld.inst.CurrentBiomeMap.IterateBiomes())
-            {
-                var HMG = item.HeightMapGenerator;
-                if (HMG != null)
-                {
-                    RegisteredVanilla.Add(HMG);
-                    /*
-                    MapGenerator.Layer[] Layers = (MapGenerator.Layer[])layers.GetValue(HMG);
-                    if (layers != null)
-                    {
-                        foreach (var item2 in Layers)
-                        {
-                            if (item2.applyOperation.code != MapGenerator.Operation.Code.Null)
-                            {
-                                Array.Resize(ref item2.operations, item2.operations.Length + 1);
-                                item2.applyOperation.index = -3;// Setup clamp to be triggered on index -3
-                                Debug_SMissions.Log("Limited Vanilla Biome Terrain " + item.name +
-                                    " to " + TerrainOperations.TileYOffsetDelta +
-                                    " so that deep oceans below sea level can exist");
-                            }
-                        }
-                    }
-                    */
-                }
-            }
-        }
-        private static FieldInfo biomesAll = typeof(BiomeMap).GetField("biomes", BindingFlags.NonPublic | BindingFlags.Instance);
-
-        private static FieldInfo biomesBatched = typeof(BiomeMap).GetField("m_BiomeGroups",
-            BindingFlags.Instance | BindingFlags.NonPublic),
-            biomesInside = typeof(BiomeGroup).GetField("m_Biomes", BindingFlags.Instance | BindingFlags.NonPublic),
-            biomesWeights = typeof(BiomeGroup).GetField("m_BiomeWeights", BindingFlags.Instance | BindingFlags.NonPublic);
-        private static void AddOceanicBiomes()
-        {
-            Biome[] biomes = (Biome[])biomesAll.GetValue(ManWorld.inst.CurrentBiomeMap);
-            foreach (var item in biomes)
-            {
-                Debug_SMissions.Log("Biome " + item.name);
-            }
-            Array.Resize(ref biomes, biomes.Length + 3);
-
-            Biome biomeGrassPond = CopyBiomeTEMP(biomes[1], "MuddyPond");
-            SinkBiomeTEMP(biomeGrassPond);
-            biomes[biomes.Length - 3] = biomeGrassPond;
-
-            Biome biomeMountainSeas = CopyBiomeTEMP(biomes[1], "JaggedSeas");
-            SinkBiomeTEMP(biomeMountainSeas);
-            biomes[biomes.Length - 2] = biomeMountainSeas;
-
-            Biome biomeDesertBeaches = CopyBiomeTEMP(biomes[1], "ParadoxalBeaches");
-            SinkBiomeTEMP(biomeDesertBeaches);
-            biomes[biomes.Length - 1] = biomeDesertBeaches;
-
-            biomesAll.SetValue(ManWorld.inst.CurrentBiomeMap, biomes);
-
-
-            BiomeGroup[] biomesGrouped = (BiomeGroup[])biomesBatched.GetValue(ManWorld.inst.CurrentBiomeMap);
-            foreach (var item in biomesGrouped)
-            {
-                Debug_SMissions.Log("Biome Group " + item.name);
-                try
-                {
-                    Biome[] biomes2 = (Biome[])biomesInside.GetValue(item);
-                    Array.Resize(ref biomes2, biomes2.Length + 3);
-                    biomes2[biomes.Length - 3] = biomeGrassPond;
-                    biomes2[biomes.Length - 2] = biomeMountainSeas;
-                    biomes2[biomes.Length - 1] = biomeDesertBeaches;
-                    biomesInside.SetValue(item, biomes2);
-
-                    float[] biomesWeightsCached = (float[])biomesWeights.GetValue(item);
-                    Array.Resize(ref biomesWeightsCached, biomesWeightsCached.Length + 3);
-                    biomesWeightsCached[biomes.Length - 3] = 30;
-                    biomesWeightsCached[biomes.Length - 2] = 30;
-                    biomesWeightsCached[biomes.Length - 1] = 30;
-                    biomesWeights.SetValue(item, biomesWeightsCached);
-                    Debug_SMissions.Log("Biomes added!");
-                }
-                catch { }
-            }
-        }
-        private static FieldInfo[] MassCopy = null;
-        private static FieldInfo[] MassCopy2 = null;
-        private static FieldInfo HeightGen = typeof(Biome).GetField("heightMapGenerator",
-            BindingFlags.Instance | BindingFlags.NonPublic);
-
-        private static Biome CopyBiomeTEMP(Biome from, string name)
-        {
-            if (MassCopy == null)
-            {
-                MassCopy = typeof(Biome).GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-                MassCopy2 = typeof(MapGenerator).GetFields(BindingFlags.Instance | BindingFlags.NonPublic);
-            }
-            Biome copyBiome = ScriptableObject.CreateInstance<Biome>();
-            copyBiome.name = name;
-            foreach (var item in MassCopy)
-            {
-                try
-                {
-                    item.SetValue(copyBiome, item.GetValue(from));
-                }
-                catch { }
-            }
-            MapGenerator MG = new GameObject(name).AddComponent<MapGenerator>();
-            foreach (var item in MassCopy2)
-            {
-                try
-                {
-                    item.SetValue(MG, item.GetValue(from.HeightMapGenerator));
-                }
-                catch { }
-            }
-            HeightGen.SetValue(copyBiome, MG);
-            Debug_SMissions.Log("Made biome " + name);
-            return copyBiome;
-        }
-        private static void SinkBiomeTEMP(Biome biome)
-        {
-            MapGenerator.Layer[] Layers = (MapGenerator.Layer[])layers.GetValue(biome.HeightMapGenerator);
-            if (layers != null)
-            {
-                foreach (var item2 in Layers)
-                {
-                    if (item2.applyOperation.code != MapGenerator.Operation.Code.Null)
-                    {
-                        Array.Resize(ref item2.operations, item2.operations.Length + 1);
-                        item2.operations[item2.operations.Length - 1] = new MapGenerator.Operation()
-                        {
-                            buffered = false,
-                            code = MapGenerator.Operation.Code.Sub,
-                            index = item2.operations.Length - 1,
-                            param = -0.25f
-                        };
-                    }
-                }
-            }
-        }
-
-
-        public static void OnModeStart(Mode mode)
-        {
-            if (inst == null)
-                return;
-            switch (mode.GetGameType())
-            {
-                case ManGameMode.GameType.Attract:
-                case ManGameMode.GameType.MainGame:
-#if DEBUG
-                    WorldDeformer.inst.enabled = true;
-#else
-                    WorldDeformer.inst.enabled = false;
-#endif
-                    break;
-                case ManGameMode.GameType.RaD:
-                case ManGameMode.GameType.Creative:
-                    WorldDeformer.inst.enabled = true;
-                    break;
-                default:
-                    WorldDeformer.inst.enabled = false;
-                    break;
-            }
         }
 
 
         public class WorldTerraTool : MonoBehaviour
         {
-            //*
+            /*
             internal bool ToolARMED = true;
             private bool showGUI = true;
             // */ internal bool ToolARMED = false; private bool showGUI = false;
@@ -753,7 +590,7 @@ namespace Sub_Missions
         }
         public static void FinishedLoading()
         {
-            if (inst == null)
+            if (inst?.TerrainModsSave == null)
                 return;
             WorldDeformer.inst.TerrainModsActive.AddRange(inst.TerrainModsSave);
             inst.TerrainModsSave = null;

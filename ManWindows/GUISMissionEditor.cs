@@ -235,16 +235,16 @@ namespace Sub_Missions.ManWindows
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button("Open Files", AltUI.ButtonBlue))
                     SMissionJSONLoader.OpenInExplorer(SMissionJSONLoader.MissionsDirectory);
-                if (WorldTerraformer.tool.UtilityShown)
+                if (ManTerraformTool.tool.UtilityShown)
                 {
                     if (GUILayout.Button("Close Terraformer", AltUI.ButtonGreen))
                     {
-                        WorldTerraformer.tool.ToggleGUIDisplay();
+                        ManTerraformTool.tool.ToggleGUIDisplay();
                     }
                 }
                 else if (GUILayout.Button("Open Terraformer", AltUI.ButtonBlue))
                 {
-                    WorldTerraformer.tool.ToggleGUIDisplay();
+                    ManTerraformTool.tool.ToggleGUIDisplay();
                 }
                 GUILayout.EndHorizontal();
             }

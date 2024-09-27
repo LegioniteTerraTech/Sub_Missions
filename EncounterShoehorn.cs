@@ -596,11 +596,13 @@ namespace Sub_Missions
                 tree = mission.Tree,
                 hashName = mission.Name.GetHashCode(),
             };
+            
             /*
             XPPercentageCondition XpPC = new XPPercentageCondition();
             XpCorp.SetValue(LC, mission.FactionType);
             XpGde.SetValue(LC, mission.GradeRequired);
-            XpPer.SetValue(LC, 0);*/
+            XpPer.SetValue(LC, 0);
+            */
 
             EncounterConditions EC = new EncounterConditions();
             lice.SetValue(EC, new LicenseCondition[2] { LC, ExC });

@@ -53,7 +53,7 @@ namespace Sub_Missions.Steps
         }
         public void TechDetachControlUpdate(Tank tank)
         {
-            tank.GetComponent<TankAIHelper>().OverrideAllControls = false;
+            tank.GetComponent<TankAIHelper>().AIControlOverride = TankAIHelper.OverrideAndFlyAway;
             tank.control.driveControlEvent.Unsubscribe(TechControlUpdate);
             tank.TankRecycledEvent.Unsubscribe(TechDetachControlUpdate);
             SetTech = null;
@@ -69,7 +69,7 @@ namespace Sub_Missions.Steps
                         try
                         {
                             SetTech = target;
-                            target.GetComponent<TankAIHelper>().OverrideAllControls = true;
+                            target.GetComponent<TankAIHelper>().AIControlOverride = TankAIHelper.OverrideAndFlyAway;
                             target.control.driveControlEvent.Subscribe(TechControlUpdate);
                             target.TankRecycledEvent.Subscribe(TechDetachControlUpdate);
                         }

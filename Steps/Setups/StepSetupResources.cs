@@ -45,7 +45,7 @@ namespace Sub_Missions.Steps
             if (Enum.TryParse(SMission.InputString, out SceneryTypes result) && SMission.InputNum >= 1)
             {
                 ResourceDispenser RD = SpawnHelper.SpawnResourceNode(SMission.Position, Quaternion.identity, 
-                    result, ManWorld.inst.GetBiomeWeightsAtScenePosition(SMission.Position).Biome(0).BiomeType);
+                    result, ManWorld.inst.GetBiomeWeightsAtScenePosition(SMission.Position).Biome(0).name);
                 SMission.AssignedTracked = new TrackedVisible(RD.visible.ID, RD.visible, ObjectTypes.Scenery, RadarTypes.Hidden);
             }
             else

@@ -10,9 +10,6 @@ using UnityEngine;
 using TerraTechETCUtil;
 using Sub_Missions.Steps;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using Newtonsoft.Json.Serialization;
-using Newtonsoft.Json.Converters;
 
 namespace Sub_Missions.ModularMonuments
 {
@@ -360,9 +357,10 @@ namespace Sub_Missions.ModularMonuments
                     List<string> outputs = tree.WorldObjectFileNames;
                     foreach (string nameCase in outputs)
                     {
-                        if (BuildWorldObject(tree, nameCase, out int hash, out SMWorldObject GO))
+                        string nameFiltered = nameCase.Replace("%", string.Empty);
+                        if (BuildWorldObject(tree, nameFiltered, out int hash, out SMWorldObject GO))
                         {
-                            iGO.Add(nameCase, GO);
+                            iGO.Add(nameFiltered, GO);
                             counter++;
                         }
                     }
