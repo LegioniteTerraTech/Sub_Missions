@@ -4,42 +4,36 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUIButtonWindow : IGUIFormat
+    public class GUIButtonWindow : GUIMiniMenu<GUIButtonWindow>
     {
-        public GUIPopupDisplay Display { get; set; }
         public string buttonMessage;
         public bool DestroyOnPress = false;
         public string InvokeAction;
 
 
-        public void Setup(GUIPopupDisplay display, string buttonLabel, bool removeOnPress, string ActionName)
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
-            buttonMessage = buttonLabel;
-            DestroyOnPress = removeOnPress;
-            InvokeAction = ActionName;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
+            buttonMessage = (string)stats2.val1;
+            DestroyOnPress = (bool)stats2.val2;
+            InvokeAction = (string)stats2.val3;
         }
 
-        public void RunGUI(int ID)
+        public override void OnOpen()
         {
-            if (!WindowManager.SetupAltWins)
-            {
-                WindowManager.styleLargeFont = new GUIStyle(GUI.skin.label);
-                WindowManager.styleLargeFont.fontSize = 16;
-                WindowManager.styleHugeFont = new GUIStyle(GUI.skin.button);
-                WindowManager.styleHugeFont.fontSize = 20;
-                WindowManager.styleGinormusFont = new GUIStyle(GUI.skin.button);
-                WindowManager.styleGinormusFont.fontSize = 38;
-                WindowManager.SetupAltWins = true;
-            }
+        }
 
-            if (GUI.Button(new Rect(15, 15, Display.Window.width - 30, Display.Window.height - 30), buttonMessage, WindowManager.styleHugeFont))
+        public override void RunGUI(int ID)
+        {
+
+            if (GUI.Button(new Rect(0, 10, Display.Window.width, Display.Window.height - 10), buttonMessage, WindowManager.styleButtonHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
-                ButtonAct.inst.Invoke(InvokeAction, 0);// has frame delay
+                ButtonAct.Invoke(InvokeAction);// has frame delay
 
                 if (DestroyOnPress)
                 {
@@ -48,14 +42,15 @@ namespace Sub_Missions.ManWindows
                 }
             }
             GUI.DragWindow();
+            WindowManager.KeepWithinScreenBounds(Display);
         }
 
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }

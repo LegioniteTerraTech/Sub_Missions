@@ -6,63 +6,419 @@ using System.Threading.Tasks;
 using System.Reflection;
 using UnityEngine;
 using HarmonyLib;
-using ModHelper.Config;
 using Nuterra.NativeOptions;
 using Sub_Missions.ManWindows;
+using TerraTechETCUtil;
+
+
+#if !STEAM
+using ModHelper.Config;
+#else
+using ModHelper;
+#endif
 
 namespace Sub_Missions
 {
+    /// <summary>
+    /// TRYING to port to Steam - Heavily reliant on external file positioning
+    /// </summary>
     public class KickStart
     {
-        const string ModName = "Sub_Missions";
+        internal const string ModID = "Mod Missions";
+        public const string ModName = "Mod Missions";
         
         public static bool Debugger = false;
-        public static bool OverrideRestrictions = true;
+        public static bool ExportPrefabExample = false;
+        public static bool OverrideRestrictions
+        {
+            get
+            {
+                bool yes = Debugger;
+                try
+                {
+                    ManGameMode.GameType current = ManGameMode.inst.GetCurrentGameType();
+                    if (current == ManGameMode.GameType.MainGame || current == ManGameMode.GameType.CoOpCampaign)
+                        yes = false;
+                }
+                catch { yes = false; }
+                return yes;
+            }
+        }
 
-        public static ModConfig Saver;
+        public static Harmony harmonyInstance = new Harmony("legioniteterratech.sub_missions");
+        private static bool patched = false;
+
 
         public static void Main()
         {
-            Harmony harmonyInstance = new Harmony("legioniteterratech.sub_missions");
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (TTMM Version) startup");
+            if (!VALIDATE_MODS())
+                return;
+            if (isSteamManaged)
+            {
+                MainOfficialInit();
+                return;
+            }
+            SMissionJSONLoader.SetupWorkingDirectories();
             try
             {
-                harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                if (!patched)
+                {
+                    try
+                    {
+                        harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                    }
+                    catch (Exception e)
+                    {
+                        Debug_SMissions.Log(KickStart.ModID + ": Error on mass patch");
+                        Debug_SMissions.Log(e);
+                    }
+                    foreach (MethodBase MB in harmonyInstance.GetPatchedMethods())
+                    {
+                        if (MB.Name == "PatchCCModding")
+                        {
+                            if (isBlockInjectorPresent)
+                            {
+                                Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
+                                //harmonyInstance.Patch(Patches.);
+                            }
+                            else
+                            {
+                                Debug_SMissions.Log(KickStart.ModID + ": UnPatching " + MB.Name);
+                                harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                            }
+                        }
+                        else
+                        {
+                            Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
+                            //harmonyInstance.Patch(MB);
+                        }
+                    }
+                    patched = true;
+                }
             }
             catch (Exception e)
             {
-                Debug.Log("SubMissions: Error on patch");
-                Debug.Log(e);
-            }
+                Debug_SMissions.Log(KickStart.ModID + ": Error on patch");
+                Debug_SMissions.Log(e);
+            };
+            ManSubMissions.Initiate();
+            ButtonAct.Initiate();
 
-            CheckActiveMods();
             if (!isTACAIPresent)
             {
                 TACAIRequiredWarning();
             }
+            WorldTerraformer.InsureInit();
+            try
+            {
+                TAC_AI.KickStart.TerrainHeight = TerrainOperations.RescaleFactor * TerrainOperations.TileHeightDefault;
+                TAC_AI.KickStart.TerrainHeightOffset = TerrainOperations.TileHeightRescaled;
+            }
+            catch (Exception)
+            {
+                throw;
+            }
 
+            ManSubMissions.inst.ReloadAllMissionTrees();
+        }
+        public static void DelayedInit()
+        {
+            ManSubMissions.Subscribe();
+            BlockIndexer.ConstructBlockLookupListDelayed();
+        }
+        public static void MainOfficialInitEARLY()
+        {
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (Steam Workshop Version) EARLY startup");
+            if (!VALIDATE_MODS())
+                return;
+            DebugExtUtilities.AllowEnableDebugGUIMenu_KeypadEnter = true;
             SMissionJSONLoader.SetupWorkingDirectories();
-            WindowManager.Initiate();
-            ManSubMissions.Initiate();
+            LegModExt.InsurePatches();
+            ManTerraformTool.Init();
+        }
+
+        public static void MainOfficialInit()
+        {
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (Steam Workshop Version) startup");
+            if (!VALIDATE_MODS())
+                return;
+            CursorChanger.AddNewCursors();
+            SubMissionsWiki.InitWiki();
+
+            try
+            {
+                if (!patched)
+                {
+                    try
+                    {
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(GlobalPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching GlobalPatches");
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(ProgressionPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching ProgressionPatches");
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(UIPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching UIPatches");
+                        if (!MassPatcher.MassPatchAllWithin(harmonyInstance, typeof(TerrainPatches), "SubMissions"))
+                            Debug_SMissions.FatalError("Error on patching TerrainPatches");
+
+                        harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
+                        Debug_SMissions.Log(KickStart.ModID + ": Patched");
+                    }
+                    catch (Exception e)
+                    {
+                        Debug_SMissions.Log(KickStart.ModID + ": Error on mass patch");
+                        Debug_SMissions.Log(e);
+                        Debug_SMissions.FatalError("Error on patching base game");
+                    }
+                    foreach (MethodBase MB in harmonyInstance.GetPatchedMethods())
+                    {
+                        if (MB.Name == "PatchCCModding")
+                        {
+                            if (isBlockInjectorPresent)
+                            {
+                                Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
+                                //harmonyInstance.Patch(Patches.);
+                            }
+                            else
+                            {
+                                Debug_SMissions.Log(KickStart.ModID + ": UnPatching " + MB.Name);
+                                harmonyInstance.Unpatch(MB, HarmonyPatchType.All);
+                            }
+                        }
+                        else
+                        {
+                            Debug_SMissions.Log(KickStart.ModID + ": Patching " + MB.Name);
+                            //harmonyInstance.Patch(MB);
+                        }
+                    }
+                    patched = true;
+                }
+            }
+            catch (Exception e)
+            {
+                Debug_SMissions.Log(KickStart.ModID + ": Error on patch");
+                Debug_SMissions.Log(e);
+            }
+            try
+            {
+                SafeSaves.ManSafeSaves.RegisterSaveSystem(Assembly.GetExecutingAssembly(), OnSaveManagers, OnLoadManagers);
+            }
+            catch (Exception e)
+            {
+                Debug_SMissions.Log(KickStart.ModID + ": Error on RegisterSaveSystem");
+                Debug_SMissions.Log(e);
+            }
             ButtonAct.Initiate();
+            ManSubMissions.Initiate();
+            ManSubMissions.Subscribe();
+            BlockIndexer.ConstructBlockLookupListDelayed();
+            ManModGUI.RequestInit(KickStartSubMissions.mInst);
+
+            if (!isTACAIPresent)
+            {
+                TACAIRequiredWarning();
+            }
+            try
+            {
+                KickStartOptions.PushExtModOptionsHandling();
+            }
+            catch
+            { 
+            }
+
+            ManSubMissions.inst.ReloadAllMissionTrees();
+        }
+
+        public static void MainOfficialDeInit()
+        {
+            Debug_SMissions.Log(KickStart.ModID + ": MAIN (Steam Workshop Version) shutdown");
+            ManModGUI.DeInit(KickStartSubMissions.mInst);
+            ManSubMissions.DeInit();
+            ButtonAct.DeInit();
+            BlockIndexer.ResetBlockLookupList();
+
+            try
+            {
+                SafeSaves.ManSafeSaves.UnregisterSaveSystem(Assembly.GetExecutingAssembly(), OnSaveManagers, OnLoadManagers);
+            }
+            catch (Exception e)
+            {
+                Debug_SMissions.Log(KickStart.ModID + ": Error on UnregisterSaveSystem");
+                Debug_SMissions.Log(e);
+            }
+            if (patched)
+            {
+                try
+                {
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(TerrainPatches), "SubMissions");
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(UIPatches), "SubMissions");
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(ProgressionPatches), "SubMissions");
+                    MassPatcher.MassUnPatchAllWithin(harmonyInstance, typeof(GlobalPatches), "SubMissions");
+                    harmonyInstance.UnpatchAll("legioniteterratech.sub_missions");
+                }
+                catch (Exception e)
+                {
+                    Debug_SMissions.Log(KickStart.ModID + ": Error on mass un-patch");
+                    Debug_SMissions.Log(e);
+                }
+                patched = false;
+            }
+        }
+
+
+        public static bool FirstTime = true;
+        public static bool FullyLoadedGame = false;
+
+
+        internal static bool isTACAIPresent = false;
+        internal static bool isWaterModPresent = false;
+        internal static bool isWeaponAimModPresent = false;
+        internal static bool isBlockInjectorPresent = false;
+        internal static bool isPopInjectorPresent = false;
+        internal static bool isRandomAdditionsPresent = false;
+        internal static bool isCustomCorpsFixPresent = false;
+
+
+        internal static bool isSteamManaged = false;
+        public static bool VALIDATE_MODS()
+        {
+            if (!LookForMod("NLogManager"))
+            {
+                isSteamManaged = false;
+#if STEAM
+                Debug_SMissions.FatalError("This mod NEEDS 0ModManager to function!  Please subscribe to it on the Steam Workshop and follow the instructions carefully.");
+                return false;
+#endif
+            }
+            else
+                isSteamManaged = true;
+            if (!LookForMod("0Harmony"))
+            {
+                Debug_SMissions.FatalError("This mod NEEDS Harmony to function!  Please subscribe to it on the Steam Workshop");
+                return false;
+            }
+
+            if (LookForMod("TAC_AI"))
+            {
+                isTACAIPresent = true;
+            }
+            else
+            {
+#if STEAM
+                Debug_SMissions.FatalError("This mod NEEDS Advanced AI to function!  Please subscribe to it on the Steam Workshop");
+#else
+                Debug_SMissions.FatalError("This mod NEEDS TACtical AI to function!  Please install/enable it in TTMM.");
+#endif
+                return false;
+            }
+            isWaterModPresent = LookForMod("WaterMod");
+            isWeaponAimModPresent = LookForMod("WeaponAimMod");
+            isBlockInjectorPresent = LookForMod("BlockInjector");
+            isPopInjectorPresent = LookForMod("PopulationInjector");
+            isRandomAdditionsPresent = LookForMod("RandomAdditions");
+            isCustomCorpsFixPresent = LookForMod("TerraTechCustomCorpFix");
+            return true;
+        }
+        public static void TACAIRequiredWarning()
+        {
+            SMUtil.Log(false, KickStart.ModID + ": This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
+        }
+        public static bool LookForMod(string name)
+        {
+            if (name == "RandomAdditions")
+            {
+                foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (assembly.FullName.StartsWith(name))
+                    {
+                        if (assembly.GetType("KickStart") != null)
+                            return true;
+                    }
+                }
+            }
+            else
+            {
+                foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    if (assembly.FullName.StartsWith(name))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        public static Type LookForType(string name)
+        {
+            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var typeGet = assembly.GetType(name);
+                if (typeGet != null)
+                {
+                    return typeGet;
+                }
+            }
+            return null;
+        }
+
+
+        public static void OnSaveManagers(bool Doing)
+        {
+            if (Doing)
+            {
+                ManTerraformTool.PrepareForSaving();
+                SaveManSubMissions.PrepareForSaving();
+            }
+            else
+            {
+                SaveManSubMissions.FinishedSaving();
+                ManTerraformTool.FinishedSaving();
+            }
+        }
+        public static void OnLoadManagers(bool Doing)
+        {
+            if (!Doing)
+            {
+                ManTerraformTool.FinishedLoading();
+                SaveManSubMissions.FinishedLoading();
+            }
+        }
+
+    }
+
+    public class KickStartOptions
+    {
+        public static ModConfig Saver;
+        public static OptionToggle editor;
+        public static OptionToggle exportTemplate;
+
+        private static bool launched = false;
+
+        internal static void PushExtModOptionsHandling()
+        {
+            if (launched)
+                return;
+            launched = true;
 
             Saver = new ModConfig();
             Saver.BindConfig<KickStart>(null, "Debugger");
+            Saver.BindConfig<KickStart>(null, "ExportPrefabExample");
             Saver.BindConfig<KickStart>(null, "FirstTime");
 
-            if (FirstTime)
+            if (KickStart.FirstTime)
             {
-                FirstTime = false;
+                KickStart.FirstTime = false;
             }
 
-            var SubMissions = ModName;
-            editor = new OptionToggle("<b>ALLOW DEBUG</b> - WILL CONSUME PROCESSING POWER", SubMissions, Debugger);
-            editor.onValueSaved.AddListener(() => 
-            { 
-                Debugger = editor.SavedValue; 
-                Save();
+            var SubMissions = KickStart.ModName;
+            editor = new OptionToggle("<b>ALLOW DEBUG</b> - WILL CONSUME PROCESSING POWER", SubMissions, KickStart.Debugger);
+            editor.onValueSaved.AddListener(() =>
+            {
+                KickStart.Debugger = editor.SavedValue;
                 try
                 {
-                    if (Debugger)
+                    if (KickStart.Debugger && SubMissionsWiki.inst.ShowButtons)
                     {
                         WindowManager.ShowPopup(ManSubMissions.Button);
                         WindowManager.ShowPopup(ManSubMissions.SideUI);
@@ -75,81 +431,63 @@ namespace Sub_Missions
                 }
                 catch { }
             });
-            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, Debugger);
-            exportTemplate.onValueSaved.AddListener(() => 
-            { 
-                Debugger = editor.SavedValue; 
-                SMissionJSONLoader.MakePrefabMissionTreeToFile("Template"); 
-                Save();
+            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, KickStart.ExportPrefabExample);
+            exportTemplate.onValueSaved.AddListener(() =>
+            {
+                KickStart.ExportPrefabExample = exportTemplate.SavedValue;
+                SimpleSMissions.MakePrefabMissionTreeToFile("Template");
             });
+            //if (ExportPrefabExample)
+            //    SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
+            NativeOptionsMod.onOptionsSaved.AddListener(() => { Save(); });
 
-            ManSubMissions.inst.HarvestAllTrees();
         }
-
-        public static OptionToggle editor;
-        public static OptionToggle exportTemplate;
-
-        public static bool FirstTime = true;
-
-
-        internal static bool isTACAIPresent = false;
-        internal static bool isWaterModPresent = false;
-        internal static bool isTougherEnemiesPresent = false;
-        internal static bool isWeaponAimModPresent = false;
-        internal static bool isBlockInjectorPresent = false;
-        internal static bool isPopInjectorPresent = false;
-        internal static bool isRandomAdditionsPresent = false;
-
         public static void Save()
         {
             Saver.WriteConfigJsonFile();
         }
+    }
 
-        public static void CheckActiveMods()
+#if STEAM
+    public class KickStartSubMissions : ModBase
+    {
+        internal static ModDataHandle oInst;
+        internal static KickStartSubMissions mInst;
+
+        bool isInit = false;
+        public override bool HasEarlyInit()
         {
-            if (LookForMod("TAC_AI"))
-            {
-                isTACAIPresent = true;
-            }
-            if (LookForMod("WaterMod"))
-            {
-                isWaterModPresent = true;
-            }
-            if (LookForMod("WeaponAimMod"))
-            {
-                isWeaponAimModPresent = true;
-            }
-            if (LookForMod("TougherEnemies"))
-            {
-                isTougherEnemiesPresent = true;
-            }
-            if (LookForMod("BlockInjector"))
-            {
-                isBlockInjectorPresent = true;
-            }
-            if (LookForMod("PopulationInjector"))
-            {
-                isPopInjectorPresent = true;
-            }
-            if (LookForMod("RandomAdditions"))
-            {
-                isRandomAdditionsPresent = true;
-            }
+            return true;//false;
         }
-        public static void TACAIRequiredWarning()
+
+        public override void EarlyInit()
         {
-            Debug.Log("SubMissions: This mod has a very heavy dependancy on TACtical AIs, if that mod is not installed,\n  then the default tech AI won't be able to perform all the duties intended by the player!");
+            oInst = new ModDataHandle(KickStart.ModID);
+            TerraTechETCUtil.ModStatusChecker.EncapsulateSafeInit(KickStart.ModID, KickStart.MainOfficialInitEARLY);
         }
-        public static bool LookForMod(string name)
+        public override void Init()
         {
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
+            Debug_SMissions.Log(KickStart.ModID + ": CALLED INIT");
+            if (isInit)
+                return;
+            try
             {
-                if (assembly.FullName.StartsWith(name))
-                {
-                    return true;
-                }
+                mInst = this;
+                oInst.DebugLogModContents();
+                TerraTechETCUtil.ModStatusChecker.EncapsulateSafeInit(KickStart.ModID,
+                    KickStart.MainOfficialInit, KickStart.MainOfficialDeInit);
             }
-            return false;
+            catch { }
+            isInit = true;
+        }
+        public override void DeInit()
+        {
+            Debug_SMissions.Log(KickStart.ModID + ": CALLED DE-INIT");
+            if (!isInit)
+                return;
+            KickStart.MainOfficialDeInit();
+            isInit = false;
         }
     }
+#endif
 }
