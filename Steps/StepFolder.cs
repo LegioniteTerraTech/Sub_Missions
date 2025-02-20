@@ -9,10 +9,14 @@ namespace Sub_Missions.Steps
 {
     public class StepFolder : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Keep your Steps neat, tidy, and collapsable with a Folder";
         public override string GetDocumentation()
         {
             return
-                "{  // Keep your Steps neat, tidy, and collapsable with a Folder" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"Folder\",  // Creates a bracket folder space  to hold your SubMissionSteps " +
                   "\n  \"InputString\": \"FolderName\",  // Just a label space for you to use to keep track incase something fails" +
                   "\n  // Conditions TO CHECK before executing the contents of the folder" +

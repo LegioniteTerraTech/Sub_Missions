@@ -10,10 +10,14 @@ namespace Sub_Missions.Steps
 {
     public class StepCheckLogic : SMissionStep
     {   // keeps track of a single tech's block count and outputs to the assigned Global1
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Sets the Mission ProgressID on success";
         public override string GetDocumentation()
         {
             return
-                "{  // Pushes the Mission ProgressID forward on success" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"CheckLogic\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if " +
@@ -43,7 +47,9 @@ namespace Sub_Missions.Steps
         {
             try
             {
-                if (SMUtil.BoolOut(ref SMission, SMission.SetMissionVarIndex1) && SMUtil.BoolOut(ref SMission, SMission.SetMissionVarIndex2) && SMUtil.BoolOut(ref SMission, SMission.SetMissionVarIndex3))
+                if (SMUtil.BoolOut(ref SMission, SMission.SetMissionVarIndex1) && 
+                    SMUtil.BoolOut(ref SMission, SMission.SetMissionVarIndex2) && 
+                    SMUtil.BoolOut(ref SMission, SMission.SetMissionVarIndex3))
                 {
                     SMUtil.ProceedID(ref SMission);
                 }

@@ -772,7 +772,7 @@ namespace Sub_Missions.Editor
 
     public class SMSFieldVarInGUI : SMSFieldGUI<int>
     {
-        protected string setCache = "";
+        protected string setCache = null;
         internal SMSFieldVarInGUI(string name, ESMSFields type) : base(name, type) { }
         public override void Display(SubMissionStep runData)
         {
@@ -838,6 +838,9 @@ namespace Sub_Missions.Editor
             else
                 GUILayout.Label("N/A");
 
+
+            if (setCache == null)
+                setCache = settable.ToString();
             if (int.TryParse(setCache, out int val) && val != settable)
                 setCache = settable.ToString();
             string set = GUILayout.TextField(setCache, 32, AltUI.TextfieldBlackAdjusted, GUILayout.Width(180));
@@ -846,6 +849,9 @@ namespace Sub_Missions.Editor
                 if (val < 0)
                 {
                     GUILayout.Button("<color=yellow>~</color>");
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Variable bool disabled", false);
                     if (set != setCache)
                     {
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -854,7 +860,10 @@ namespace Sub_Missions.Editor
                 }
                 else if (settable >= runData.Mission.VarTrueFalseActive.Count)
                 {
-                    GUILayout.Button("<color=blue>–</color>");
+                    GUILayout.Button("–");
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Variable bool out of range!", false);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
                     settable = runData.Mission.VarTrueFalseActive.Count;
                     setCache = runData.Mission.VarTrueFalseActive.Count.ToString();
@@ -874,6 +883,9 @@ namespace Sub_Missions.Editor
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                         settable = ClampInt(val2);
                     }
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Valid variable bool.  Click to unassign", false);
                 }
             }
             else
@@ -889,6 +901,9 @@ namespace Sub_Missions.Editor
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                     settable = val;
                 }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid variable bool.  Click to unassign", false);
             }
         }
         protected void DisplayInt(SubMissionStep runData)
@@ -898,6 +913,8 @@ namespace Sub_Missions.Editor
             else
                 GUILayout.Label("N/A");
 
+            if (setCache == null)
+                setCache = settable.ToString();
             if (int.TryParse(setCache, out int val) && val != settable)
                 setCache = settable.ToString();
             string set = GUILayout.TextField(setCache, 32, AltUI.TextfieldBlackAdjusted, GUILayout.Width(180));
@@ -906,6 +923,9 @@ namespace Sub_Missions.Editor
                 if (val < 0)
                 {
                     GUILayout.Button("<color=yellow>~</color>");
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Variable bool disabled", false);
                     if (set != setCache)
                     {
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -914,7 +934,10 @@ namespace Sub_Missions.Editor
                 }
                 else if (settable >= runData.Mission.VarIntsActive.Count)
                 {
-                    GUILayout.Button("<color=blue>–</color>");
+                    GUILayout.Button("–");
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Variable bool out of range!", false);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
                     settable = runData.Mission.VarIntsActive.Count;
                     setCache = runData.Mission.VarIntsActive.Count.ToString();
@@ -934,6 +957,9 @@ namespace Sub_Missions.Editor
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                         settable = ClampInt(val2);
                     }
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Valid variable bool.  Click to unassign", false);
                 }
             }
             else
@@ -949,6 +975,9 @@ namespace Sub_Missions.Editor
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                     settable = val;
                 }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid variable bool.  Click to unassign", false);
             }
         }
     }
@@ -990,7 +1019,12 @@ namespace Sub_Missions.Editor
         internal SMSFieldTechSelectGUI(string name, ESMSFields type) : base(name, type) { }
         public override void Display(SubMissionStep runData)
         {
-            GUILayout.Label(displayTechName == null ? "<color=red>NULL</color>" : displayTechName);
+            if (displayTechName == null)
+            {
+                displayTechName = "<color=red>NULL</color>";
+                RefreshGUI(runData);
+            }
+            GUILayout.Label(displayTechName);
             GUILayout.EndHorizontal();
             GUILayout.BeginHorizontal();
             if (displayTechPicture != null)
@@ -1045,6 +1079,104 @@ namespace Sub_Missions.Editor
                     displayTechName = "<color=red>NULL</color>";
                 displayTechPicture = null;
             }
+        }
+    }
+    public class SMSFieldCorpSelectGUI : SMSFieldGUI<string>
+    {
+        private Texture2D displayCorpPicture;
+        private string displayCorpName = null;
+        //private UIScreenTechLoader loader;
+        private static SubMission LastSelected = null;
+        private bool expanded = false;
+        internal SMSFieldCorpSelectGUI(string name, ESMSFields type) : base(name, type) { }
+        public override void Display(SubMissionStep runData)
+        {
+            if (displayCorpName == null)
+            {
+                displayCorpName = "<color=red>NULL</color>";
+                displayCorpName = GetFaction(settable);
+            }
+            GUILayout.Label(displayCorpName);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            if (displayCorpPicture != null)
+                GUILayout.Label(displayCorpPicture, AltUI.TextfieldBordered, GUILayout.Height(80), GUILayout.Width(80));
+            else
+                GUILayout.Label("Not Selected", AltUI.TextfieldBordered, GUILayout.Height(80), GUILayout.Width(80));
+            if (GUILayout.Button("Select"))
+            {
+                expanded = !expanded;
+            }
+            if (expanded)
+            {
+                GUILayout.BeginHorizontal(GUILayout.Height(85));
+                GUILayout.Space(30);
+                if (GUILayout.Button("Any Corp"))
+                {
+                    settable = "Any";
+                }
+                GUILayout.EndHorizontal();
+                for (FactionSubTypes i = FactionSubTypes.GSO; i <= (FactionSubTypes)Enum.GetValues(typeof(FactionSubTypes)).Length; i++)
+                {
+                    Sprite spr = ManUI.inst.GetCorpIcon(i);
+                    if (spr?.texture != null)
+                    {
+                        GUILayout.BeginHorizontal(GUILayout.Height(85));
+                        GUILayout.Space(30);
+                        if (GUILayout.Button(spr.texture, GUILayout.Height(80), GUILayout.Width(80)))
+                        {
+                            settable = GetFactionName(i);
+                        }
+                        if (GUILayout.Button(i.ToString()))
+                        {
+                            settable = GetFactionName(i);
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                }
+                foreach (int j in ManMods.inst.GetCustomCorpIDs())
+                {
+                    FactionSubTypes i = (FactionSubTypes)j;
+                    Sprite spr = ManUI.inst.GetCorpIcon(i);
+                    if (spr?.texture != null)
+                    {
+                        GUILayout.BeginHorizontal(GUILayout.Height(85));
+                        GUILayout.Space(30);
+                        if (GUILayout.Button(spr.texture, GUILayout.Height(80), GUILayout.Width(80)))
+                        {
+                            settable = GetFactionName(i);
+                        }
+                        if (GUILayout.Button(i.ToString()))
+                        {
+                            settable = GetFactionName(i);
+                        }
+                        GUILayout.EndHorizontal();
+                    }
+                }
+            }
+        }
+        private string GetFactionName(FactionSubTypes input)
+        {
+            if (ManMods.inst.IsModdedCorp(input))
+            {
+                return ManMods.inst.FindCorpShortName(input);
+            }
+            else
+                return input.ToString();
+        }
+        private string GetFaction(string input)
+        {
+            if (Enum.TryParse(input, out FactionSubTypes result))
+            {
+                return result.ToString();
+            }
+            else
+            {
+                ModdedCorpDefinition MCD = ManMods.inst.FindCorp(input);
+                if (MCD != null)
+                    return MCD.m_ShortName;
+            }
+            return "Any";
         }
     }
     public class SMSFieldMonumentSelectGUI : SMSFieldGUI<string>

@@ -9,10 +9,15 @@ namespace Sub_Missions.Steps
 {
     public class StepActRandom : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Sets a specified VarInt to a random value";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Sets a specified VarInt to a random value" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActRandom\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +

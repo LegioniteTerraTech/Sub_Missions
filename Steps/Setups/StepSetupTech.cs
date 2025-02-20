@@ -10,10 +10,14 @@ namespace Sub_Missions.Steps
 {
     public class StepSetupTech : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Creates a specified Tech to use during the mission";
         public override string GetDocumentation()
         {
             return
-                "{  // Creates a Tech to use during the mission" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"SetupTech\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +
@@ -67,6 +71,7 @@ namespace Sub_Missions.Steps
         public override void FirstSetup()
         {   // Spawn Tech
             SMission.hasTech = true;
+            SMission.SavedInt = 0;
             if (ManNetwork.IsHost)
             {
                 if (SMission.InputStringAux.NullOrEmpty() || SMission.InputStringAux == "OnStartup")

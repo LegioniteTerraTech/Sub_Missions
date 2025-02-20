@@ -13,11 +13,15 @@ namespace Sub_Missions.Steps
 {
     public class StepTransformTech : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Changes the entire form of a TrackedTech";
         public override string GetDocumentation()
         {
             /*
             return
-                "{  // Changes/Edits the entire form of a TrackedTech" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"TransformTech\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if this is successful" +
@@ -49,7 +53,7 @@ namespace Sub_Missions.Steps
                 "\n},";
             */
             return
-                "{  // Changes/Edits the entire form of a TrackedTech" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"TransformTech\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +

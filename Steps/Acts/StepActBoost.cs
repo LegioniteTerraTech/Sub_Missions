@@ -11,10 +11,15 @@ namespace Sub_Missions.Steps
 {
     public class StepActBoost : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Tells a TrackedTech to fire it's own boosters";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Tells a TrackedTech to fire it's boosters (REQUIRES TACTICAL AI TO FUNCTION)" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActBoost\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +

@@ -26,6 +26,7 @@ namespace Sub_Missions
     {
         internal const string ModID = "Mod Missions";
         public const string ModName = "Mod Missions";
+        public static string UnityEditorAccessInfo => "You can access the editor through the Mod Wiki by pressing " + ManIngameWiki.WikiButtonKeybind;
         
         public static bool Debugger = false;
         public static bool ExportPrefabExample = false;
@@ -48,6 +49,7 @@ namespace Sub_Missions
         public static Harmony harmonyInstance = new Harmony("legioniteterratech.sub_missions");
         private static bool patched = false;
 
+        private static bool launchedOptions = false;
 
         public static void Main()
         {
@@ -134,7 +136,15 @@ namespace Sub_Missions
                 return;
             DebugExtUtilities.AllowEnableDebugGUIMenu_KeypadEnter = true;
             SMissionJSONLoader.SetupWorkingDirectories();
-            LegModExt.InsurePatches();
+            try
+            {
+                LegModExt.InsurePatches();
+            }
+            catch (Exception e)
+            {
+                Debug_SMissions.Log(KickStart.ModID + ": Failed TerraTechModExt init");
+                Debug_SMissions.Log(e);
+            }
             ManTerraformTool.Init();
         }
 
@@ -163,6 +173,13 @@ namespace Sub_Missions
 
                         harmonyInstance.PatchAll(Assembly.GetExecutingAssembly());
                         Debug_SMissions.Log(KickStart.ModID + ": Patched");
+                        try
+                        {
+                            KickStartOptions.PushExtModOptionsHandling();
+                        }
+                        catch
+                        {
+                        }
                     }
                     catch (Exception e)
                     {
@@ -217,13 +234,6 @@ namespace Sub_Missions
             if (!isTACAIPresent)
             {
                 TACAIRequiredWarning();
-            }
-            try
-            {
-                KickStartOptions.PushExtModOptionsHandling();
-            }
-            catch
-            { 
             }
 
             ManSubMissions.inst.ReloadAllMissionTrees();
@@ -393,54 +403,60 @@ namespace Sub_Missions
         public static OptionToggle editor;
         public static OptionToggle exportTemplate;
 
-        private static bool launched = false;
 
         internal static void PushExtModOptionsHandling()
         {
-            if (launched)
-                return;
-            launched = true;
-
-            Saver = new ModConfig();
-            Saver.BindConfig<KickStart>(null, "Debugger");
-            Saver.BindConfig<KickStart>(null, "ExportPrefabExample");
-            Saver.BindConfig<KickStart>(null, "FirstTime");
-
-            if (KickStart.FirstTime)
+            try
             {
-                KickStart.FirstTime = false;
-            }
+                //if (launched)
+               //     return;
+                //launched = true;
 
-            var SubMissions = KickStart.ModName;
-            editor = new OptionToggle("<b>ALLOW DEBUG</b> - WILL CONSUME PROCESSING POWER", SubMissions, KickStart.Debugger);
-            editor.onValueSaved.AddListener(() =>
-            {
-                KickStart.Debugger = editor.SavedValue;
-                try
+                ModConfig config = new ModConfig();
+                config.BindConfig<KickStart>(null, "Debugger");
+                //config.BindConfig<KickStart>(null, "ExportPrefabExample"); // NO YOU CAUSE CRASHES
+                config.BindConfig<KickStart>(null, "FirstTime");
+
+                if (KickStart.FirstTime)
                 {
-                    if (KickStart.Debugger && SubMissionsWiki.inst.ShowButtons)
-                    {
-                        WindowManager.ShowPopup(ManSubMissions.Button);
-                        WindowManager.ShowPopup(ManSubMissions.SideUI);
-                    }
-                    else if (!ManGameMode.inst.IsCurrent<ModeMain>())
-                    {
-                        WindowManager.HidePopup(ManSubMissions.Button);
-                        WindowManager.HidePopup(ManSubMissions.SideUI);
-                    }
+                    KickStart.FirstTime = false;
                 }
-                catch { }
-            });
-            exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, KickStart.ExportPrefabExample);
-            exportTemplate.onValueSaved.AddListener(() =>
-            {
-                KickStart.ExportPrefabExample = exportTemplate.SavedValue;
-                SimpleSMissions.MakePrefabMissionTreeToFile("Template");
-            });
-            //if (ExportPrefabExample)
-            //    SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
-            NativeOptionsMod.onOptionsSaved.AddListener(() => { Save(); });
 
+                var SubMissions = KickStart.ModName;
+                OptionToggle togTest = new OptionToggle("<b>ALLOW DEBUG</b> - WILL CONSUME PROCESSING POWER", SubMissions, KickStart.Debugger);
+                togTest.onValueSaved.AddListener(() =>
+                {
+                    KickStart.Debugger = togTest.SavedValue;
+                    try
+                    {
+                        if (KickStart.Debugger && SubMissionsWiki.inst.ShowButtons)
+                        {
+                            WindowManager.ShowPopup(ManSubMissions.Button);
+                            WindowManager.ShowPopup(ManSubMissions.SideUI);
+                        }
+                        else if (!ManGameMode.inst.IsCurrent<ModeMain>())
+                        {
+                            WindowManager.HidePopup(ManSubMissions.Button);
+                            WindowManager.HidePopup(ManSubMissions.SideUI);
+                        }
+                    }
+                    catch { }
+                });
+                editor = togTest;
+                /*
+                exportTemplate = new OptionToggle("Export Mission Examples", SubMissions, KickStart.ExportPrefabExample);
+                exportTemplate.onValueSaved.AddListener(() =>
+                {
+                    KickStart.ExportPrefabExample = exportTemplate.SavedValue;
+                    SimpleSMissions.MakePrefabMissionTreeToFile("Template");
+                });*/
+                //if (ExportPrefabExample)
+                //    SMissionJSONLoader.MakePrefabMissionTreeToFile("Template");
+                NativeOptionsMod.onOptionsSaved.AddListener(() => { Save(); });
+                Saver = config;
+
+            }
+            catch { }
         }
         public static void Save()
         {

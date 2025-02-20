@@ -157,6 +157,10 @@ namespace Sub_Missions
                     output = 0;
                     return false;
                 case VarType.IntOverInt:
+                    if (GlobalIndex < 0 || GlobalIndex >= mission.VarIntsActive.Count)
+                        throw new Exception("Checklist entry set to IntOverInt but GlobalIndex is set to [" +
+                            GlobalIndex + "] which is outside the range of present Ints and not the -1" +
+                            " always active value: [0 -> " + (mission.VarIntsActive.Count - 1).ToString() + "]");
                     output = mission.VarIntsActive[GlobalIndex];
                     return true;
                 default:

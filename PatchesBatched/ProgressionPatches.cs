@@ -158,21 +158,21 @@ namespace Sub_Missions
         {
             internal static Type target = typeof(ManLicenses);
             //InsureShoehornedLicenceReady
-            private static void GetLicense_Prefix(ManLicenses __instance, FactionSubTypes faction)
+            internal static void GetLicense_Prefix(ManLicenses __instance, FactionSubTypes faction)
             {
                 //LogLicenceReady(faction);
             }
 
             //GetTheLayout
-            private static void SetupLicenses_Prefix(ManLicenses __instance)
+            internal static void SetupLicenses_Prefix(ManLicenses __instance)
             {
                 Debug_SMissions.Log(KickStart.ModID + ": SetupLicenses - Injecting Unofficial corps beforehand");
                 ManSMCCorps.PushUnofficialCorpsToPool();
             }
             //DontSaveModdedLicenses
-            private static void Save_Prefix(ManLicenses __instance, ref ManSaveGame.State saveState)
+            internal static void Save_Prefix(ManLicenses __instance, ref ManSaveGame.State saveState)
             {
-                Debug_SMissions.Log(KickStart.ModID + ": DontSaveModdedLicenses - Removing modded corp save states...");
+                Debug_SMissions.Log(KickStart.ModID + ": DontSaveModdedLicenses - Preventing the base game from saving it (prevent crash on corp absence)...");
                 Dictionary<FactionSubTypes, FactionLicense> licences = (Dictionary<FactionSubTypes, FactionLicense>)m_FactionLicenses.GetValue(__instance);
                 foreach (var item in ManSMCCorps.GetAllSMCCorpFactionTypes())
                 {
@@ -180,7 +180,7 @@ namespace Sub_Missions
                 }
             }
             //AwardCorrect
-            private static bool AwardLevelUpBlocks_Prefix(ref FactionSubTypes corporation, ref int grade)
+            internal static bool AwardLevelUpBlocks_Prefix(ref FactionSubTypes corporation, ref int grade)
             {
                 if (ManSMCCorps.TryGetSMCCorpLicense((int)corporation, out SMCCorpLicense CL))
                 {

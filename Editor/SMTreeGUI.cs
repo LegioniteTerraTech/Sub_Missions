@@ -10,6 +10,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Xml.Linq;
 using Newtonsoft.Json;
+using TAC_AI.Templates;
+using MonoMod.Utils;
 
 namespace Sub_Missions.Editor
 {
@@ -192,6 +194,7 @@ namespace Sub_Missions.Editor
             Missions,
             Techs,
             Monuments,
+            Terrain,
             TechSelect,
             MonumentsSelect,
         }
@@ -201,6 +204,12 @@ namespace Sub_Missions.Editor
         private static TreeGUIType guiTypeCache = TreeGUIType.NULL;
         private static Action actReturn;
         private static bool PlayerOption = false;
+        private static bool DeleteConfirmation = false;
+        private static void OnButtonClick()
+        {
+            DeleteConfirmation = false;
+        }
+
         internal static void JumpToTechSelector(bool showPlayerAsOption, Action callbackReturn)
         {
             if (callbackReturn == null)
@@ -269,6 +278,9 @@ namespace Sub_Missions.Editor
                     case TreeGUIType.Monuments:
                         GUIListWObjects();
                         break;
+                    case TreeGUIType.Terrain:
+                        GUIListTerrain();
+                        break;
                     case TreeGUIType.TechSelect:
                         GUIListTechSelect();
                         break;
@@ -306,6 +318,11 @@ namespace Sub_Missions.Editor
                     GUIDisplayWObject();
                     GUILayout.EndScrollView();
                     break;
+                case TreeGUIType.Terrain:
+                    pagePosT = GUILayout.BeginScrollView(pagePosT);
+                    GUIDisplayTerrain();
+                    GUILayout.EndScrollView();
+                    break;
                 case TreeGUIType.TechSelect:
                     GUIDisplayTechSelect();
                     break;
@@ -327,6 +344,7 @@ namespace Sub_Missions.Editor
 
             if (GUILayout.Button("Missions", AltUI.ButtonRed))
             {
+                OnButtonClick();
                 validNew = false;
                 delta = true;
                 guiType = TreeGUIType.Missions;
@@ -340,6 +358,7 @@ namespace Sub_Missions.Editor
             }*/
             if (GUILayout.Button("Add Techs", AltUI.ButtonRed))
             {
+                OnButtonClick();
                 validNew = false;
                 delta = true;
                 PlayerOption = false;
@@ -347,17 +366,29 @@ namespace Sub_Missions.Editor
             }
             if (GUILayout.Button("Monuments", AltUI.ButtonRed))
             {
+                OnButtonClick();
                 validNew = false;
                 delta = true;
                 guiType = TreeGUIType.Monuments;
+            }
+            if (GUILayout.Button("Terrain", AltUI.ButtonRed))
+            {
+                OnButtonClick();
+                validNew = false;
+                delta = true;
+                guiType = TreeGUIType.Terrain;
             }
             if (ActiveGameInterop.inst && ActiveGameInterop.IsReady)
             {
                 if (GUILayout.Button("Send To Editor", AltUI.ButtonBlue))
                     ActiveGameInterop.TryTransmit("RetreiveMissionTree", tree.TreeHierachy.AddressName);
             }
-            else if (GUILayout.Button("Needs UnityEditor", AltUI.ButtonGrey))
-            { 
+            else
+            {
+                GUILayout.Button("Send To Editor", AltUI.ButtonGrey);
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Unity Editor is not connected.  " + KickStart.UnityEditorAccessInfo, false);
             }
             GUILayout.FlexibleSpace();
             if (GUILayout.Button("Open Files", AltUI.ButtonBlue))
@@ -384,6 +415,10 @@ namespace Sub_Missions.Editor
             GUILayout.FlexibleSpace();
             GUILayout.Label(tree.TreeHierachy.GetType().ToString());
             GUILayout.EndHorizontal();
+            if (tree.TreeHierachy.IsEditable())
+                GUILayout.Label("Is Editable");
+            else
+                GUILayout.Label("Is NOT Editable");
             GUILayoutHelpers.GUILabelDispFast("Total Number Of Missions:", tree.Missions.Count);
             GUILayoutHelpers.GUILabelDispFast("Number Of Instant Missions:", tree.ImmedeateMissions.Count);
             GUILayoutHelpers.GUILabelDispFast("Number Of Techs:", tree.TreeTechCount);
@@ -579,7 +614,15 @@ namespace Sub_Missions.Editor
         {
             LBarTitle = "Missions:";
 
-            SMAutoFill.OneWayButtonLarge("Add New", ref addNewMission);
+            if (tree.TreeHierachy.IsEditable())
+                SMAutoFill.OneWayButtonLarge("Add New", ref addNewMission);
+            else
+            {
+                GUILayout.Button("Add New", AltUI.ButtonGreyLarge, GUILayout.Height(48));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
+            }
 
             GUIListMissionsList();
         }
@@ -625,6 +668,7 @@ namespace Sub_Missions.Editor
             {
                 if (GUILayout.Button("Create", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     validNew = false;
                     SubMission mission = new SubMission()
                     {
@@ -665,11 +709,13 @@ namespace Sub_Missions.Editor
                 RDispTitle = selectedActiveMission.Name;
                 if (GUILayout.Button("Open Editor", AltUI.ButtonBlueLarge, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     ManSubMissions.Selected = selectedActiveMission;
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Enter);
                 }
                 if (GUILayout.Button("FORCE END (SAVE FIRST)", AltUI.ButtonRed, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     ManSubMissions.SelectedIsAnon = false;
                     ManSubMissions.Selected = selectedActiveMission;
                     ButtonAct.inst.Invoke("RequestCancelSMission", 0);
@@ -681,6 +727,7 @@ namespace Sub_Missions.Editor
                 RDispTitle = selectedMission.Name;
                 if (GUILayout.Button("Edit Mission", AltUI.ButtonBlueLarge, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     if (selectedMission.tree.AcceptTreeMission(selectedMission, true))
                     {
                         editor.Paused = true;
@@ -700,6 +747,7 @@ namespace Sub_Missions.Editor
                 }
                 if (GUILayout.Button("Test Mission", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     if (selectedMission.tree.AcceptTreeMission(selectedMission, false))
                     {
                         editor.Paused = false;
@@ -725,16 +773,67 @@ namespace Sub_Missions.Editor
 
 
         // Techs
+        public enum TechViewerMode
+        {
+            None,
+            Tech,
+            PopParam,
+        }
         private static Vector2 scrollDrag3 = Vector2.zero;
         private static SpawnableTech tech = null;
         private static string techName = "";
         private static Texture2D techImage = Texture2D.whiteTexture;
-        private static bool addNewTech = false;
+        private static TechViewerMode addNewMode = TechViewerMode.None;
+        private static RawTechPopParams newPopParam = new RawTechPopParams()
+        {
+            Purpose = BasePurpose.AnyNonHQ,
+            Purposes = new HashSet<BasePurpose> { BasePurpose.AnyNonHQ },
+            SearchAttract = false,
+            SpawnCharged = true,
+            AllowSnipers = TAC_AI.KickStart.AllowSniperSpawns,
+            RandSkins = true,
+            ExcludeErad = !TAC_AI.KickStart.EnemyEradicators,
+            AllowAutominers = true,
+            BlockConveyors = false,
+            Disarmed = false,
+            Faction = FactionSubTypes.NULL,
+            TeamSkins = true,
+            ForceCompleted = true,
+            IsPopulation = false,
+            MaxGrade = 4,
+            MaxPrice = int.MaxValue,
+            ForceAnchor = true,
+            Offset = RawTechOffset.OnGround,
+            Progression = FactionLevel.NULL,
+        };
         private static void GUIListTechs()
         {
             LBarTitle = "Techs:";
 
-            SMAutoFill.OneWayButtonLarge("Add New", ref addNewTech);
+            if (tree.TreeHierachy.IsEditable())
+            {
+                if (addNewMode == TechViewerMode.Tech)
+                    GUILayout.Button("Add New", AltUI.ButtonOrangeLargeActive, GUILayout.Height(48));
+                else if (GUILayout.Button("Add New", AltUI.ButtonOrangeLarge, GUILayout.Height(48)))
+                    addNewMode = TechViewerMode.Tech;
+
+                if (addNewMode == TechViewerMode.PopParam)
+                    GUILayout.Button("Add Pop Param", AltUI.ButtonOrangeLargeActive, GUILayout.Height(48));
+                else if (GUILayout.Button("Add Pop Param", AltUI.ButtonOrangeLarge, GUILayout.Height(48)))
+                    addNewMode = TechViewerMode.PopParam;
+            }
+            else
+            {
+                GUILayout.Button("Add New", AltUI.ButtonGreyLarge, GUILayout.Height(48));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
+                GUILayout.Button("Add Pop Param", AltUI.ButtonGreyLarge, GUILayout.Height(48));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
+
+            }
 
             scrollDrag3 = GUILayout.BeginScrollView(scrollDrag3);
             SubMissionType prev = (SubMissionType)(-1);
@@ -749,13 +848,14 @@ namespace Sub_Missions.Editor
                 }
                 else if (GUILayout.Button(item.name, AltUI.ButtonBlue) && item.name != techName)
                 {
+                    OnButtonClick();
                     tech = item;
                     techName = item.name;
                     item.GetTextureAsync(tree, (TechData techData, Texture2D techImage2) =>
                     {
                         techImage = techImage2;
                     });
-                    addNewTech = false;
+                    addNewMode = TechViewerMode.None;
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 }
                 GUILayout.FlexibleSpace();
@@ -771,10 +871,18 @@ namespace Sub_Missions.Editor
             {
                 try
                 {
-                    if (addNewTech)
-                        GUIDisplayNewTech();
-                    else
-                        GUIDisplayExistingTech();
+                    switch (addNewMode)
+                    {
+                        case TechViewerMode.Tech:
+                            GUIDisplayNewTech();
+                            break;
+                        case TechViewerMode.PopParam:
+                            GUIDisplayNewParam();
+                            break;
+                        default:
+                            GUIDisplayExistingTech();
+                            break;
+                    }
                 }
                 catch (ExitGUIException e) { throw e; }
                 catch (Exception e)
@@ -803,16 +911,24 @@ namespace Sub_Missions.Editor
             {
                 if (GUILayout.Button("Attach Snap", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     SMissionJSONLoader.SaveNewTechSnapshot(tree, newTech, SMUtil.DisplaySelectTechImage);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Snapshot);
                     validNew = false;
                 }
             }
-            else if (GUILayout.Button("Attach Snap", AltUI.ButtonGreyLarge, GUILayout.Height(128))) { }
+            else
+            {
+                GUILayout.Button("Attach Snap", AltUI.ButtonGreyLarge, GUILayout.Height(128));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+            }
             if (validNew)
             {
                 if (GUILayout.Button("Attach Raw", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     if (ManScreenshot.TryDecodeSnapshotRender(SMUtil.DisplaySelectTechImage, out var TechData))
                     {
                         SMissionJSONLoader.SaveNewTechRaw(tree, newTech, TechData.CreateTechData());
@@ -821,46 +937,162 @@ namespace Sub_Missions.Editor
                     validNew = false;
                 }
             }
-            else if (GUILayout.Button("Attach Raw", AltUI.ButtonGreyLarge, GUILayout.Height(128))) { }
+            else
+            {
+                GUILayout.Button("Attach Raw", AltUI.ButtonGreyLarge, GUILayout.Height(128));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+            }
             if (GUILayout.Button("Open Snapshots in Explorer", AltUI.ButtonBlue))
             {
+                OnButtonClick();
                 SMissionJSONLoader.OpenInExplorer(
                     Path.Combine(SMissionJSONLoader.MissionsDirectory,
                     tree.TreeName, "Techs"));
             }
             if (GUILayout.Button("Open RAW Techs in Explorer", AltUI.ButtonBlue))
             {
+                OnButtonClick();
                 SMissionJSONLoader.OpenInExplorer(
                     Path.Combine(SMissionJSONLoader.MissionsDirectory,
                     tree.TreeName, "Raw Techs"));
             }
         }
-        
+        private static string prevTech = "";
+        private static void GUIDisplayNewParam()
+        {
+            SMAutoFill.AutoTextField("Name", ref prevTech);
+            if (delta || (newTech != prevTech))
+            {
+                delta = false;
+                newTech = prevTech;
+                if (newTech.NullOrEmpty() || tree.TreeTechs.Any(x => x.Key == newTech))
+                    validNew = false;
+                else
+                    validNew = true;
+            }
+            if (validNew)
+            {
+                if (GUILayout.Button("Save To Mission", AltUI.ButtonGrey))
+                {
+                    OnButtonClick();
+                    SMissionJSONLoader.SaveNewPopParam(tree, newTech, newPopParam);
+                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Snapshot);
+                    validNew = false;
+                    tech = tree.TreeTechs[newTech];
+                    addNewMode = TechViewerMode.None;
+                    SMissionJSONLoader.OpenInExplorer(
+                        Path.Combine(SMissionJSONLoader.MissionsDirectory,
+                        tree.TreeName, "Pop Params"));
+                }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Make sure to hit RELOAD after you are done editing!", false);
+            }
+            else
+            {
+                GUILayout.Button("Save To Mission", AltUI.ButtonGrey);
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+            }
+            if (GUILayout.Button("Open Pop Params in Explorer", AltUI.ButtonBlue))
+            {
+                OnButtonClick();
+                SMissionJSONLoader.OpenInExplorer(
+                    Path.Combine(SMissionJSONLoader.MissionsDirectory,
+                    tree.TreeName, "Pop Params"));
+            }
+        }
+
         private static void GUIDisplayExistingTech()
         {
             if (tech != null)
             {
                 RDispTitle = tech.name;
                 GUILayout.Label("Type: " + tech.GetType(), GUILayout.Width(300));
-                GUILayout.Box(techImage, AltUI.TextfieldBorderedBlue, GUILayout.Width(300), GUILayout.Height(220));
-                if (previewTech == null)
+                if (tech is SpawnableTechFromPool pooled)
                 {
-                    if (GUILayout.Button("Spawn Preview", AltUI.ButtonGreen))
+                    if (previewTech == null)
                     {
-                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
-                        previewTech = tech.Spawn(tree, Singleton.playerPos + Camera.main.transform.forward.SetY(0) * 32,
-                            Vector3.forward, ManPlayer.inst.PlayerTeam);
+                        if (GUILayout.Button("Spawn Random", AltUI.ButtonGreen))
+                        {
+                            OnButtonClick();
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
+                            previewTech = tech.Spawn(tree, Singleton.playerPos + Camera.main.transform.forward.SetY(0) * 32,
+                                Vector3.forward, ManPlayer.inst.PlayerTeam);
+                        }
+                    }
+                    else if (GUILayout.Button("Clear Random", AltUI.ButtonBlue))
+                    {
+                        OnButtonClick();
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                        previewTech.visible.RemoveFromGame();
+                        previewTech = null;
+                    }
+                    if (tree.TreeHierachy.IsEditable())
+                    {
+                        if (GUILayout.Button("RELOAD", AltUI.ButtonBlue))
+                        {
+                            OnButtonClick();
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                            pooled.ReloadFromDisk(tree);
+                        }
+                    }
+                    else
+                    {
+                        GUILayout.Button("RELOAD", AltUI.ButtonGrey);
+                        if (Event.current.type == EventType.Repaint &&
+                            GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                            AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
                     }
                 }
-                else if (GUILayout.Button("Clear Preview", AltUI.ButtonBlue))
+                else
                 {
-                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
-                    previewTech.visible.RemoveFromGame();
-                    previewTech = null;
+                    GUILayout.Box(techImage, AltUI.TextfieldBorderedBlue, GUILayout.Width(300), GUILayout.Height(220));
+                    if (previewTech == null)
+                    {
+                        if (GUILayout.Button("Spawn Preview", AltUI.ButtonGreen))
+                        {
+                            OnButtonClick();
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
+                            previewTech = tech.Spawn(tree, Singleton.playerPos + Camera.main.transform.forward.SetY(0) * 32,
+                                Vector3.forward, ManPlayer.inst.PlayerTeam);
+                        }
+                    }
+                    else if (GUILayout.Button("Clear Preview", AltUI.ButtonBlue))
+                    {
+                        OnButtonClick();
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                        previewTech.visible.RemoveFromGame();
+                        previewTech = null;
+                    }
                 }
-                if (GUILayout.Button("DELETE", AltUI.ButtonRed))
+                if (tree.TreeHierachy.IsEditable())
                 {
-                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                    if (DeleteConfirmation && GUILayout.Button("DELETE", AltUI.ButtonRedActive))
+                    {
+                        OnButtonClick();
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                        tech.Remove(tree);
+                        tech = null;
+                    }
+                    else
+                    {
+                        if (GUILayout.Button("Delete", AltUI.ButtonRed))
+                        {
+                            DeleteConfirmation = true;
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.PopUpClose);
+                        }
+                    }
+                }
+                else
+                {
+                    GUILayout.Button("Delete", AltUI.ButtonGrey);
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
                 }
             }
             else
@@ -920,6 +1152,7 @@ namespace Sub_Missions.Editor
                     style = AltUI.ButtonBlueLarge;
                 if (GUILayout.Button("Player Tech", style, GUILayout.Height(SelectorHeight)))
                 {
+                    OnButtonClick();
                     lastSelectedName = "Player Tech";
                     SelectorIndex = -2;
                 }
@@ -940,6 +1173,7 @@ namespace Sub_Missions.Editor
                         if (GUILayout.Button(SelectorRendTextures[indexR], style,
                             GUILayout.Height(SelectorHeight), GUILayout.Width(SelectorHeight * 1.3f)))
                         {
+                            OnButtonClick();
                             lastSelectedName = SelectorRendNames[indexR];
                             SelectorIndex = i;
                         }
@@ -951,6 +1185,7 @@ namespace Sub_Missions.Editor
                         if (GUILayout.Button(loading, style,
                         GUILayout.Height(SelectorHeight), GUILayout.Width(SelectorHeight * 1.3f)))
                         {
+                            OnButtonClick();
                             lastSelectedName = SelectorRendNames[indexR];
                             SelectorIndex = i;
                         }
@@ -958,6 +1193,7 @@ namespace Sub_Missions.Editor
 
                     if (GUILayout.Button(SelectorRendNames[indexR], style, GUILayout.Height(SelectorHeight)))
                     {
+                        OnButtonClick();
                         lastSelectedName = SelectorRendNames[indexR];
                         SelectorIndex = i;
                     }
@@ -967,11 +1203,13 @@ namespace Sub_Missions.Editor
                     if (GUILayout.Button(loading, AltUI.ButtonBlueLarge,
                         GUILayout.Height(SelectorHeight), GUILayout.Width(SelectorHeight * 1.3f)))
                     {
+                        OnButtonClick();
                         lastSelectedName = tree.TreeTechs.Keys.ElementAt(i);
                         SelectorIndex = i;
                     }
                     if (GUILayout.Button(loading, AltUI.ButtonBlueLarge, GUILayout.Height(SelectorHeight)))
                     {
+                        OnButtonClick();
                         lastSelectedName = tree.TreeTechs.Keys.ElementAt(i);
                         SelectorIndex = i;
                     }
@@ -988,12 +1226,14 @@ namespace Sub_Missions.Editor
                     GUILayout.Height(32), GUILayout.Width(200));
                 if (GUILayout.Button("Close", AltUI.ButtonRed))
                 {
+                    OnButtonClick();
                     SelectorIndex = -1;
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                 }
                 GUILayout.FlexibleSpace();
                 if (actReturn != null && GUILayout.Button("Select", AltUI.ButtonGreen))
                 {
+                    OnButtonClick();
                     actReturn();
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                 }
@@ -1008,6 +1248,7 @@ namespace Sub_Missions.Editor
                 var tech = tree.TreeTechs.Values.ElementAt(SelectorIndex);
                 if (GUILayout.Button("Close", AltUI.ButtonRed))
                 {
+                    OnButtonClick();
                     SelectorIndex = -1;
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                 }
@@ -1023,6 +1264,7 @@ namespace Sub_Missions.Editor
                     {
                         if (GUILayout.Button("Spawn", AltUI.ButtonGreen))
                         {
+                            OnButtonClick();
                             ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                             previewTech = tech.Spawn(tree, Singleton.playerPos + Camera.main.transform.forward.SetY(0) * 32,
                                 Vector3.forward, ManPlayer.inst.PlayerTeam);
@@ -1030,16 +1272,36 @@ namespace Sub_Missions.Editor
                     }
                     else if (GUILayout.Button("Clear", AltUI.ButtonBlue))
                     {
+                        OnButtonClick();
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
                         previewTech.visible.RemoveFromGame();
                         previewTech = null;
                     }
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("DELETE", AltUI.ButtonRed))
+                    if (tree.TreeHierachy.IsEditable())
                     {
-                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
-                        tech.Remove(tree);
-                        SelectorRendIndex = -1;
+                        if (DeleteConfirmation && GUILayout.Button("DELETE", AltUI.ButtonRedActive))
+                        {
+                            OnButtonClick();
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                            tech.Remove(tree);
+                            SelectorRendIndex = -1;
+                        }
+                        else
+                        {
+                            if (GUILayout.Button("Delete", AltUI.ButtonRed))
+                            {
+                                DeleteConfirmation = true;
+                                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.PopUpClose);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        GUILayout.Button("Delete", AltUI.ButtonGrey);
+                        if (Event.current.type == EventType.Repaint &&
+                            GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                            AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
                     }
                 }
             }
@@ -1075,6 +1337,17 @@ namespace Sub_Missions.Editor
                 loader.Hide();
                 loader = null;
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Close);
+            }
+            if (GUILayout.Button("Add Random", AltUI.ButtonOrangeLarge, GUILayout.Height(48)))
+            {
+                string NewPop = "PopParam1.json";
+                int step = 2;
+                while (tree.TreeTechs.ContainsKey(NewPop))
+                {
+                    NewPop = "PopParam" + step + ".json";
+                    step++;
+                }
+                SMissionJSONLoader.SaveNewPopParam(tree, NewPop, newPopParam);
             }
             if (Singleton.playerTank != null)
             {
@@ -1135,7 +1408,15 @@ namespace Sub_Missions.Editor
         {
             LBarTitle = "Pieces:";
 
-            SMAutoFill.OneWayButtonLarge("Add New", ref addWObject);
+            if (tree.TreeHierachy.IsEditable())
+                SMAutoFill.OneWayButtonLarge("Add New", ref addWObject);
+            else
+            {
+                GUILayout.Button("Add New", AltUI.ButtonGreyLarge, GUILayout.Height(48));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions.", false);
+            }
 
             scrollDrag4 = GUILayout.BeginScrollView(scrollDrag4);
             SubMissionType prev = (SubMissionType)(-1);
@@ -1156,6 +1437,7 @@ namespace Sub_Missions.Editor
                 }
                 else if (GUILayout.Button(name, AltUI.ButtonBlue) && item.name != wObjectName)
                 {
+                    OnButtonClick();
                     wObject = item;
                     wObjectName = name;
                     GetTexture(item, (Texture2D delegater) => { WObjectVis = delegater; });
@@ -1167,15 +1449,31 @@ namespace Sub_Missions.Editor
                 GUILayout.EndHorizontal();
             }
             GUILayout.EndScrollView();
-            if (GUILayout.Button("Open Folder", AltUI.ButtonBlue))
+            if (tree.TreeHierachy.IsEditable())
             {
-                SMissionJSONLoader.OpenInExplorer(
-                    Path.Combine(SMissionJSONLoader.MissionsDirectory,
-                    tree.TreeName, "Pieces"));
+                if (GUILayout.Button("Open Folder", AltUI.ButtonBlue))
+                {
+                    OnButtonClick();
+                    SMissionJSONLoader.OpenInExplorer(
+                        Path.Combine(SMissionJSONLoader.MissionsDirectory,
+                        tree.TreeName, "Pieces"));
+                }
+                if (GUILayout.Button("Reload Files", AltUI.ButtonBlue))
+                {
+                    OnButtonClick();
+                    tree.TreeHierachy.LoadTreeWorldObjects(ref tree.WorldObjectFileNames);
+                }
             }
-            if (GUILayout.Button("Reload Files", AltUI.ButtonBlue))
+            else
             {
-                tree.TreeHierachy.LoadTreeWorldObjects(ref tree.WorldObjectFileNames);
+                GUILayout.Button("Open Folder", AltUI.ButtonGrey);
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions.", false);
+                GUILayout.Button("Reload Files", AltUI.ButtonGrey);
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions.", false);
             }
         }
 
@@ -1219,6 +1517,7 @@ namespace Sub_Missions.Editor
             {
                 if (GUILayout.Button("Create", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
+                    OnButtonClick();
                     validNew = false;
                     var SMWO = new SMWorldObjectJSON()
                     {
@@ -1232,7 +1531,13 @@ namespace Sub_Missions.Editor
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
                 }
             }
-            else if (GUILayout.Button("Create", AltUI.ButtonGreyLarge, GUILayout.Height(128))) { }
+            else 
+            {
+                GUILayout.Button("Create", AltUI.ButtonGreyLarge, GUILayout.Height(128));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("There is already a World Object with the same name!", false);
+            }
         }
 
         private static void GUIDisplayExistingWObject()
@@ -1246,8 +1551,9 @@ namespace Sub_Missions.Editor
                 {
                     if (GUILayout.Button("Spawn Preview", AltUI.ButtonGreen))
                     {
+                        OnButtonClick();
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
-                        WorldPosition WP = WorldPosition.FromScenePosition(Singleton.playerPos + 
+                        WorldPosition WP = WorldPosition.FromScenePosition(Singleton.playerPos +
                             Camera.main.transform.forward * 80);
                         ManModularMonuments.SpawnMM(new ModularMonumentSave
                         {
@@ -1262,12 +1568,32 @@ namespace Sub_Missions.Editor
                 }
                 else if (GUILayout.Button("Clear Preview", AltUI.ButtonBlue))
                 {
+                    OnButtonClick();
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
                     previewWO.GetComponent<SMWorldObject>().Remove(false);
                 }
-                if (GUILayout.Button("DELETE", AltUI.ButtonRed))
+                if (tree.TreeHierachy.IsEditable())
                 {
-                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                    if (DeleteConfirmation && GUILayout.Button("DELETE", AltUI.ButtonRedActive))
+                    {
+                        OnButtonClick();
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                    }
+                    else
+                    {
+                        if (GUILayout.Button("Delete", AltUI.ButtonRed))
+                        {
+                            DeleteConfirmation = true;
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.PopUpClose);
+                        }
+                    }
+                }
+                else
+                {
+                    GUILayout.Button("Delete", AltUI.ButtonGrey);
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
                 }
             }
             else
@@ -1321,6 +1647,7 @@ namespace Sub_Missions.Editor
                         if (GUILayout.Button(SelectorRendTextures[indexR], style,
                             GUILayout.Height(SelectorHeight), GUILayout.Width(SelectorHeight * 1.3f)))
                         {
+                            OnButtonClick();
                             lastSelectedName = SelectorRendNames[indexR];
                             SelectorIndex = i;
                         }
@@ -1330,6 +1657,7 @@ namespace Sub_Missions.Editor
                         if (GUILayout.Button(loading, style,
                         GUILayout.Height(SelectorHeight), GUILayout.Width(SelectorHeight * 1.3f)))
                         {
+                            OnButtonClick();
                             lastSelectedName = SelectorRendNames[indexR];
                             SelectorIndex = i;
                         }
@@ -1337,6 +1665,7 @@ namespace Sub_Missions.Editor
 
                     if (GUILayout.Button(SelectorRendNames[indexR], style, GUILayout.Height(SelectorHeight)))
                     {
+                        OnButtonClick();
                         lastSelectedName = SelectorRendNames[indexR];
                         SelectorIndex = i;
                     }
@@ -1346,11 +1675,13 @@ namespace Sub_Missions.Editor
                     if (GUILayout.Button(loading, AltUI.ButtonBlueLarge,
                         GUILayout.Height(SelectorHeight), GUILayout.Width(SelectorHeight * 1.3f)))
                     {
+                        OnButtonClick();
                         lastSelectedName = tree.TreeTechs.Keys.ElementAt(i);
                         SelectorIndex = i;
                     }
                     if (GUILayout.Button(loading, AltUI.ButtonBlueLarge, GUILayout.Height(SelectorHeight)))
                     {
+                        OnButtonClick();
                         lastSelectedName = tree.TreeTechs.Keys.ElementAt(i);
                         SelectorIndex = i;
                     }
@@ -1368,6 +1699,7 @@ namespace Sub_Missions.Editor
                 var tech = tree.TreeTechs.Values.ElementAt(SelectorIndex);
                 if (GUILayout.Button("Close", AltUI.ButtonRed))
                 {
+                    OnButtonClick();
                     SelectorIndex = -1;
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                 }
@@ -1376,6 +1708,7 @@ namespace Sub_Missions.Editor
                 {
                     if (actReturn != null && GUILayout.Button("Select", AltUI.ButtonGreen))
                     {
+                        OnButtonClick();
                         actReturn();
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                     }
@@ -1383,6 +1716,7 @@ namespace Sub_Missions.Editor
                     {
                         if (GUILayout.Button("Spawn", AltUI.ButtonGreen))
                         {
+                            OnButtonClick();
                             ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                             previewTech = tech.Spawn(tree, Singleton.playerPos + Camera.main.transform.forward.SetY(0) * 32,
                                 Vector3.forward, ManPlayer.inst.PlayerTeam);
@@ -1395,11 +1729,30 @@ namespace Sub_Missions.Editor
                         previewTech = null;
                     }
                     GUILayout.FlexibleSpace();
-                    if (GUILayout.Button("DELETE", AltUI.ButtonRed))
+                    if (tree.TreeHierachy.IsEditable())
                     {
-                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
-                        tech.Remove(tree);
-                        SelectorRendIndex = -1;
+                        if (DeleteConfirmation && GUILayout.Button("DELETE", AltUI.ButtonRedActive))
+                        {
+                            OnButtonClick();
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                            tech.Remove(tree);
+                            SelectorRendIndex = -1;
+                        }
+                        else
+                        {
+                            if (GUILayout.Button("Delete", AltUI.ButtonRed))
+                            {
+                                DeleteConfirmation = true;
+                                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.PopUpClose);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        GUILayout.Button("Delete", AltUI.ButtonGrey);
+                        if (Event.current.type == EventType.Repaint &&
+                            GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                            AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
                     }
                 }
             }
@@ -1438,6 +1791,246 @@ namespace Sub_Missions.Editor
             {
                 
             }
+        }
+
+
+        // Custom Terrain
+        private static bool addTerrain = false;
+        private static bool terrainActive = false;
+        private static string terrainName = string.Empty;
+        private static Dictionary<IntVector2, TerrainModifier> terrainSelect = null;
+        private static void GUIListTerrain()
+        {
+            LBarTitle = "Terrain:";
+
+            if (tree.TreeHierachy.IsEditable())
+                SMAutoFill.OneWayButtonLarge("Add New", ref addTerrain);
+            else
+            {
+                GUILayout.Button("Add New", AltUI.ButtonGreyLarge, GUILayout.Height(48));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions.", false);
+            }
+
+            if (GUILayout.Button("CLEAR ALL SAVED", AltUI.ButtonRed))
+            {
+                OnButtonClick();
+                ManTerraformTool.inst.TerrainModsEdit.Clear();
+                WorldDeformer.ResetCurrentlyTargetedTerrain();
+                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Back);
+                terrainActive = false;
+            }
+            if (Event.current.type == EventType.Repaint &&
+                GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                AltUI.TooltipWorld("Clears all edited Mod Mission Terrain in the world!", false);
+
+            scrollDrag4 = GUILayout.BeginScrollView(scrollDrag4);
+
+            foreach (var item in tree.TerrainEdits.OrderBy(x => x))
+            {
+                var itemValue = item.Value;
+                if (itemValue == null)
+                {
+                    GUILayout.Button("ErrorCode0", AltUI.ButtonGrey);
+                    continue;
+                }
+                string name = item.Key.NullOrEmpty() ? "NULL_NAME" : item.Key;
+                GUILayout.BeginHorizontal(GUILayout.Height(32));
+                if (name == terrainName)
+                {
+                    GUILayout.Button(name, AltUI.ButtonBlueActive);
+                }
+                else if (GUILayout.Button(name, AltUI.ButtonBlue))
+                {
+                    OnButtonClick();
+                    terrainSelect = itemValue;
+                    terrainName = name;
+                    addTerrain = false;
+                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
+                }
+                GUILayout.FlexibleSpace();
+
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.EndScrollView();
+            if (tree.TreeHierachy.IsEditable())
+            {
+                if (GUILayout.Button("Open Folder", AltUI.ButtonBlue))
+                {
+                    OnButtonClick();
+                    SMissionJSONLoader.OpenInExplorer(
+                        Path.Combine(SMissionJSONLoader.MissionsDirectory,
+                        tree.TreeName, "Terrain"));
+                }
+                if (GUILayout.Button("Reload Files", AltUI.ButtonBlue))
+                {
+                    OnButtonClick();
+                    tree.TreeHierachy.LoadTreeTerrains(ref tree.TerrainEdits);
+                }
+            }
+            else
+            {
+                GUILayout.Button("Open Folder", AltUI.ButtonGrey);
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions.", false);
+                GUILayout.Button("Reload Files", AltUI.ButtonGrey);
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Cannot edit AssetBundled missions.", false);
+            }
+        }
+
+        private static void GUIDisplayTerrain()
+        {
+            if (tree != null)
+            {
+                try
+                {
+                    if (addTerrain)
+                        GUIDisplayNewTerrain();
+                    else
+                        GUIDisplayExistingTerrain();
+                }
+                catch (ExitGUIException e) { throw e; }
+                catch (Exception e)
+                {
+                    tech = null;
+                    throw new Exception("Error in GUIDisplayTerrain()", e);
+                }
+            }
+            else
+            {
+                RDispTitle = "Not Selected";
+            }
+        }
+        private static string newTerrain = "";
+        private static void GUIDisplayNewTerrain()
+        {
+            RDispTitle = "Add New Terrain";
+            if (delta || SMAutoFill.AutoTextField("Name", ref newTerrain, 64))
+            {
+                delta = false;
+                if (newTerrain.NullOrEmpty() || newTerrain.Length <= 3 ||
+                    tree.TerrainEdits.Any(x => x.Value != null && !x.Key.NullOrEmpty() && x.Key == newTerrain))
+                    validNew = false;
+                else
+                    validNew = true;
+            }
+            if (validNew)
+            {
+                if (GUILayout.Button("Save Current", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
+                {
+                    OnButtonClick();
+                    validNew = false;
+                    SMissionJSONLoader.SaveCurrentTerrainDelta(tree, newTerrain, false);
+                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
+                }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Saves ALL currently active edits in the world, excluding vanilla Set Pieces", false);
+            }
+            else
+            {
+                if (GUILayout.Button("OVERWRITE", AltUI.ButtonOrangeLargeActive, GUILayout.Height(128)))
+                {
+                    OnButtonClick();
+                    validNew = false;
+                    SMissionJSONLoader.SaveCurrentTerrainDelta(tree, newTerrain, true);
+                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
+                }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("OVERWRITES the file with ALL currently active edits in the world, excluding vanilla Set Pieces", false);
+            }
+        }
+
+        private static void GUIDisplayExistingTerrain()
+        {
+            if (terrainSelect != null)
+            {
+                RDispTitle = terrainName;
+                if (terrainActive)
+                {
+                    if (GUILayout.Button("Clear", AltUI.ButtonBlue))
+                    {
+                        OnButtonClick();
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                        ManTerraformTool.inst.TerrainModsEdit.Clear();
+                        WorldDeformer.ResetCurrentlyTargetedTerrain();
+                        terrainActive = false;
+                    }
+                }
+                else
+                {
+                    if (GUILayout.Button("Load (REPLACES ACTIVE)", AltUI.ButtonGreen))
+                    {
+                        OnButtonClick();
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
+                        ManTerraformTool.inst.TerrainModsEdit.Clear();
+                        WorldDeformer.ResetCurrentlyTargetedTerrain();
+                        IntVector2 playerCoord = WorldPosition.FromScenePosition(Singleton.playerPos).TileCoord;
+                        foreach (var item in terrainSelect)
+                        {
+                            ManTerraformTool.inst.TerrainModsEdit.Add(item.Key + playerCoord, item.Value);
+                        }
+                        WorldDeformer.ReloadALLTerrainMods();
+                        terrainActive = true;
+                    }
+                }
+                if (GUILayout.Button("OVERWRITE", AltUI.ButtonRed))
+                {
+                    OnButtonClick();
+                    if (tree.TerrainEdits.Remove(terrainName))
+                    {
+                        SMissionJSONLoader.SaveCurrentTerrainDelta(tree, newTerrain, true);
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
+                    }
+                    else
+                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AnchorFailed);
+                }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("OVERWRITES the file with ALL currently active edits in the world, excluding vanilla Set Pieces", false);
+
+                if (tree.TreeHierachy.IsEditable())
+                {
+                    if (DeleteConfirmation && GUILayout.Button("DELETE", AltUI.ButtonRedActive))
+                    {
+                        OnButtonClick();
+                        if (tree.TerrainEdits.Remove(terrainName))
+                        {
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                            WorldDeformer.ResetCurrentlyTargetedTerrain();
+                            if (File.Exists(Path.Combine(SMissionJSONLoader.MissionsDirectory, tree.TreeName, "Terrain", terrainName)))
+                                File.Delete(Path.Combine(SMissionJSONLoader.MissionsDirectory, tree.TreeName, "Terrain", terrainName));
+                            terrainActive = false;
+                            terrainSelect = null;
+                            terrainName = string.Empty;
+                        }
+                        else
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AnchorFailed);
+                    }
+                    else
+                    {
+                        if (GUILayout.Button("Delete", AltUI.ButtonRed))
+                        {
+                            DeleteConfirmation = true;
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.PopUpClose);
+                        }
+                    }
+                }
+                else
+                {
+                    GUILayout.Button("Delete", AltUI.ButtonGrey);
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Cannot edit AssetBundled missions", false);
+                }
+            }
+            else
+                RDispTitle = "Not Selected";
         }
     }
 }

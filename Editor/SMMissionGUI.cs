@@ -54,7 +54,6 @@ namespace Sub_Missions.Editor
             {
                 ManSubMissions.Selected = null;
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.InfoClose);
-                GUILayout.EndHorizontal();
             }
             else
             {
@@ -121,15 +120,12 @@ namespace Sub_Missions.Editor
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Close);
                     ManSubMissions.Selected = null;
-                    GUILayout.EndHorizontal();
                 }
-                GUILayout.EndHorizontal();
 
-                if (!editor.DisplayHierachy())
-                {
-                    return true;
-                }
+                GUILayout.EndHorizontal();
+                return !editor.DisplayHierachy();
             }
+            GUILayout.EndHorizontal();
             return false;
         }
 
@@ -199,8 +195,10 @@ namespace Sub_Missions.Editor
                     }
                     else
                     {
-                        val = new Dictionary<int, SubMissionStep>();
-                        val.Add(step, item);
+                        val = new Dictionary<int, SubMissionStep>
+                        {
+                            { step, item }
+                        };
                         StepsByTier.Add(item.ProgressID, val);
                     }
                     step++;
@@ -414,6 +412,8 @@ namespace Sub_Missions.Editor
             //GUIUtility.hotControl.
         }
 
+        private static SMStepType lastHoveredTooltip = SMStepType.NULL;
+        private static SMissionStep lastHoveredTooltipInst = new StepNull();
         private static void GUIDrag()
         {
             LBarTitle = "Add New";
@@ -432,8 +432,10 @@ namespace Sub_Missions.Editor
 
                 HeldElement = null;
 
-                foreach (var item in Enum.GetNames(typeof(SMStepType)))
+                for (int i = 0; i < Enum.GetValues(typeof(SMStepType)).Length; i++)
                 {
+                    SMStepType type = (SMStepType)i;
+                    string item = type.ToString();
                     if (item.CompareTo(LastHeldElement) == 0)
                     {
                         if (GUILayout.RepeatButton(item, AltUI.ButtonBlueActive))
@@ -448,6 +450,19 @@ namespace Sub_Missions.Editor
                         HeldSomething = true;
                         HeldElement = item;
                         LastHeldElement = item;
+                    }
+                    if (Event.current.type == EventType.Repaint)
+                    {
+                        var lastWindow = GUILayoutUtility.GetLastRect();
+                        if (lastWindow.Contains(Event.current.mousePosition))
+                        {
+                            if (lastHoveredTooltip != type)
+                            {
+                                lastHoveredTooltip = type;
+                                lastHoveredTooltipInst = SubMissionStep.CreateMissionStep(type);
+                            }
+                            AltUI.TooltipWorld(lastHoveredTooltipInst.GetTooltip(), false);
+                        }
                     }
                 }
 
@@ -542,9 +557,11 @@ namespace Sub_Missions.Editor
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
         }
+        private static SubMissionStep lastHoveredActive = null;
         private static void GUITimeTableSingleSteps(List<SubMissionStep> iterate, 
             ref bool interacted, ref int y)
         {
+            lastHoveredActive = null;
             for (int step = 0; step < iterate.Count; step++)
             {
                 var item = iterate[step];
@@ -610,6 +627,14 @@ namespace Sub_Missions.Editor
                     }
                     interacted = true;
                 }
+                if (Event.current.type == EventType.Repaint)
+                {
+                    var lastWindow = GUILayoutUtility.GetLastRect();
+                    if (lastWindow.Contains(Event.current.mousePosition))
+                    {   // Preview mission step in the world as we hover over it!
+                        lastHoveredActive = selectedStep;
+                    }
+                }
 
                 GUILayout.EndHorizontal();
 
@@ -645,6 +670,7 @@ namespace Sub_Missions.Editor
         private static bool GUITimeTableRows()
         {
             bool interacted = false;
+            lastHoveredActive = null;
             GUILayout.BeginHorizontal();
             scrollTable = GUILayout.BeginScrollView(scrollTable);
 
@@ -697,6 +723,14 @@ namespace Sub_Missions.Editor
                                     selectedStep = val;
                                 }
                                 interacted = true;
+                            }
+                            if (Event.current.type == EventType.Repaint)
+                            {
+                                var lastWindow = GUILayoutUtility.GetLastRect();
+                                if (lastWindow.Contains(Event.current.mousePosition))
+                                {   // Preview mission step in the world as we hover over it!
+                                    lastHoveredActive = selectedStep;
+                                }
                             }
                         }
                         else
@@ -823,6 +857,8 @@ namespace Sub_Missions.Editor
             }
             else if (selectedStep != null)
                 selectedStep.Update();
+            if (lastHoveredActive != null)
+                lastHoveredActive.Update();
         }
 
 
@@ -932,7 +968,7 @@ namespace Sub_Missions.Editor
             if (selectedChecker != null)
             {
                 GUILayout.Box("Information", AltUI.WindowHeaderBlue, GUILayout.Height(32));
-                SMAutoFill.AutoBoolField("Enabled Bool Variable", false, mission,
+                SMAutoFill.AutoVarBoolField("Enabled Bool Variable", false, mission,
                     ref setCache1, ref selectedChecker.BoolToEnable);
                 SMAutoFill.AutoTextField("Caption", ref selectedChecker.ListArticle);
                 selectedChecker.ValueType = (VarType)SMAutoFill.AutoFixedOptions("Condition", (int)selectedChecker.ValueType, 
@@ -959,7 +995,7 @@ namespace Sub_Missions.Editor
                             GUILayout.Label("<color=yellow><b>~</b></color>", AltUI.TextfieldBordered);
                         }
                         GUILayout.EndHorizontal();
-                        SMAutoFill.AutoBoolField("Bool Variable", false, mission,
+                        SMAutoFill.AutoVarBoolField("Bool Variable", false, mission,
                             ref setCache1, ref selectedChecker.GlobalIndex);
                         break;
                     case VarType.IntOverInt:
@@ -991,9 +1027,9 @@ namespace Sub_Missions.Editor
                             GUILayout.Label("State: <color=yellow><b>~</b></color>");
                         }
                         GUILayout.EndHorizontal();
-                        SMAutoFill.AutoIntField("Bool Variable", mission, 
+                        SMAutoFill.AutoVarIntField("Bool Variable", mission, 
                             ref setCache1, ref selectedChecker.GlobalIndex);
-                        SMAutoFill.AutoIntField("Bool Variable", mission,
+                        SMAutoFill.AutoVarIntField("Bool Variable", mission,
                             ref setCache2, ref selectedChecker.GlobalIndex2);
                         break;
                     default:
@@ -1118,85 +1154,114 @@ namespace Sub_Missions.Editor
         private static Vector2 GUIVariablesIntScroll = Vector2.zero;
         private static void RemoveAllUnusedVariablesBools()
         {
-            int shiftAmount = 0;
-            for (int i = 0; i < mission.VarTrueFalseActive.Count; i++)
+            List<int> downShiftIndex = new List<int>();
+            for (int i = 0; i < mission.VarTrueFalse.Count; i++)
             {
                 bool remove = true;
+                // We check every step to make sure our value is assigned at least once
+                foreach (var item in mission.GetAllEventsLinear())
+                {
+                    if ((item.VaribleType == EVaribleType.True ||
+                        item.VaribleType == EVaribleType.False) &&
+                        (item.SetMissionVarIndex1 == i ||
+                        item.SetMissionVarIndex2 == i ||
+                        item.SetMissionVarIndex3 == i))
+                    {
+                        remove = false;
+                        break;
+                    }
+                }
+                // If there are no assignments, we remove this variable, and mark all items
+                //   that may use this to go down one index
+                if (remove)
+                    downShiftIndex.Add(i);
+            }
+            int count = downShiftIndex.Count;
+            if (count > 0)
+            { 
+                // We step down every step index to reflect that we removed a variable below this
                 foreach (var item in mission.GetAllEventsLinear())
                 {
                     if (item.VaribleType == EVaribleType.True ||
                         item.VaribleType == EVaribleType.False)
                     {
-                        if (item.SetMissionVarIndex1 == i || item.SetMissionVarIndex2 == i ||
-                            item.SetMissionVarIndex3 == i)
+                        for (int i = count - 1; i >= 0; i++)
                         {
-                            remove = false;
-                        }
-                        if (shiftAmount > 0)
-                        {
-                            if (item.SetMissionVarIndex1 > 0)
-                                item.SetMissionVarIndex1 -= shiftAmount;
-                            if (item.SetMissionVarIndex2 > 0)
-                                item.SetMissionVarIndex2 -= shiftAmount;
-                            if (item.SetMissionVarIndex3 > 0)
-                                item.SetMissionVarIndex3 -= shiftAmount;
+                            int val = downShiftIndex[i];
+                            if (item.SetMissionVarIndex1 >= val)
+                                item.SetMissionVarIndex1--;
+                            if (item.SetMissionVarIndex2 >= val)
+                                item.SetMissionVarIndex2--;
+                            if (item.SetMissionVarIndex3 >= val)
+                                item.SetMissionVarIndex3--;
                         }
                     }
                 }
-                if (remove)
-                    shiftAmount++;
-            }
-            if (shiftAmount > 0)
-            {
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
-                for (int i = 0; i < shiftAmount; i++)
+                for (int i = count - 1; i >= 0; i++)
                 {
-                    mission.VarTrueFalse.RemoveAt(mission.VarTrueFalse.Count - 1);
-                    mission.VarTrueFalseActive.RemoveAt(mission.VarTrueFalseActive.Count - 1);
+                    mission.VarTrueFalse.RemoveAt(downShiftIndex[i]);
+                    mission.VarTrueFalseActive.RemoveAt(downShiftIndex[i]);
                 }
+                downShiftIndex.Clear();
             }
             else
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);
         }
         private static void RemoveAllUnusedVariablesVals()
         {
-            int shiftAmount = 0;
-            for (int i = 0; i < mission.VarIntsActive.Count; i++)
+            List<int> downShiftIndex = new List<int>();
+            for (int i = 0; i < mission.VarInts.Count; i++)
             {
                 bool remove = true;
+                // We check every step to make sure our value is assigned at least once
+                foreach (var item in mission.GetAllEventsLinear())
+                {
+                    if ((item.VaribleType == EVaribleType.Int ||
+                        item.VaribleType == EVaribleType.IntLessThan ||
+                        item.VaribleType == EVaribleType.IntGreaterThan) &&
+                        (item.SetMissionVarIndex1 == i || 
+                        item.SetMissionVarIndex2 == i ||
+                        item.SetMissionVarIndex3 == i))
+                    {
+                        remove = false;
+                        break;
+                    }
+                }
+                // If there are no assignments, we remove this variable, and mark all items
+                //   that may use this to go down one index
+                if (remove)  // We didn't find any uses here, we remove
+                    downShiftIndex.Add(i);
+            }
+            int count = downShiftIndex.Count;
+            if (count > 0)
+            {
+                // We step down every step index to reflect that we removed a variable below this
                 foreach (var item in mission.GetAllEventsLinear())
                 {
                     if (item.VaribleType == EVaribleType.Int ||
                         item.VaribleType == EVaribleType.IntLessThan ||
                         item.VaribleType == EVaribleType.IntGreaterThan)
                     {
-                        if (item.SetMissionVarIndex1 == i || item.SetMissionVarIndex2 == i ||
-                            item.SetMissionVarIndex3 == i)
+                        for (int i = count - 1; i >= 0; i++)
                         {
-                            remove = false;
-                        }
-                        if (shiftAmount > 0)
-                        {
-                            if (item.SetMissionVarIndex1 > 0)
-                                item.SetMissionVarIndex1 -= shiftAmount;
-                            if (item.SetMissionVarIndex2 > 0)
-                                item.SetMissionVarIndex2 -= shiftAmount;
-                            if (item.SetMissionVarIndex3 > 0)
-                                item.SetMissionVarIndex3 -= shiftAmount;
+                            int val = downShiftIndex[i];
+                            if (item.SetMissionVarIndex1 >= val)
+                                item.SetMissionVarIndex1--;
+                            if (item.SetMissionVarIndex2 >= val)
+                                item.SetMissionVarIndex2--;
+                            if (item.SetMissionVarIndex3 >= val)
+                                item.SetMissionVarIndex3--;
                         }
                     }
                 }
-                if (remove)
-                    shiftAmount++;
-            }
-            if (shiftAmount > 0)
-            {
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
-                for (int i = 0; i < shiftAmount; i++)
+                for (int i = count - 1; i >= 0; i++)
                 {
-                    mission.VarInts.RemoveAt(mission.VarInts.Count - 1);
-                    mission.VarIntsActive.RemoveAt(mission.VarIntsActive.Count - 1);
+                    mission.VarTrueFalse.RemoveAt(downShiftIndex[i]);
+                    mission.VarTrueFalseActive.RemoveAt(downShiftIndex[i]);
                 }
+                downShiftIndex.Clear();
             }
             else
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.CheckBox);

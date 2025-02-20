@@ -35,8 +35,8 @@ namespace Sub_Missions
         public string Lore = "A corporation so mysterious, we have no intel on it!";
         public Dictionary<string, string> MoreLore = new Dictionary<string, string>();
         public bool BlocksUseFullName = false;  // Should we check for the fullname instead?
-        public FactionSubTypes EngineReferenceFaction = FactionSubTypes.GSO;    // The Faction to reference for the engine. Due to FMOD this cannot be customized.
-        public FactionSubTypes CombatMusicFaction = FactionSubTypes.GSO;    // The Faction to reference for the combat music. Due to FMOD this cannot be customized.
+        //public FactionSubTypes EngineReferenceFaction = FactionSubTypes.GSO;    // The Faction to reference for the engine. Due to FMOD this cannot be customized.
+        //public FactionSubTypes CombatMusicFaction = FactionSubTypes.GSO;    // The Faction to reference for the combat music. Due to FMOD this cannot be customized.
         public FactionSubTypes SkinReferenceFaction = FactionSubTypes.NULL; // The Faction to reference for skins. Leave "NULL" to use only your own.
         public FactionSubTypes CrateReferenceFaction = FactionSubTypes.NULL;// The Faction to reference for Delivery crates. You can override the models with your own.
         public int ID = -3;                 // MUST be set to a unique value above 50000
@@ -126,7 +126,7 @@ namespace Sub_Missions
             {
                 if (ManWorld.inst.CheckIsTileAtPositionLoaded(Vector3.zero))
                 {
-                    if (CSIBacklogRender.Count < countWorked)
+                    if (CSIBacklogRender.Count <= countWorked)
                     {
                         needsToRenderSkins = false;
                         CSIBacklogRender.Clear();
@@ -409,8 +409,8 @@ namespace Sub_Missions
         internal void TryInitFactionEXPSys()
         {   //
 
-            if ((int)CombatMusicFaction > Enum.GetNames(typeof(FactionSubTypes)).Length - 1 || (int)CombatMusicFaction < -1)
-                CombatMusicFaction = FactionSubTypes.GSO;
+            //if ((int)CombatMusicFaction > Enum.GetNames(typeof(FactionSubTypes)).Length - 1 || (int)CombatMusicFaction < -1)
+            //    CombatMusicFaction = FactionSubTypes.GSO;
             int errorLevel = 0;
             try
             {
@@ -1038,8 +1038,15 @@ namespace Sub_Missions
         {   //
             if (!GetDirectory(out string directory))
                 return;
-            if (SMissionJSONLoader.DirectoryExists(Path.Combine(directory, "AutoBlockList.txt")))
-                return;
+            try
+            {
+                if (SMissionJSONLoader.DirectoryExists(Path.Combine(directory, "AutoBlockList.txt")))
+                    return;
+            }
+            catch (ArgumentException e)
+            {
+                throw new Exception("Invalid path: " + directory, e);
+            }
             Debug_SMissions.Log("Building AutoBlockList for faction " + Faction);
             StringBuilder SB = new StringBuilder();
             int tier = 0;
@@ -1324,7 +1331,7 @@ namespace Sub_Missions
             {
                 if (directoryCache == null)
                 {
-                    if (SMissionJSONLoader.TryGetCorpInfoData(Faction, out string directoryEnd))
+                    if (SMissionJSONLoader.TryGetDirectoryOfCorp(Faction, out string directoryEnd))
                     {
                         directoryCache = directoryEnd;
                     }
@@ -1441,13 +1448,16 @@ namespace Sub_Missions
         public string FullName = "NuLl";    // The FULL Name
         public string Faction = null;     // The SHORTENED name
         public bool BlocksUseFullName = false;  // Should we check for the fullname instead?
-        public FactionSubTypes EngineReferenceFaction = FactionSubTypes.GSO;    // The Faction to reference for the engine. Due to FMOD this cannot be customized.
-        public FactionSubTypes CombatMusicFaction = FactionSubTypes.GSO;    // The Faction to reference for the combat music. Due to FMOD this cannot be customized.
+        public string Lore = "A corporation so mysterious, we have no intel on it!";
+        public Dictionary<string, string> MoreLore = new Dictionary<string, string>();
+        //public FactionSubTypes EngineReferenceFaction = FactionSubTypes.GSO;    // The Faction to reference for the engine. Due to FMOD this cannot be customized.
+        //public FactionSubTypes CombatMusicFaction = FactionSubTypes.GSO;    // The Faction to reference for the combat music. Due to FMOD this cannot be customized.
         public FactionSubTypes SkinReferenceFaction = FactionSubTypes.NULL; // The Faction to reference for skins. Leave "NULL" to use only your own.
         public FactionSubTypes CrateReferenceFaction = FactionSubTypes.NULL;// The Faction to reference for Delivery crates. You can override the models with your own.
         public int ID = -3;                 // MUST be set to a unique value above 50000
         public float minEmissive = 0.25f;
 
+        public int[] XPLevels;
         public int[] GradesXP;
 
         public string FirstCabUnlocked = "GSOCockpit_111";
@@ -1469,7 +1479,7 @@ namespace Sub_Missions
 
         public SMCCorpLicenseJSON(SMCCorpLicense toAddTo)
         {
-            EngineReferenceFaction = toAddTo.EngineReferenceFaction;
+            //EngineReferenceFaction = toAddTo.EngineReferenceFaction;
             ExampleSkinTech = toAddTo.ExampleSkinTech;
             minEmissive = toAddTo.minEmissive;
             SelectedCorpIcon = toAddTo.SelectedCorpIcon;
@@ -1479,7 +1489,7 @@ namespace Sub_Missions
             BattleMusic = toAddTo.BattleMusic;
             BlocksUseFullName = toAddTo.BlocksUseFullName;
             GradeUnlockBlocks = toAddTo.GradeUnlockBlocks;
-            CombatMusicFaction = toAddTo.CombatMusicFaction;
+            //CombatMusicFaction = toAddTo.CombatMusicFaction;
             CrateReferenceFaction = toAddTo.CrateReferenceFaction;
             FirstCabUnlocked = toAddTo.FirstCabUnlocked;
             Faction = toAddTo.Faction;
@@ -1489,7 +1499,7 @@ namespace Sub_Missions
         }
         public SMCCorpLicense Apply(SMCCorpLicense toAddTo)
         {
-            toAddTo.EngineReferenceFaction = EngineReferenceFaction;
+            //toAddTo.EngineReferenceFaction = EngineReferenceFaction;
             toAddTo.ExampleSkinTech = ExampleSkinTech;
             toAddTo.minEmissive = minEmissive;
             toAddTo.SelectedCorpIcon = SelectedCorpIcon;
@@ -1499,12 +1509,19 @@ namespace Sub_Missions
             toAddTo.BattleMusic = BattleMusic;
             toAddTo.BlocksUseFullName = BlocksUseFullName;
             toAddTo.GradeUnlockBlocks = GradeUnlockBlocks;
-            toAddTo.CombatMusicFaction = CombatMusicFaction;
+            //toAddTo.CombatMusicFaction = CombatMusicFaction;
             toAddTo.CrateReferenceFaction = CrateReferenceFaction;
             toAddTo.FirstCabUnlocked = FirstCabUnlocked;
             toAddTo.Faction = Faction;
             toAddTo.FullName = FullName;
-            toAddTo.GradesXP = GradesXP;
+            if (XPLevels != null)
+                toAddTo.GradesXP = XPLevels;
+            else
+                toAddTo.GradesXP = GradesXP;
+            if (MoreLore != null)
+                toAddTo.MoreLore = MoreLore;
+            if (Lore != null)
+                toAddTo.Lore = Lore;
             toAddTo.ID = ID;
             return toAddTo;
         }

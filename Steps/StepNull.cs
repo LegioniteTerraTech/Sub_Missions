@@ -9,10 +9,14 @@ namespace Sub_Missions.Steps
 {
     public class StepNull : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "THIS SHOULD NEVER BE IN YOUR MISSION UNDER ANY CIRCUMSTANCES!!!";
         public override string GetDocumentation()
         {
             return
-                "{  // THIS SHOULD NEVER BE IN YOUR MISSION UNDER ANY CIRCUMSTANCES!!!" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": null,  // all it needs is a poorly spelt StepType to ruin everything. \n    // WATCH YOUR TYPING AND SYNTAX!!" +
                 "\n},";
         }

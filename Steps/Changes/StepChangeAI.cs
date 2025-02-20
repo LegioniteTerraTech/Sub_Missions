@@ -12,10 +12,14 @@ namespace Sub_Missions.Steps
 {
     public class StepChangeAI : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Existing Tech AI changer";
         public override string GetDocumentation()
         {
             return
-                "{  // Existing Tech AI changer (REQUIRES TACTICAL AI TO HAVE AN IMPACT [vanilla does not have much control])" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ChangeAI\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +

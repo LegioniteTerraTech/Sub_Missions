@@ -16,6 +16,8 @@ using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Converters;
 using System.Diagnostics;
 using TAC_AI.Templates;
+using FMOD;
+using MonoMod.Utils;
 
 namespace Sub_Missions
 {
@@ -309,7 +311,42 @@ namespace Sub_Missions
 
 
         // Utilities
-        public static bool TryGetCorpInfoData(string factionShort,  out string results)
+        public static bool TryGetDirectoryOfCorp(string factionShort, out string results)
+        {
+            string location = new DirectoryInfo(Assembly.GetExecutingAssembly().Location).Parent.Parent.ToString();
+            // Goes to the cluster directory where all the mods are
+            string fileName = factionShort + corpJsonPostFix + ".json";
+            int attempts = 0;
+            foreach (string directoryLoc in Directory.GetDirectories(location))
+            {
+                while (true)
+                {
+                    try
+                    {
+                        string GO;
+                        GO = directoryLoc + "\\" + fileName;
+                        if (File.Exists(GO))
+                        {
+                            attempts++;
+                            results = directoryLoc;
+                            return true;
+                        }
+                        else
+                            break;
+                    }
+                    catch (Exception e)
+                    {
+                        Debug_SMissions.Log(KickStart.ModID + ": TryGetCorpInfoDirectory - Error on MissionCorp search " + factionShort + " | " + e);
+                        break;
+                    }
+                }
+                attempts = 0;
+            }
+
+            results = null;
+            return false;
+        }
+        public static bool TryGetCorpInfoData(string factionShort, out string results)
         {
             string dataName = factionShort + corpJsonPostFix;
             foreach (var contained in ResourcesHelper.IterateAllMods())
@@ -1115,12 +1152,136 @@ namespace Sub_Missions
             name = name.Replace(".json", string.Empty).Replace(".RAWTECH", string.Empty) + ".RAWTECH";
             if (!tree.TreeTechs.ContainsKey(name))
             {
-                tree.TreeTechs.Add(name, new SpawnableTechRAW(name));
-                RawTech RT = new RawTech(data);
-                var dataString = JsonConvert.SerializeObject(RT.ToTemplate());
+                RawTechTemplate RTT = new RawTechTemplate(data);
+                var dataString = JsonConvert.SerializeObject(RTT);
                 if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Raw Techs")))
                     Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Raw Techs"));
                 TryWriteToFile(Path.Combine(MissionsDirectory, tree.TreeName, "Raw Techs", name), dataString);
+                tree.TreeTechs.Add(name, new SpawnableTechRAW(name));
+                return true;
+            }
+            return false;
+        }
+        public static bool SaveCurrentTerrainDelta(SubMissionTree tree, string name, bool Overwrite)
+        {
+            name = name.Replace(".json", string.Empty);
+            if (!tree.TerrainEdits.ContainsKey(name) || Overwrite)
+            {
+                Vector3 pos = Singleton.playerTank.boundsCentreWorldNoCheck;
+                Dictionary<IntVector2, TerrainModifier> saveCurrent = new Dictionary<IntVector2, TerrainModifier>();
+                foreach (WorldTile tile in WorldDeformer.IterateModifiedWorldTiles())
+                    saveCurrent.Add(tile.Coord, new TerrainModifier(tile, pos));
+                var dataString = JsonConvert.SerializeObject(saveCurrent);
+                if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Terrain")))
+                    Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Terrain"));
+                TryWriteToFile(Path.Combine(MissionsDirectory, tree.TreeName, "Terrain", name), dataString);
+                if (tree.TerrainEdits.ContainsKey(name))
+                    tree.TerrainEdits.Remove(name);
+                tree.TerrainEdits.Add(name, saveCurrent);
+                return true;
+            }
+            return false;
+        }
+
+        public class RawTechPopParamsEx
+        {
+            public string Faction;
+            public BaseTerrain Terrain;
+            public HashSet<BasePurpose> Purposes;
+            public RawTechOffset Offset;
+            public int MaxGrade;
+            public int MaxPrice;
+            public bool IsPopulation;
+            public bool SpawnCharged;
+            public bool RandSkins;
+            public bool TeamSkins;
+            public bool ForceCompleted;
+
+            /// <summary>
+            /// DO NOT USE - FOR SERIALIZATION ONLY
+            /// </summary>
+            public RawTechPopParamsEx() { }
+            public RawTechPopParamsEx(RawTechPopParams param)
+            {
+                Faction = GetFactionName(param.Faction);
+                Terrain = param.Terrain;
+                Purposes = param.Purposes;
+                Offset = param.Offset;
+                MaxGrade = param.MaxGrade;
+                MaxPrice = param.MaxPrice;
+                IsPopulation = param.IsPopulation;
+                SpawnCharged = param.SpawnCharged;
+                RandSkins = param.RandSkins;
+                TeamSkins = param.TeamSkins;
+                ForceCompleted = param.ForceCompleted;
+            }
+            public RawTechPopParams ToInst()
+            {
+                return new RawTechPopParams()
+                {
+                    Faction = GetFactionType(Faction),
+                    Terrain = Terrain,
+                    Purposes = Purposes,
+                    Offset = Offset,
+                    MaxGrade = MaxGrade,
+                    MaxPrice = MaxPrice,
+                    IsPopulation = IsPopulation,
+                    SpawnCharged = IsPopulation,
+                    ForceCompleted = ForceCompleted,
+                    Progression = FactionLevel.ALL,
+                    RandSkins = RandSkins,
+                    TeamSkins = TeamSkins
+                };
+            }
+            private string GetFactionName(FactionSubTypes input)
+            {
+                if (ManMods.inst.IsModdedCorp(input))
+                {
+                    return ManMods.inst.FindCorpShortName(input);
+                }
+                else
+                    return input.ToString();
+            }
+            private FactionSubTypes GetFactionType(string input)
+            {
+                if (Enum.TryParse(input, out FactionSubTypes result))
+                {
+                    return result;
+                }
+                else
+                {
+                    result = ManMods.inst.GetCorpIndex(input);
+                    if (result != (FactionSubTypes)(-1))
+                        return result;
+                }
+                return FactionSubTypes.GSO;
+            }
+        }
+
+        public static bool SaveNewPopParam(SubMissionTree tree, string name, RawTechPopParams data)
+        {
+            name = name.Replace(".json", string.Empty) + ".json";
+            if (!tree.TreeTechs.ContainsKey(name))
+            {
+                RawTechPopParams RTPP = new RawTechPopParams()
+                {
+                    Faction = data.Faction,
+                    ForceCompleted = data.ForceCompleted,
+                    IsPopulation = data.IsPopulation,
+                    MaxGrade = data.MaxGrade,
+                    MaxPrice = data.MaxPrice,
+                    Offset = data.Offset,
+                    Progression = data.Progression,
+                    RandSkins = data.RandSkins,
+                    SpawnCharged = data.SpawnCharged,
+                    TeamSkins = data.TeamSkins,
+                    Terrain = data.Terrain,
+                };
+                tree.TreeTechs.Add(name, new SpawnableTechFromPool(name, RTPP));
+                var dataString = JsonConvert.SerializeObject(new RawTechPopParamsEx(data));
+                if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Pop Params")))
+                    Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Pop Params"));
+                TryWriteToFile(Path.Combine(MissionsDirectory, tree.TreeName, "Pop Params", name), dataString);
                 return true;
             }
             return false;

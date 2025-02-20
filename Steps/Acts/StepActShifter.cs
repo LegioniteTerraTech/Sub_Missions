@@ -16,10 +16,14 @@ namespace Sub_Missions.Steps
         // BUT:
         //   The Shifter is greedy since there can only be one per ID and they cannot be safely adjacent.
 
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Shifts the ProgressID by +1 when the input variable is true";
         public override string GetDocumentation()
         {
             return
-                "{  // Shifts the ProgressID by +1 when the input variable is true" +
+                "{  // " + GetTooltip() +
                 "\n  // The Shifter acts as a possible \"update\" gate for ProgressIDs " +
                 "\n  //   Say, the Shifter's Progress ID always remains true but " +
                 "\n  //   When the Shifter is Shifting (up one) " +

@@ -10,10 +10,15 @@ namespace Sub_Missions.Steps
 {
     public class StepCheckDestroy : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Checks if a certain amount of Techs were destroyed or if a TrackedTech was destroyed";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Checks if a certain amount of Techs were destroyed or a TrackedTech was destroyed" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"CheckDestroy\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if the VaribleType is DoProgressID and the subject is destroyed" +
@@ -25,7 +30,6 @@ namespace Sub_Missions.Steps
                   "\n  \"SetMissionVarIndex1\": -1,        // the index to apply the output from this" +
                 "\n},";
         }
-
         public override void InitGUI()
         {
             AddField(ESMSFields.InputNum, "Techs to Destroy");
@@ -37,8 +41,8 @@ namespace Sub_Missions.Steps
                 },
                 new Dictionary<int, KeyValuePair<string, ESMSFields>>()
                 {
-                    {0, new KeyValuePair<string, ESMSFields>("Tracked Tech", ESMSFields.InputString) },
-                    {1, new KeyValuePair<string, ESMSFields>("Corporation", ESMSFields.InputString) },
+                    {0, new KeyValuePair<string, ESMSFields>("Tracked Tech", ESMSFields.InputString_Tracked_Tech) },
+                    {1, new KeyValuePair<string, ESMSFields>("Corporation", ESMSFields.InputString_Corp) },
                 }
              );
         }

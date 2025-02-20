@@ -103,14 +103,20 @@ namespace Sub_Missions
 
         public List<SubMissionStep> EventList; // MUST be set externally via JSON or built C# code!
 
+        /// <summary>Used to SAVE AND LOAD the mission to the drive</summary>
         public List<bool> VarTrueFalse = new List<bool>();          // MUST be set externally via JSON or built C# code!
         public List<int> VarInts = new List<int>();                 // MUST be set externally via JSON or built C# code!
+
         [JsonIgnore]
-        public List<bool> VarTrueFalseActive = new List<bool>();          // Used during active mission
+        /// <summary>Used during ACTIVE mission</summary>
+        public List<bool> VarTrueFalseActive = new List<bool>();
         [JsonIgnore]
-        public List<int> VarIntsActive = new List<int>();                 // Used during active mission
-                                                                          //public List<float> VarFloats = new List<float>();           // MUST be set externally via JSON or built C# code!
-                                                                          //public List<Vector3> VarPositions = new List<Vector3>();    // MUST be set externally via JSON or built C# code!
+        /// <summary>Used during ACTIVE mission</summary>
+        public List<int> VarIntsActive = new List<int>();
+
+        //public List<float> VarFloats = new List<float>();           // MUST be set externally via JSON or built C# code!
+        //public List<Vector3> VarPositions = new List<Vector3>();    // MUST be set externally via JSON or built C# code!
+
 
         [JsonIgnore]
         public List<TrackedTech> TrackedTechs = new List<TrackedTech>();
@@ -330,6 +336,8 @@ namespace Sub_Missions
             return MaxActiveDistValue;
         }
 
+        /// <summary> Called when the mission starts for the first time </summary>
+        /// <exception cref="MandatoryException"></exception>
         internal void Startup(bool forceNearPlayer)
         {   // 
             try
@@ -432,12 +440,49 @@ namespace Sub_Missions
                 FirstLoad();
             }
         }
+        /// <summary>
+        /// Called for newly started Sub Missions
+        /// </summary>
         private void FirstLoad()
         {   // 
             if (Corrupted)
                 return; // cannot run!!!
             try
             {
+                // Sanity check to INSURE no invalid variable counts
+                int minVarInts = VarInts.Count;
+                int minVarTF = VarTrueFalse.Count;
+                foreach (SubMissionStep step in GetAllEventsLinear())
+                {
+                    step.Mission = this;
+                    step.FirstSetup();
+                    if (step.VaribleType == EVaribleType.Int ||
+                        step.VaribleType == EVaribleType.IntLessThan ||
+                        step.VaribleType == EVaribleType.IntGreaterThan ||
+                        step.stepGenerated.ForceUsesVarInt())
+                        minVarInts = Mathf.Max(minVarInts, step.SetMissionVarIndex1 + 1,
+                            step.SetMissionVarIndex2 + 1, step.SetMissionVarIndex3 + 1);
+                    else if (step.VaribleType == EVaribleType.True ||
+                        step.VaribleType == EVaribleType.False ||
+                        step.stepGenerated.ForceUsesVarBool())
+                        minVarTF = Mathf.Max(minVarTF, step.SetMissionVarIndex1 + 1, 
+                            step.SetMissionVarIndex2 + 1, step.SetMissionVarIndex3 + 1);
+                }
+                if (VarInts.Count < minVarInts)
+                {
+                    SMUtil.Log(false, "Mission " + Name + " had less VarInts than expected [" + VarInts.Count + "] vs [" + minVarInts +
+                        "].  Please report this to the mission developer.");
+                    while (VarInts.Count <= minVarInts)
+                        VarInts.Add(0);
+                }
+                if (VarTrueFalse.Count < minVarTF)
+                {
+                    SMUtil.Log(false, "Mission " + Name + " had less VarTrueFalse than expected [" + VarTrueFalse.Count + "] vs [" + minVarTF +
+                        "].  Please report this to the mission developer.");
+                    while (VarTrueFalse.Count <= minVarTF)
+                        VarTrueFalse.Add(false);
+                }
+
                 VarTrueFalseActive.Clear();
                 foreach (var item in VarTrueFalse)
                     VarTrueFalseActive.Add(item);
@@ -448,11 +493,6 @@ namespace Sub_Missions
                     TryClearAreaForMission();
                 if (!TerrainMod.NullOrEmpty())
                     SubMissionTree.ApplyTerrain(this, TerrainMod);
-                foreach (SubMissionStep step in GetAllEventsLinear())
-                {
-                    step.Mission = this;
-                    step.FirstSetup();
-                }
                 try
                 {
                     foreach (TrackedBlock listEntry in TrackedBlocks)
@@ -501,7 +541,9 @@ namespace Sub_Missions
                 Corrupted = true; 
             }
         }
-
+        /// <summary>
+        /// Reloads the mission from the save file
+        /// </summary>
         private void ReSync()
         {   // 
             SMUtil.Log(false, KickStart.ModID + ": Resync(Load from save file) for SubMission " + Name);
@@ -742,11 +784,11 @@ namespace Sub_Missions
             ManSubMissions.GetActiveSubMissions.Remove(this);
         }
 
-        internal void Reboot(bool Reset = false)
+        internal void Reboot(bool ToBeginning = false)
         {   //
             Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Craft);
             CurrentProgressID = 0;
-            if (Reset)
+            if (ToBeginning)
             {
                 Cleanup();
                 FirstLoad();
@@ -836,17 +878,17 @@ namespace Sub_Missions
                     throw new Exception("VarTrueFalse is missing...      Wait how?");
                 for (int step = 0; step < CheckList.Count; step++)
                 {
-                    if (CheckList[step].BoolToEnable == -1)
+                    int boolIndex = CheckList[step].BoolToEnable;
+                    if (boolIndex == -1)
                         QLD.SetObjectiveVisible(step, true);
                     else
                     {
-                        if (CheckList[step].BoolToEnable < 0 ||
-                            CheckList[step].BoolToEnable >= VarTrueFalseActive.Count)
+                        if (boolIndex < 0 || boolIndex >= VarTrueFalseActive.Count)
                             throw new Exception("Checklist contains invalid entry at index [" + step +
-                                "], which has BoolToEnable set to [" + CheckList[step].BoolToEnable +
+                                "], which has BoolToEnable set to [" + boolIndex +
                                 "] but such value is outside the range of present Bools and not the -1" +
                                 " always active value: [0 -> " + (VarTrueFalseActive.Count - 1).ToString() + "]");
-                        bool trueFalse = VarTrueFalseActive[CheckList[step].BoolToEnable];
+                        bool trueFalse = VarTrueFalseActive[boolIndex];
                         QLD.SetObjectiveVisible(step, trueFalse);
                     }
 
@@ -857,7 +899,7 @@ namespace Sub_Missions
                     }
                     catch (Exception e)
                     {
-                        throw new WarningException("Checklist GetNumber partial fail", e);
+                        throw new WarningException("Checklist GetNumber fail at index [" + step + "]", e);
                     }
                     try
                     {

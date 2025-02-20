@@ -260,6 +260,9 @@ namespace Sub_Missions.Editor
             if (long.TryParse(set, out long val2))
             {
                 GUILayout.Label("<color=green>O</color>", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid integer", false); 
                 if (set != setCache)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -269,6 +272,9 @@ namespace Sub_Missions.Editor
             else
             {
                 GUILayout.Label("<color=red>X</color>", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid integer", false);
             }
             GUILayout.EndHorizontal();
             setCache = set;
@@ -284,6 +290,9 @@ namespace Sub_Missions.Editor
             if (long.TryParse(set, out long val2))
             {
                 GUILayout.Label("<color=green>O</color>", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid Sbyte", false);
                 if (set != setCache)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -293,6 +302,9 @@ namespace Sub_Missions.Editor
             else
             {
                 GUILayout.Label("<color=red>X</color>", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid Sbyte (" + sbyte.MinValue + " - " + sbyte.MaxValue + ")", false);
             }
             GUILayout.EndHorizontal();
             setCache = set;
@@ -331,7 +343,7 @@ namespace Sub_Missions.Editor
             }
         }
 
-        public static void AutoBoolField(string name, bool invertOutput, SubMission Mission, ref string setCache, 
+        public static void AutoVarBoolField(string name, bool invertOutput, SubMission Mission, ref string setCache, 
             ref int settable, float height = 32)
         {
             GUILayout.BeginHorizontal(GUILayout.Height(height));
@@ -353,6 +365,9 @@ namespace Sub_Missions.Editor
                 if (val < 0)
                 {
                     GUILayout.Button("~", AltUI.ButtonGrey, GUILayout.Width(height), GUILayout.Height(height));
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Unassigned", false);
                     if (set != setCache)
                     {
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -362,9 +377,14 @@ namespace Sub_Missions.Editor
                 else if (settable >= Mission.VarTrueFalseActive.Count)
                 {
                     GUILayout.Button("–", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Over the existing variable entries!", false);
+
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
                     settable = Mission.VarTrueFalseActive.Count;
                     setCache = Mission.VarTrueFalseActive.Count.ToString();
+                    Mission.VarTrueFalse.Add(false);
                     Mission.VarTrueFalseActive.Add(false);
                 }
                 else
@@ -380,6 +400,9 @@ namespace Sub_Missions.Editor
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                         settable = ClampInt(val2);
                     }
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Assigned.  Click to disable", false);
                 }
             }
             else
@@ -395,10 +418,13 @@ namespace Sub_Missions.Editor
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                     settable = val;
                 }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid integer.  Click to disable.", false);
             }
             GUILayout.EndHorizontal();
         }
-        public static void AutoIntField(string name, SubMission Mission, ref string setCache,
+        public static void AutoVarIntField(string name, SubMission Mission, ref string setCache,
             ref int settable, float height = 32)
         {
             GUILayout.BeginHorizontal(GUILayout.Height(height));
@@ -419,6 +445,9 @@ namespace Sub_Missions.Editor
                 if (val < 0)
                 {
                     GUILayout.Button("~", AltUI.ButtonGrey, GUILayout.Width(height), GUILayout.Height(height));
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Unassigned.", false);
                     if (set != setCache)
                     {
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -428,9 +457,14 @@ namespace Sub_Missions.Editor
                 else if (settable >= Mission.VarIntsActive.Count)
                 {
                     GUILayout.Button("–", AltUI.TextfieldBordered, GUILayout.Width(height), GUILayout.Height(height));
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Over the existing variable entries!", false);
+
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.RadarOn);
                     settable = Mission.VarIntsActive.Count;
                     setCache = Mission.VarIntsActive.Count.ToString();
+                    Mission.VarInts.Add(0);
                     Mission.VarIntsActive.Add(0);
                 }
                 else
@@ -446,6 +480,9 @@ namespace Sub_Missions.Editor
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                         settable = ClampInt(val2);
                     }
+                    if (Event.current.type == EventType.Repaint &&
+                        GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                        AltUI.TooltipWorld("Assigned.  Click to disable.", false);
                 }
             }
             else
@@ -461,6 +498,9 @@ namespace Sub_Missions.Editor
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
                     settable = val;
                 }
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid integer.  Click to disable.", false);
             }
             GUILayout.EndHorizontal();
         }
@@ -507,7 +547,7 @@ namespace Sub_Missions.Editor
                 typeof(T).ToString() + ">.Display(" + typeof(C).ToString() + " runData) was incorrectly set up!" +
                 " \nDisplay(" + typeof(C).ToString() + " runData) must be overrriden with the display GUILayout functions!");
         }*/
-        public virtual void RefreshGUI(SubMissionStep runData) { }
+        public virtual void RefreshGUI(C runData) { }
         /// <summary>
         /// Call this to show the function and it's respective fields
         /// </summary>
@@ -563,6 +603,9 @@ namespace Sub_Missions.Editor
             if (long.TryParse(set, out long val2))
             {
                 GUILayout.Label("<color=green>O</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid byte (0 - 255)", false);
                 if (set != setCache)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -573,6 +616,9 @@ namespace Sub_Missions.Editor
             else
             {
                 GUILayout.Label("<color=red>X</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid byte (0 - 255)", false);
             }
             setCache = set;
             newSettable = settable;
@@ -587,6 +633,9 @@ namespace Sub_Missions.Editor
             if (long.TryParse(set, out long val2))
             {
                 GUILayout.Button("O", AltUI.ButtonGreen, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid integer", false);
                 if (set != setCache)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -597,6 +646,9 @@ namespace Sub_Missions.Editor
             else
             {
                 GUILayout.Button("X", AltUI.ButtonRed, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid integer", false);
             }
             setCache = set;
             newSettable = settable;
@@ -611,6 +663,9 @@ namespace Sub_Missions.Editor
             if (long.TryParse(set, out long refined))
             {
                 GUILayout.Button("O", AltUI.ButtonGreen, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid integer", false);
                 if (set != setCache)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -621,6 +676,9 @@ namespace Sub_Missions.Editor
             else
             {
                 GUILayout.Button("X", AltUI.ButtonRed, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid integer", false);
             }
             setCache = set;
             newSettable = settable;
@@ -635,6 +693,9 @@ namespace Sub_Missions.Editor
             if (float.TryParse(set, out val))
             {
                 GUILayout.Button("O", AltUI.ButtonGreen, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid float", false);
                 if (set != setCache)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -645,6 +706,9 @@ namespace Sub_Missions.Editor
             else
             {
                 GUILayout.Button("X", AltUI.ButtonRed, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid float", false);
             }
             setCache = set;
             newSettable = settable;
@@ -676,9 +740,19 @@ namespace Sub_Missions.Editor
         {
             newSettable = GUILayout.TextField(settable == null ? "" : settable, 32, GUILayout.Width(180));
             if (float.TryParse(newSettable, out _))
+            {
                 GUILayout.Button("O", AltUI.ButtonGreen, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid float", false);
+            }
             else
+            {
                 GUILayout.Button("X", AltUI.ButtonRed, GUILayout.Width(32), GUILayout.Height(32));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid float", false);
+            }
             if (newSettable != settable)
             {
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -698,6 +772,9 @@ namespace Sub_Missions.Editor
             if (float.TryParse(set1, out val1))
             {
                 GUILayout.Label("<color=green>X</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid X float", false);
                 if (set1 != setCache1)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -706,7 +783,12 @@ namespace Sub_Missions.Editor
                 }
             }
             else
+            {
                 GUILayout.Label("<color=red>X</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid X float", false);
+            }
 
             if (!float.TryParse(setCache2, out float val2) || !val2.Approximately(settable.y))
                 setCache2 = settable.y.ToString("F");
@@ -714,6 +796,9 @@ namespace Sub_Missions.Editor
             if (float.TryParse(set2, out val2))
             {
                 GUILayout.Label("<color=green>Y</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid Y float", false);
                 if (set2 != setCache2)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -722,7 +807,12 @@ namespace Sub_Missions.Editor
                 }
             }
             else
+            {
                 GUILayout.Label("<color=red>Y</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid Z float", false);
+            }
 
             if (!float.TryParse(setCache3, out float val3) || !val3.Approximately(settable.z))
                 setCache3 = settable.z.ToString("F");
@@ -730,6 +820,9 @@ namespace Sub_Missions.Editor
             if (float.TryParse(set3, out val3))
             {
                 GUILayout.Label("<color=green>Z</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Valid Z float", false);
                 if (set3 != setCache3)
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Rename);
@@ -738,7 +831,12 @@ namespace Sub_Missions.Editor
                 }
             }
             else
+            {
                 GUILayout.Label("<color=red>Z</color>", GUILayout.Width(25));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Invalid Z float", false);
+            }
 
             setCache1 = set1;
             setCache2 = set2;

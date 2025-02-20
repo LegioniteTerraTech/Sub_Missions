@@ -319,9 +319,11 @@
     <Compile Include="CustomCorpsMK2\SMCSkinID.cs" />
     <Compile Include="SMExplosion.cs" />
     <Compile Include="SpawnableTech.cs" />
+    <Compile Include="Steps\Acts\StepActAnchor.cs" />
     <Compile Include="Steps\Acts\StepActDrive.cs" />
     <Compile Include="Steps\Checks\StepCheckMoney.cs" />
     <Compile Include="Steps\IPositioned.cs" />
+    <Compile Include="Steps\Setups\StepSetupTeam.cs" />
     <Compile Include="Steps\StepAirstrike.cs" />
     <Compile Include="Steps\StepFolder.cs" />
     <Compile Include="CustomCorpsMK2\UICCorpLicenses.cs" />

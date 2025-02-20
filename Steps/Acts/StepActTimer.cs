@@ -10,10 +10,14 @@ namespace Sub_Missions.Steps
 {
     public class StepActTimer : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => true;
+        public override string GetTooltip() =>
+            "Constantly increments the specified VarInt while true for each SubMission update";
         public override string GetDocumentation()
         {
             return
-                "{  // Constantly increments the specified VarInt while true on each SubMission update." +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActTimer\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"InputNum\": \"0\",       // Increments VarIndex1 by the value here." +
@@ -72,6 +76,7 @@ namespace Sub_Missions.Steps
             }
         }
         private bool ShownTimer = false;
+        private float secondTracker = 0;
         public override void Trigger()
         {
             try
@@ -94,7 +99,12 @@ namespace Sub_Missions.Steps
                             }
                             else
                             {
-                                Mission.VarIntsActive[SMission.SetMissionVarIndex2] += (int)SMission.InputNum;
+                                secondTracker += SMission.InputNum * Mission.DeltaTime;
+                                if (secondTracker >= 1f)
+                                {
+                                    Mission.VarIntsActive[SMission.SetMissionVarIndex2] += Mathf.FloorToInt(secondTracker);
+                                    secondTracker = 0f;
+                                }
                             }
                         }
                         else
@@ -116,7 +126,14 @@ namespace Sub_Missions.Steps
                                 SMission.SavedInt = Mission.VarIntsActive[SMission.SetMissionVarIndex2];
                             }
                             else
-                                Mission.VarIntsActive[SMission.SetMissionVarIndex2] += (int)SMission.InputNum;
+                            {
+                                secondTracker += SMission.InputNum * Mission.DeltaTime;
+                                if (secondTracker >= 1f)
+                                {
+                                    Mission.VarIntsActive[SMission.SetMissionVarIndex2] += Mathf.FloorToInt(secondTracker);
+                                    secondTracker = 0f;
+                                }
+                            }
                         }
                         break;
                     default:    // tick always
@@ -132,7 +149,14 @@ namespace Sub_Missions.Steps
                             SMission.SavedInt = Mission.VarIntsActive[SMission.SetMissionVarIndex2];
                         }
                         else
-                            Mission.VarIntsActive[SMission.SetMissionVarIndex2] += (int)SMission.InputNum;
+                        {
+                            secondTracker += SMission.InputNum * Mission.DeltaTime;
+                            if (secondTracker >= 1f)
+                            {
+                                Mission.VarIntsActive[SMission.SetMissionVarIndex2] += Mathf.FloorToInt(secondTracker);
+                                secondTracker = 0f;
+                            }
+                        }
                         break;
                 }
             }

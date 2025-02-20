@@ -9,10 +9,14 @@ namespace Sub_Missions.Steps
 {
     public class StepCheckPlayerDist : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Tracks the distance of a Tech from a specified point in world space";
         public override string GetDocumentation()
         {
             return
-                "{  // Tracks the distance of a Tech from a specified point in wold space" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"CheckPlayerDist\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if \"VaribleType\" is set to \"DoSuccessID\"" +

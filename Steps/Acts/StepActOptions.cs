@@ -10,10 +10,15 @@ namespace Sub_Missions.Steps
 {
     public class StepActOptions : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Gives the player two options:  the set InputStringAux or \"No\"";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Gives the player two options:  \"InputStringAux\" or \"No\"" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActOptions\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +
@@ -63,6 +68,7 @@ namespace Sub_Missions.Steps
             WindowManager.AddPopupButtonDual(SMission.InputString, SMission.InputStringAux, true, this, windowOverride: WindowManager.WideWindow);
             SMission.AssignedWindow = WindowManager.GetCurrentPopup();
             WindowManager.ChangePopupPositioning(new Vector2(0.5f, 0.5f), SMission.AssignedWindow);
+            SMission.SavedInt = 0;
         }
 
         public override void Trigger()
@@ -71,6 +77,11 @@ namespace Sub_Missions.Steps
             {
                 SMUtil.Error(true, SMission.LogName, 
                     KickStart.ModID + ": ActOptions does not support the VaribleType of DoSuccessID.  Mission " + Mission.Name + ", Step " + Mission.EventList.IndexOf(SMission));
+            }
+            if (SMission.SavedInt == 9998)
+            {
+                SMUtil.ConcludeGlobal2(ref SMission);
+                return;
             }
             if (SMission.SavedInt == 9999)
             {
@@ -94,6 +105,10 @@ namespace Sub_Missions.Steps
             }
         }
 
+        public void NoSelect()
+        {
+            SMission.SavedInt = 9998;
+        }
         public void OptionSelect()
         {
             SMission.SavedInt = 9999;

@@ -10,10 +10,14 @@ namespace Sub_Missions.Steps
 {
     public class StepCheckMoney : SMissionStep
     {   // keeps track of a single tech's block count and outputs to the assigned Global1
+        public override bool ForceUsesVarBool() => SMission.InputString.Length != 4;
+        public override bool ForceUsesVarInt() => SMission.InputString.Length == 4;
+        public override string GetTooltip() =>
+            "Updates a VarInt based on the player's available money";
         public override string GetDocumentation()
         {
             return
-                "{  // Updates a VarInt based on the player's available money" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"CheckMoney\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if " +

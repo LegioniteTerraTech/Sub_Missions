@@ -12,6 +12,7 @@ using Newtonsoft.Json;
 using System.Reflection;
 using System.IO;
 using TerraTechETCUtil;
+using static CompoundExpression;
 #if !STEAM
 using Nuterra.BlockInjector;
 #endif
@@ -115,7 +116,7 @@ namespace Sub_Missions
         internal static GUIPopupDisplay SideUI;
 
         private static float timer = 0;
-        private static float timerSecondsDelay = 1;
+        private static float timerSecondsDelay = 0.5f;//1;
 
 
         public static Event<SubMission> MissionStartedEvent = new Event<SubMission>();
@@ -548,8 +549,10 @@ namespace Sub_Missions
             }
         }
 
+        private bool insureModdedCorpsSkinButtonExists = false;
+
         // UPDATE
-        private void Update()
+        internal void Update()
         {
             try
             {
@@ -563,6 +566,24 @@ namespace Sub_Missions
                 timer += Time.deltaTime;
                 if (timer >= timerSecondsDelay)
                 {
+                    if (!insureModdedCorpsSkinButtonExists && ManSMCCorps.AllCorpNames.Count > 0)
+                    {
+                        UISkinsPaletteHUD hud = (UISkinsPaletteHUD)ManHUD.inst.GetHudElement(ManHUD.HUDElementType.SkinsPalette);
+                        if (hud != null)
+                        {
+                            var GO = (GameObject)typeof(UISkinsPaletteHUD).GetField("m_ModdedCorpsSection", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(hud);
+                            if (GO != null)
+                            {
+                                GO.SetActive(true);
+                                insureModdedCorpsSkinButtonExists = true;
+                            }
+                            else
+                            {
+                                Debug_SMissions.Assert("m_ModdedCorpsSection is F^KING NULL");
+                                UICCorpLicenses.ForceAddModdedCorpsSection(hud);
+                            }
+                        }
+                    }
                     if (SlowMo && !Stopped)
                         UpdateAllSubMissionsStep(1);
                     timer = 0;

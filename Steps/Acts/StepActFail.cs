@@ -9,10 +9,15 @@ namespace Sub_Missions.Steps
 {
     public class StepActFail : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Fails and ends the mission, giving the player good grief.";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Fails and ends the mission, giving the player good grief." +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActFail\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +

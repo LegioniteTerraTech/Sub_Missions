@@ -112,6 +112,12 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
+                    StepType = SMStepType.ActAnchor,
+                    ProgressID = 1,
+                    InputString = "Garrett Gruntle",
+                },
+                new SubMissionStep
+                {
                     StepType = SMStepType.CheckPlayerDist,
                     ProgressID = 1, // note that this still works even when the CurrentProgressID is 0 or 2 due to the adjecency rule
                     InitPosition = new Vector3(2,0,6), // needs specific location
@@ -138,6 +144,12 @@ namespace Sub_Missions
                     ProgressID = 10,
                     VaribleType = EVaribleType.None,
                     InputNum = 1,// only fire once
+                },
+                new SubMissionStep
+                {
+                    StepType = SMStepType.ActAnchor,
+                    ProgressID = 10,
+                    InputString = "Garrett Gruntle",
                 },
                 new SubMissionStep
                 {
@@ -363,7 +375,7 @@ namespace Sub_Missions
                     GlobalIndex = 0,
                 }
             };
-            mission2.VarTrueFalseActive = new List<bool>
+            mission2.VarTrueFalse = new List<bool>
             {
                 true,
                 true,
@@ -425,11 +437,18 @@ namespace Sub_Missions
                 },
                 new SubMissionStep
                 {
+                    StepType = SMStepType.ActAnchor,
+                    ProgressID = 0,
+                    InputString = "TestTarget.RAWTECH",
+                },
+                new SubMissionStep
+                {
                     StepType = SMStepType.CheckDestroy,
                     ProgressID = 0,
                     SuccessProgressID = 30,
                     VaribleType = EVaribleType.DoSuccessID,
                     InputString = "TestTarget.RAWTECH",
+                    InputStringAux = "Tracked Tech",
                 },
                 new SubMissionStep
                 {
@@ -456,13 +475,13 @@ namespace Sub_Missions
             mission3.Faction = "GSO";
             mission3.IgnorePlayerProximity = true;
             mission3.ClearTechsOnClear = true;
-            mission3.VarTrueFalseActive = new List<bool>
+            mission3.VarTrueFalse = new List<bool>
             {
                 false,
                 false,
                 //Simple mission using only ProgressIDs
             };
-            mission3.VarIntsActive = new List<int>
+            mission3.VarInts = new List<int>
             {
                 // F*bron
                 0,  // count of chunks
@@ -579,11 +598,11 @@ namespace Sub_Missions
             mission4.ClearTechsOnClear = true;
             mission4.SetStartingPosition = Vector3.forward * 32;
             mission4.SpawnPosition = SubMissionPosition.OffsetFromPlayer;
-            mission4.VarTrueFalseActive = new List<bool>
+            mission4.VarTrueFalse = new List<bool>
             {
                 //Simple mission using only ProgressIDs
             };
-            mission4.VarIntsActive = new List<int>
+            mission4.VarInts = new List<int>
             {
                 //Simple mission that only rewards once
             };
@@ -627,11 +646,11 @@ namespace Sub_Missions
             mission4.ClearTechsOnClear = true;
             mission4.SetStartingPosition = Vector3.forward * 32;
             mission4.SpawnPosition = SubMissionPosition.OffsetFromPlayer;
-            mission4.VarTrueFalseActive = new List<bool>
+            mission4.VarTrueFalse = new List<bool>
             {
                 //Simple mission using only ProgressIDs
             };
-            mission4.VarIntsActive = new List<int>
+            mission4.VarInts = new List<int>
             {
                 //Simple mission that only rewards once
             };
@@ -685,6 +704,7 @@ namespace Sub_Missions
         }
         public static void MakePrefabMissionTreeToFile(string TreeName)
         {
+
             Debug_SMissions.Log(KickStart.ModID + ": Setting up template reference...");
 
             SubMission mission1 = MakePrefabNPC_Mission();
@@ -695,7 +715,7 @@ namespace Sub_Missions
             SMWorldObjectJSON SMWO = MakePrefabWorldObject();
 
             SubMissionTree tree = new SubMissionTree();
-            tree.TreeName = "Template";
+            tree.TreeName = TreeName;
             tree.Faction = "GSO";
             tree.ModID = KickStart.ModID;
             tree.MissionNames.Add("NPC Mission");

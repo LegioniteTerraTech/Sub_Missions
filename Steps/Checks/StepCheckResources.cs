@@ -9,10 +9,14 @@ namespace Sub_Missions.Steps
 {
     public class StepCheckResources : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => true;
+        public override string GetTooltip() =>
+            "Keeps Track of Chunks collected";
         public override string GetDocumentation()
         {
             return
-                "{  // Keeps Track of Resource/Chunk Mining/Creation" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"CheckResources\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if \"VaribleType\" is set to \"DoSuccessID\"" +

@@ -10,10 +10,14 @@ namespace Sub_Missions.Steps
 {
     public class StepCheckHealth : SMissionStep
     {   // keeps track of a single tech's block count and outputs to the assigned Global1
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => true;
+        public override string GetTooltip() =>
+            "Updates a VarInt based on the specified TrackedTech's Block Count";
         public override string GetDocumentation()
         {
             return
-                "{  // Updates a VarInt based on the specified TrackedTech's Block Count" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"CheckHealth\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if " +

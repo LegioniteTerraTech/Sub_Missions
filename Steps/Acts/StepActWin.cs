@@ -9,10 +9,14 @@ namespace Sub_Missions.Steps
 {
     public class StepActWin : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Wins and ends the mission, giving the player any set SubMissionRewards.";
         public override string GetDocumentation()
         {
             return
-                "{  // Wins and ends the mission, giving the player any set SubMissionRewards." +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActWin\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +

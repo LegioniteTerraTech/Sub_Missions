@@ -654,7 +654,7 @@ namespace Sub_Missions
             if (!mission.Tree.TreeTechs.TryGetValue(FileTechName, out var ST))
                 throw new NullReferenceException("The tech " + FileTechName + " is not in the Mission Tree of the " +
                     "hosting mission");
-            TrackedTech tech = new TrackedTech(ST.name, FileTechName, true);
+            TrackedTech tech = new TrackedTech(ST.name, ST.name, FileTechName, true);
             tech.mission = mission;
             if (instant)
             {
@@ -686,7 +686,11 @@ namespace Sub_Missions
                 tech = Singleton.playerTank;
                 return Singleton.playerTank;
             }
-            tech = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.FileTechName == FileTechName; }).TechAuto;
+            var techAuto = mission.Mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.FileTechName == FileTechName; });
+            tech = null;
+            if (techAuto == null)
+                return false;
+            tech = techAuto.TechAuto;
             if (tech == null)
                 return false;
             return true;
@@ -722,7 +726,7 @@ namespace Sub_Missions
             TrackedTech TT = mission.TrackedTechs.Find(delegate (TrackedTech cand) { return cand.TechName == tech.name; });
             if (TT == null)
             {
-                mission.TrackedTechs.Add(new TrackedTech(tech.name, FileTechName, tech.IsPopulation));
+                mission.TrackedTechs.Add(new TrackedTech(tech.name, tech.name, FileTechName, tech.IsPopulation));
             }
         }
 

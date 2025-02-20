@@ -11,10 +11,14 @@ namespace Sub_Missions.Steps
 {
     public class StepSetupWaypoint : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Sets up a Waypoint for the Mission.";
         public override string GetDocumentation()
         {
             return
-                "{  // Sets up a Waypoint for the Mission." +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"SetupWaypoint\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +
@@ -55,7 +59,8 @@ namespace Sub_Missions.Steps
         {
         }
         public override void FirstSetup()
-        {  
+        {
+            SMission.SavedInt = 0;
         }
         public override void Trigger()
         {

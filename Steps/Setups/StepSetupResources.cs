@@ -11,10 +11,15 @@ namespace Sub_Missions.Steps
 {
     public class StepSetupResources : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Spawns a Resource Node or Scenery Object";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Spawns a Resource node / Scenery Object" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"SetupResources\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +

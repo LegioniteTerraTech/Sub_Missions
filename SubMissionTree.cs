@@ -317,18 +317,18 @@ namespace Sub_Missions
             { 
             }
         }
-        public static bool GetTreeCorp(string factionName, out FactionSubTypes FST)
+        public static bool GetTreeCorp(string factionNameShort, out FactionSubTypes FST)
         {   //
             FST = (FactionSubTypes)(-1);
             try
             {
-                FST = ManMods.inst.GetCorpIndex(factionName);
+                FST = ManMods.inst.GetCorpIndex(factionNameShort);
             }
             catch { }
 
             if (FST == (FactionSubTypes)(-1))
             {
-                if (ManSMCCorps.GetSMCIDUnofficial(factionName, out FactionSubTypes FST1))
+                if (ManSMCCorps.GetSMCIDUnofficial(factionNameShort, out FactionSubTypes FST1))
                 {
                     FST = FST1;
                     return true;

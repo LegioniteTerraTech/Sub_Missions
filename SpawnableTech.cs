@@ -7,6 +7,7 @@ using UnityEngine;
 using TerraTechETCUtil;
 using Newtonsoft.Json;
 using TAC_AI.Templates;
+using System.Security.Cryptography;
 
 namespace Sub_Missions
 {
@@ -264,5 +265,54 @@ namespace Sub_Missions
             throw new InvalidOperationException("Techs bundled within AssetBundles cannot be removed.  " +
                 "Please remove it before building the mod");
         }*/
+    }
+    internal class SpawnableTechFromPool : SpawnableTech
+    {
+        private RawTechPopParams popParams;
+        internal SpawnableTechFromPool(string name, RawTechPopParams popParams) : base(name)
+        {
+            this.popParams = popParams;
+            Debug_SMissions.Log(KickStart.ModID + ": Registered " + name + " as SpawnableTechFromPool");
+        }
+        internal override Tank Spawn(SubMissionTree tree, Vector3 Pos, Vector3 Fwd, int Team)
+        {
+            return RawTechLoader.SpawnRandomTechAtPosHead(Pos, Fwd, Team, popParams, false);
+        }
+        protected override void CreateTexture(SubMissionTree tree, ManScreenshot.OnTechRendered callback)
+        {
+            callback.Invoke(null, ManIngameWiki.BlocksSprite.texture);
+        }
+        internal override void Remove(SubMissionTree tree)
+        {
+            if (tree.TreeHierachy is SubMissionHierachyDirectory SMHD)
+            {
+                string path = Path.Combine(SMHD.TreeDirectory, "Pop Params", name);
+                if (File.Exists(path))
+                    File.Delete(path);
+            }
+            else if (tree.TreeHierachy is SubMissionHierachyAssetBundle SMHAB)
+                SMHAB.TechNames.Remove(name);
+            tree.TreeTechs.Remove(name);
+        }
+        /*
+        internal override void Remove(SubMissionTree tree)
+        {
+            throw new InvalidOperationException("Techs bundled within AssetBundles cannot be removed.  " +
+                "Please remove it before building the mod");
+        }*/
+        internal void ReloadFromDisk(SubMissionTree tree)
+        {
+            if (tree.TreeHierachy is SubMissionHierachyDirectory SMHD)
+            {
+                string path = Path.Combine(SMHD.TreeDirectory, "Pop Params", name);
+                if (File.Exists(path))
+                {
+                    string fileData = File.ReadAllText(path);
+                    var temp = JsonConvert.DeserializeObject<RawTechPopParams>(fileData);
+                    if (temp != null)
+                        popParams = temp;
+                }
+            }
+        }
     }
 }

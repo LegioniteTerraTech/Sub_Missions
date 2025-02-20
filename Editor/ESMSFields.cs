@@ -41,6 +41,7 @@ namespace Sub_Missions.Steps
         InputStringAux_Tech,
         InputString_Tracked_Tech,
         InputStringAux_Tracked_Tech,
+        InputString_Corp,
         InputString_MM,
 
         // - OTHERS

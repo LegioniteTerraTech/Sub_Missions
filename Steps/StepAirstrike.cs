@@ -9,10 +9,15 @@ namespace Sub_Missions.Steps
     public class StepAirstrike : SMissionStep
     {
         private const float deliveryTimeSec = 100;
+
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Creates a base bomb that explodes on impact as long as it's linked condition is true";
         public override string GetDocumentation()
         {
             return
-                "{  // Creates a base bomb that explodes on impact as long as it's linked condition is true" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActAirstrike\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +

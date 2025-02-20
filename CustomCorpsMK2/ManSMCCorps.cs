@@ -20,6 +20,7 @@ namespace Sub_Missions
         private static int RCC = UCorpRange;
 
         internal const int AdvisedCorpSkinIDStartRef = 128;
+        public static bool HasCustomCorps => corpsStoredOfficial.Any();
 
         /// <summary> SHORT names </summary>
         public static List<string> AllCorpNames = new List<string>(Enum.GetNames(typeof(FactionSubTypes)));
@@ -591,8 +592,39 @@ namespace Sub_Missions
             {
                 if (SMissionJSONLoader.TryGetCorpInfoData(CorpShortName, out string directEnd))
                 {
-                    License = JsonConvert.DeserializeObject<SMCCorpLicenseJSON>(directEnd).ConvertToActive();
-                    License.Faction.ToString();
+                    SMCCorpLicenseJSON CLJSON = JsonConvert.DeserializeObject<SMCCorpLicenseJSON>(directEnd);
+                    if (CLJSON == null)
+                    {
+                        SMUtil.Error(false, CorpShortName + " - Loading", "Custom Corp " + CorpShortName +
+                            " failed to load SMCCorpLicenseJSON!");
+                        License = null;
+                        return false;
+                    }
+                    License = CLJSON.ConvertToActive();
+                    ModdedCorpDefinition MCD = ManMods.inst.FindCorp((int)FST);
+                    if (MCD == null)
+                    {
+                        SMUtil.Error(false, CorpShortName + " - Loading", "Custom Corp " + CorpShortName +
+                            " ModdedCorpDefinition is NULL");
+                        License = null;
+                        return false;
+                    }
+                    if (License.Faction == null)
+                    {
+                        if (MCD.m_DisplayName != null && MCD.m_ShortName != null)
+                        {
+                            License.FullName = MCD.m_DisplayName;
+                            License.Faction = MCD.m_ShortName;
+                        }
+                        else
+                        {
+                            SMUtil.Error(false, CorpShortName + " - Loading", "Custom Corp " + CorpShortName +
+                                " faction is NULL");
+                            License = null;
+                            return false;
+                        }
+                    }
+                    //License.Faction.ToString();
                     License.OfficialCorp = true;
                     License.ID = (int)FST;
 

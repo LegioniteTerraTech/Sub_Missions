@@ -147,6 +147,8 @@ namespace Sub_Missions.Editor
                     return new SMSFieldTechSelectGUI(name, ESMSFields.InputString);
                 case ESMSFields.InputStringAux_Tracked_Tech:
                     return new SMSFieldTechSelectGUI(name, ESMSFields.InputStringAux);
+                case ESMSFields.InputString_Corp:
+                    return new SMSFieldCorpSelectGUI(name, ESMSFields.InputString);
                 case ESMSFields.InputString_MM:
                     return new SMSFieldMonumentSelectGUI(name, ESMSFields.InputString);
                 case ESMSFields.SpawnOnly:

@@ -46,9 +46,7 @@ namespace Sub_Missions.ManWindows
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Open);
                 if (ConnectedToMission)
-                { 
                     options.OptionSelect();
-                }
                 else
                     ButtonAct.Invoke(InvokeAction);// has frame delay
 
@@ -61,6 +59,8 @@ namespace Sub_Missions.ManWindows
             if (GUI.Button(new Rect((Display.Window.width / 2) + 15, 30, (Display.Window.width / 2) - 30, Display.Window.height - 45), "<b>No</b>", ConnectedToMission ? WindowManager.styleButtonGinormusFont : WindowManager.styleButtonHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
+                if (ConnectedToMission)
+                    options.NoSelect();
 
                 WindowManager.HidePopup(Display);
                 if (DestroyOnPress)

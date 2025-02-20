@@ -29,6 +29,7 @@ namespace Sub_Missions
         {
             TreeName = treeName;
         }
+        public abstract bool IsEditable();
 
         private static Dictionary<string, string> nameCollisionDetector = new Dictionary<string, string>();
         internal SubMissionHierachyAssetBundle CreateAssetBundleable()
@@ -60,7 +61,10 @@ namespace Sub_Missions
                         return newC;
                     }
                     nameCollisionDetector.Add(name, "Techs");
-                    newC.TechNames.Add(name);
+                    if (item.Value is SpawnableTechFromPool)
+                        newC.PoolParamNames.Add(name);
+                    else
+                        newC.TechNames.Add(name);
                 }
                 foreach (var item in tree.WorldObjectFileNames)
                 {
@@ -111,8 +115,10 @@ namespace Sub_Missions
         internal ModContents contents => container.Contents;
         public List<string> MissionNames = new List<string>();
         public List<string> TechNames = new List<string>();
+        public List<string> PoolParamNames = new List<string>();
         public List<string> TerrainNames = new List<string>();
         public List<string> ObjectNames = new List<string>();
+        public override bool IsEditable() => false;
 
 
         /// <summary> SERIALIZATION ONLY </summary>
@@ -246,6 +252,19 @@ namespace Sub_Missions
                     }
                 }
             }
+            foreach (var item in ResourcesHelper.IterateAssetsInModContainer<TextAsset>(container))
+            {
+                if (PoolParamNames.Contains(item.name) && !dictionary.ContainsKey(item.name))
+                {
+                    if (!item.text.NullOrEmpty())
+                    {
+                        string nameFiltered = item.name.Replace("%", string.Empty);
+                        SMissionJSONLoader.RawTechPopParamsEx RTPP = JsonConvert.DeserializeObject<SMissionJSONLoader.RawTechPopParamsEx>(item.text);
+                        if (RTPP != null)
+                            dictionary.Add(nameFiltered, new SpawnableTechFromPool(nameFiltered, RTPP.ToInst()));
+                    }
+                }
+            }
         }
 
         internal override void LoadTreeWorldObjects(ref List<string> entries)
@@ -289,6 +308,7 @@ namespace Sub_Missions
     public class SubMissionHierachyDirectory : SubMissionHierachy
     {
         public string TreeDirectory;
+        public override bool IsEditable() => true;
         /// <summary> SERIALIZATION ONLY </summary>
         public SubMissionHierachyDirectory()
         {
@@ -723,6 +743,40 @@ namespace Sub_Missions
                                 {
                                     SMUtil.Error(false, "Mission Tree RawTechs (Loading) ~ " + TreeName + ", tech " + name,
                                         "Tech of name " + name + " Is corrupted or in invalid format.  Cannot load!");
+                                }
+                            }
+                            foundAny = true;
+                        }
+                    }
+                }
+
+                if (Directory.Exists(Path.Combine(TreeDirectory, "Pop Params")))
+                {
+                    outputs = Directory.GetFiles(Path.Combine(TreeDirectory, "Pop Params"));
+                    foreach (string str in outputs)
+                    {
+                        if (SMissionJSONLoader.GetName(str, out string name) && name.EndsWith(".json"))
+                        {
+                            if (dictionary.ContainsKey(name))
+                            {
+                                SMUtil.Error(false, "Mission Tree Pop Params (Loading) ~ " + TreeName + ", tech " + name,
+                                    "Pop Param of name " + name + " already is assigned to the tree.  Cannot add " +
+                                    "multiple Techs of same name!");
+                            }
+                            else
+                            {
+                                try
+                                {
+                                    string fileData = File.ReadAllText(str);
+                                    SMissionJSONLoader.RawTechPopParamsEx temp = JsonConvert.DeserializeObject<SMissionJSONLoader.RawTechPopParamsEx>(fileData);
+                                    if (temp == null)
+                                        throw new NullReferenceException("RawTechPopParams is in invalid format");
+                                    dictionary.Add(name, new SpawnableTechFromPool(name, temp.ToInst()));
+                                }
+                                catch (Exception e)
+                                {
+                                    SMUtil.Error(false, "Mission Tree RawTechs (Loading) ~ " + TreeName + ", tech " + name,
+                                        "Tech of name " + name + " Is corrupted or in invalid format.  Cannot load! + " + e);
                                 }
                             }
                             foundAny = true;

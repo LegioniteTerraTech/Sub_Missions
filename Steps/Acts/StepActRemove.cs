@@ -10,10 +10,14 @@ namespace Sub_Missions.Steps
 {
     public class StepActRemove : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Destroys existing TrackedTechs";
         public override string GetDocumentation()
         {
             return
-                "{  // Destroys existing TrackedTechs" +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActRemove\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +

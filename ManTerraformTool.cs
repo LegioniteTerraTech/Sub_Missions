@@ -44,18 +44,29 @@ namespace Sub_Missions
     [AutoSaveManager]
     public class ManTerraformTool
     {
+        public const int ManTerraformToolTerraEditPriority = 9001;
+        public const int ManTerraformToolTerraSavePriority = 1;
+
         [SSManagerInst]
         public static ManTerraformTool inst;
+        // Need to make this work (hook up the the missions system)
+
         /// <summary>
         /// This stores EVERY SINGLE Mod Missions terrain modifier active in-scene.
         /// </summary>
         [SSaveField]
-        public Dictionary<IntVector2, TerrainModifier> TerrainModsSave;
+        public Dictionary<IntVector2, TerrainModifier> TerrainModsSave = new Dictionary<IntVector2, TerrainModifier>();
 
-        public static Dictionary<IntVector2, TerrainModifier> CurrentTerrainMods;
+        [SSaveField]
+        public Dictionary<IntVector2, TerrainModifier> TerrainModsEdit = new Dictionary<IntVector2, TerrainModifier>();
+
+        /// <summary>
+        /// All the TerrainMods done by WorldTerraTool
+        /// </summary>
+        private static Dictionary<IntVector2, TerrainModifier> CurrentTerrainMods;
         public static string TerrainDirectory;
         public static WorldTerraTool tool;
-
+        public static MethodInfo InitWorldDeformer = typeof(WorldDeformer).GetMethod("Init", BindingFlags.Static | BindingFlags.NonPublic);
 
         public static void Init()
         {
@@ -67,13 +78,40 @@ namespace Sub_Missions
             {
                 //AddOceanicBiomes(ManWorld.inst.CurrentBiomeMap);
             }
+            WorldDeformer.Init();
             TerrainDirectory = Path.Combine(SMissionJSONLoader.BaseDirectory, "Custom Terrain");
             inst = new ManTerraformTool();
             tool = new GameObject("TerrainToolEditor").AddComponent<WorldTerraTool>();
             TerrainModifier.TileHeight = TerrainOperations.TileHeightRescaled;
             tool.Init();
             CurrentTerrainMods = new Dictionary<IntVector2, TerrainModifier>();
+            WorldDeformer.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraSavePriority, inst.TerrainModsSave);
+            WorldDeformer.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraEditPriority, inst.TerrainModsEdit);
         }
+
+        public static void PrepareForSaving()
+        {
+            if (inst == null || WorldDeformer.inst == null)
+                return;
+            if (inst.TerrainModsSave == null)
+                inst.TerrainModsSave = new Dictionary<IntVector2, TerrainModifier>();
+            if (inst.TerrainModsEdit == null)
+                inst.TerrainModsEdit = new Dictionary<IntVector2, TerrainModifier>();
+
+            //WorldDeformer.UnregisterModdedTerrain(KickStart.ModID);
+        }
+        public static void FinishedSaving()
+        {
+            if (inst == null || WorldDeformer.inst == null)
+                return;
+            //WorldDeformer.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraPriority, inst.TerrainModsSave);
+        }
+        public static void FinishedLoading()
+        {
+            if (inst == null || inst.TerrainModsSave == null || WorldDeformer.inst == null)
+                return;
+        }
+
 
 
         public class WorldTerraTool : MonoBehaviour
@@ -81,7 +119,8 @@ namespace Sub_Missions
             /*
             internal bool ToolARMED = true;
             private bool showGUI = true;
-            // */ internal bool ToolARMED = false; private bool showGUI = false;
+            // */
+            internal bool ToolARMED = false; private bool showGUI = false;
 
             public TerraformerCursorState state = 0;
             private static int ToolSize = 9;
@@ -158,7 +197,7 @@ namespace Sub_Missions
                         float SFXtime = 0.75f;
                         Vector3 terrainPosSpotCorrect = terrainPosSpot -
                             TerrainDefaults[TerraformerType.Circle].Position.GameWorldPosition;
-                        Vector3 terrainPosSpotCorrectSqr = terrainPosSpot + new Vector3(ToolSize * 2,0, -ToolSize) - 
+                        Vector3 terrainPosSpotCorrectSqr = terrainPosSpot + new Vector3(ToolSize * 2, 0, -ToolSize) -
                             TerrainDefaults[TerraformerType.Square].Position.GameWorldPosition;
                         switch (ToolMode)
                         {
@@ -391,12 +430,12 @@ namespace Sub_Missions
             public bool UtilityShown => showGUI;
             private static Rect MainWindow = new Rect(0, 0, 260, 200);
             private static string[] labels = new string[] {
-            TerraformerType.Circle.ToString(),
-            TerraformerType.Square.ToString(),
-            TerraformerType.Level.ToString(),
-            TerraformerType.Reset.ToString(),
-            TerraformerType.Slope.ToString(),
-        };
+                TerraformerType.Circle.ToString(),
+                TerraformerType.Square.ToString(),
+                TerraformerType.Level.ToString(),
+                TerraformerType.Reset.ToString(),
+                TerraformerType.Slope.ToString(),
+            };
             internal void OnGUI()
             {
                 if (showGUI)
@@ -566,34 +605,9 @@ namespace Sub_Missions
             }
             private void CloseGUIDisplay()
             {
-                ToolARMED = false; 
+                ToolARMED = false;
                 showGUI = false;
             }
-        }
-
-
-        public static void PrepareForSaving()
-        {
-            if (inst == null)
-                return;
-            foreach (var item in inst.TerrainModsSave)
-            {
-                WorldDeformer.inst.TerrainModsActive.Remove(item.Key);
-            }
-            //inst.TerrainModsSave = WorldDeformer.inst.TerrainModsActive;
-        }
-        public static void FinishedSaving()
-        {
-            if (inst == null)
-                return;
-            inst.TerrainModsSave = null;
-        }
-        public static void FinishedLoading()
-        {
-            if (inst?.TerrainModsSave == null)
-                return;
-            WorldDeformer.inst.TerrainModsActive.AddRange(inst.TerrainModsSave);
-            inst.TerrainModsSave = null;
         }
 
 

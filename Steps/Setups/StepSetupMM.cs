@@ -10,10 +10,14 @@ namespace Sub_Missions.Steps
 {
     public class StepSetupMM : SMissionStep
     {   // Builds a tileable ModularMonument out of given models and meshes
+        public override bool ForceUsesVarBool() => true;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Builds a tileable ModularMonument out of given models";
         public override string GetDocumentation()
         {
             return
-                "{  // Builds a tileable ModularMonument out of given models" +
+                "{  // " + GetTooltip() + 
                   "\n  \"StepType\": \"SetupMM\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"Position\": {  // The position where this is handled relative to the Mission origin." +

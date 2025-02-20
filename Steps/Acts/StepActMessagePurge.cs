@@ -10,10 +10,15 @@ namespace Sub_Missions.Steps
 {
     public class StepActMessagePurge : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Clears ALL NPC dialect from the screen.";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Progresses the Mission ProgressID when successful." +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActMessagePurge\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  // Conditions TO CHECK before executing" +
@@ -43,6 +48,7 @@ namespace Sub_Missions.Steps
         }
         public override void FirstSetup()
         {
+            SMission.InputNum = 0;
         }
         public override void Trigger()
         {   // purge the text box things

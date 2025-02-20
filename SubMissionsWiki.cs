@@ -78,9 +78,19 @@ namespace Sub_Missions
             }
             else
             {
-                GUILayout.Button("Mission Editor(Only In Creative/R&D)", AltUI.ButtonGreyLarge);
-                GUILayout.Button("Mission List(Only In Creative/R&D)", AltUI.ButtonGreyLarge);
-                GUILayout.Button("Show Editor Buttons(Only In Creative/R&D)", AltUI.ButtonBlueLarge);
+                ManGameMode.GameType current = ManGameMode.inst.GetCurrentGameType();
+                if (current == ManGameMode.GameType.MainGame || current == ManGameMode.GameType.CoOpCampaign)
+                {
+                    GUILayout.Button("Mission Editor(Only In Creative/R&D)", AltUI.ButtonGreyLarge);
+                    GUILayout.Button("Mission List(Only In Creative/R&D)", AltUI.ButtonGreyLarge);
+                    GUILayout.Button("Show Editor Buttons(Only In Creative/R&D)", AltUI.ButtonBlueLarge);
+                }
+                else
+                {
+                    GUILayout.Button("Mission Editor(Enable Debug Mode In Settings)", AltUI.ButtonGreyLarge);
+                    GUILayout.Button("Mission List(Enable Debug Mode In Settings)", AltUI.ButtonGreyLarge);
+                    GUILayout.Button("Show Editor Buttons(Enable Debug Mode In Settings)", AltUI.ButtonBlueLarge);
+                }
             }
             GUILayout.EndVertical();
         }

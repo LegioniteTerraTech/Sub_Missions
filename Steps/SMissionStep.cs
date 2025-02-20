@@ -32,9 +32,12 @@ namespace Sub_Missions.Steps
         "  // 2 = Align with terrain + offset by position\n" +
         "  // 3 = Snap to Terrain";
 
+        /// <summary> Appears when you hover over it </summary>
+        public abstract string GetTooltip();
         public abstract string GetDocumentation();
-
         public abstract void InitGUI();
+        public abstract bool ForceUsesVarBool();
+        public abstract bool ForceUsesVarInt();
 
         /// <summary>
         /// Called every time the mission is loaded

@@ -11,10 +11,15 @@ namespace Sub_Missions.Steps
 {
     public class StepActSpeak : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Displays a mission NPC-like chatbox with text scrolling";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Displays a mission NPC-like chatbox with text scrolling." +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActSpeak\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 0,      // The ProgressID the mission will be pushed to if \"VaribleType\" is set to \"DoProgressID\"" +
@@ -42,7 +47,7 @@ namespace Sub_Missions.Steps
         {
             if (!SMission.InputStringAux.NullOrEmpty())
             {
-                ExpectedMessageDisplayTime = ((float)SMission.InputStringAux.Length / 5) + 5;
+                ExpectedMessageDisplayTime = ((float)SMission.InputStringAux.Length / 20f) + 1.25f;
                 Debug_SMissions.Log(KickStart.ModID + ": StepActSpeak - ExpectedMessageDisplayTime = " +
                     ExpectedMessageDisplayTime.ToString() + "\n" + SMission.InputStringAux);
             }
@@ -118,7 +123,10 @@ namespace Sub_Missions.Steps
             {
                 if (SMUtil.BoolOut(ref SMission))
                 {   // start speaking
-                    MessageDisplayTime += SMission.Mission.DeltaTime * 4;
+                    if (ManOnScreenMessages.inst.FastTalk)
+                        MessageDisplayTime += SMission.Mission.DeltaTime * 4;
+                    else
+                        MessageDisplayTime += SMission.Mission.DeltaTime;
                     //Debug_SMissions.Log(KickStart.ModID + ": StepActSpeak - MessageDisplayTime = " + MessageDisplayTime.ToString());
                     if (SMission.AssignedWindow == null)
                         if (!MessageUp)

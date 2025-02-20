@@ -6,22 +6,30 @@ using System.Threading.Tasks;
 using UnityEngine;
 using TAC_AI.Templates;
 using Newtonsoft.Json;
+using TAC_AI;
 
 namespace Sub_Missions
 {
+    /// <summary>
+    /// Keeps track of a select tech
+    /// </summary>
     [Serializable]
     public class TrackedTech
     {   //  
         [JsonIgnore]
         public SubMission mission;
 
+        /// <summary>The name of the Tech for the mission to identify it</summary>
         public string TechName = ""; // WITHOUT file prefix for Techs
+        /// <summary>The name of the Tech in the world</summary>
+        public string ActualTechName = ""; // WITHOUT file prefix for Techs
         public string FileTechName = ""; // WITH prefix for Techs
         public int TechID = 0;
 
         public bool loaded = false;
         public bool destroyed = false;
         public bool isDisposible = false;
+
 
         [JsonIgnore]
         public DeliveryBombSpawner delayedSpawn;
@@ -33,9 +41,10 @@ namespace Sub_Missions
         [JsonIgnore]
         public Tank Tech => tech;
 
-        public TrackedTech(string nameWorld, string nameFile, bool isDisposable = false)
+        public TrackedTech(string nameMission, string nameWorld, string nameFile, bool isDisposable = false)
         {
-            TechName = nameWorld;
+            TechName = nameMission;
+            ActualTechName = nameWorld;
             FileTechName = nameFile;
             this.isDisposible = isDisposable;
         }
@@ -94,6 +103,7 @@ namespace Sub_Missions
                         KickStart.ModID + ": Tech in TrackedTechs list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
                 
                 TechAuto = SMUtil.SpawnTechAuto(ref mission, pos, team, direction, FileTechName);
+                ActualTechName = tech.name;
 
                 DeliQueued = false;
             }
@@ -109,6 +119,8 @@ namespace Sub_Missions
             {
                 if (TechName == null)
                     TechName = "Unset";
+                if (ActualTechName == null)
+                    ActualTechName = "Unset";
                 if (!tech)
                 {
                     Visible techUnloaded = ManSaveGame.inst.LookupSerializedVisible(TechID);
@@ -116,19 +128,18 @@ namespace Sub_Missions
                     {
                         if (techUnloaded.tank)
                         {
-                            int hash = TechName.GetHashCode();
-                            if (techUnloaded.tank.name.GetHashCode() == hash)
+                            if (techUnloaded.tank.name.GetHashCode().CompareTo(ActualTechName) == 0)
                             {
                                 ManSaveGame.inst.GetStoredTile(techUnloaded.tileCache.tile.Coord, false).RemoveSavedVisible(ObjectTypes.Vehicle, TechID);
                             }
                         }
                         SMUtil.Error(false, "Mission (TrackedTech) ~ " + mission.Name + " - " + FileTechName, 
-                            KickStart.ModID + ": TrackedTech - Found Tech " + TechName + 
-                            ", but out-of-play Tech is not loaded correctly!  Of mission " + mission.Name + 
+                            KickStart.ModID + ": TrackedTech - Found Tech " + TechName + " (" + ActualTechName +
+                            "), but out-of-play Tech is not loaded correctly!  Of mission " + mission.Name + 
                             ", tree " + mission.Tree.TreeName);
                         SMUtil.Error(false, "Mission (TrackedTech) ~ " + mission.Name + " - " + FileTechName, 
-                            KickStart.ModID + ": TrackedTech - COULD NOT ELIMINATE TECH " + TechName + 
-                            "!  Of mission " + mission.Name + ", tree " + mission.Tree.TreeName);
+                            KickStart.ModID + ": TrackedTech - COULD NOT ELIMINATE TECH " + TechName + " (" + ActualTechName +
+                            ")!  Of mission " + mission.Name + ", tree " + mission.Tree.TreeName);
                     }
                 }
                 else
@@ -140,16 +151,17 @@ namespace Sub_Missions
                     }
                     else
                         SMUtil.Error(false, "Mission (TrackedTech) ~ " + mission.Name + " - " + FileTechName, 
-                            KickStart.ModID + ": TrackedTech.DestroyTech - Found Tech " + TechName + 
-                            ", but it is NOT VALID because it is the player Tech!  Of mission " + mission.Name + 
+                            KickStart.ModID + ": TrackedTech.DestroyTech - Found Tech " + TechName + " (" + ActualTechName +
+                            "), but it is NOT VALID because it is the player Tech!  Of mission " + mission.Name + 
                             ", tree " + mission.Tree.TreeName);
                 }
                 destroyed = true;
             }
             catch (Exception e)
             {
-                SMUtil.Assert(false, "Mission (TrackedTech) ~ " + mission.Name + " - " + FileTechName, KickStart.ModID + ": TrackedTech - COULD NOT ELIMINATE TECH " + TechName + 
-                    "!  Of mission " + mission.Name + ", tree " + mission.Tree.TreeName, e);
+                SMUtil.Assert(false, "Mission (TrackedTech) ~ " + mission.Name + " - " + FileTechName, KickStart.ModID + ": TrackedTech - COULD NOT ELIMINATE TECH " + 
+                    TechName + " (" + ActualTechName +
+                    ")!  Of mission " + mission.Name + ", tree " + mission.Tree.TreeName, e);
             }
             if (isDisposible)
             {
@@ -160,10 +172,12 @@ namespace Sub_Missions
         {
             if (TechName == null)
                 TechName = "Unset";
-            int hash = TechName.GetHashCode();
+            if (ActualTechName == null)
+                ActualTechName = "Unset";
+            int hash = ActualTechName.GetHashCode();
             foreach (Tank tank in Singleton.Manager<ManTechs>.inst.CurrentTechs)
             {
-                if (tank.name.GetHashCode() == hash || tank.visible.ID == TechID)
+                if (tank.visible.ID == TechID || tank.name.GetHashCode() == hash)
                 {
                     return tank;
                 }
@@ -177,14 +191,14 @@ namespace Sub_Missions
                         return techUnloaded.tank;
                 }
                 SMUtil.Error(false, "Mission (TrackedTech) ~ " + mission.Name + " - " + FileTechName, 
-                    KickStart.ModID + ": TrackedTech - Found Tech " + TechName + 
-                    ", but out-of-play Tech is not loaded correctly!  Of mission " + mission.Name + 
+                    KickStart.ModID + ": TrackedTech - Found Tech " + TechName + " (" + ActualTechName + 
+                    "), but out-of-play Tech is not loaded correctly!  Of mission " + mission.Name + 
                     ", tree " + mission.Tree.TreeName);
                 return null;
             }
             SMUtil.Error(false, "Mission (TrackedTech) ~ " + mission.Name + " - " + FileTechName, 
-                KickStart.ModID + ": TrackedTech - COULD NOT FIND TECH " + TechName + 
-                "!  Of mission " + mission.Name + ", tree " + mission.Tree.TreeName);
+                KickStart.ModID + ": TrackedTech - COULD NOT FIND TECH " + TechName + " (" + ActualTechName +
+                ")!  Of mission " + mission.Name + ", tree " + mission.Tree.TreeName);
             return null;
         }
         public void CheckWasDestroyed(Tank techIn)
@@ -198,7 +212,7 @@ namespace Sub_Missions
                 }
             }
             //else
-            //    Debug_SMissions.Log(KickStart.ModID + ": Tech does not match " + TechName + " of ID " + TechID + ".");
+            //    Debug_SMissions.Log(KickStart.ModID + ": Tech does not match " + TechName + " (" + ActualTechName + ") of ID " + TechID + ".");
         }
     }
 }

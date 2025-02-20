@@ -213,20 +213,43 @@ namespace Sub_Missions.ManWindows
                     }
                     else
                     {
-                        foreach (var item in ManSubMissions.SubMissionTrees)
+                        if (ManSubMissions.SubMissionTrees.Any())
                         {
-                            GUILayout.BeginHorizontal(GUILayout.Height(64));
-                            if (GUILayout.Button(item.TreeName, AltUI.ButtonBlueLarge))
+                            foreach (var item in ManSubMissions.SubMissionTrees)
                             {
-                                Tree = item;
+                                GUILayout.BeginHorizontal(GUILayout.Height(64));
+                                if (GUILayout.Button(item.TreeName, AltUI.ButtonBlueLarge))
+                                {
+                                    Tree = item;
+                                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AcceptMission);
+                                }
+                                GUILayout.Label(item.Faction);
+                                GUILayout.Label("|");
+                                GUILayout.Label(item.Missions.Count.ToString());
+                                GUILayout.FlexibleSpace();
+
+                                GUILayout.EndHorizontal();
+                            }
+                            if (Input.GetKey(KeyCode.LeftControl))
+                            {
+                                GUILayout.FlexibleSpace();
+                                if (GUILayout.Button("Make Example", AltUI.ButtonGreen))
+                                {
+                                    SimpleSMissions.MakePrefabMissionTreeToFile("Example");
+                                    ManSubMissions.inst.ReloadAllMissionTrees();
+                                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AcceptMission);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            GUILayout.FlexibleSpace();
+                            if (GUILayout.Button("Make Example", AltUI.ButtonGreen))
+                            {
+                                SimpleSMissions.MakePrefabMissionTreeToFile("Example");
+                                ManSubMissions.inst.ReloadAllMissionTrees();
                                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AcceptMission);
                             }
-                            GUILayout.Label(item.Faction);
-                            GUILayout.Label("|");
-                            GUILayout.Label(item.Missions.Count.ToString());
-                            GUILayout.FlexibleSpace();
-
-                            GUILayout.EndHorizontal();
                         }
                     }
                 }

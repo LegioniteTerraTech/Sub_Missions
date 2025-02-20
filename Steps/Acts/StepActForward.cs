@@ -9,10 +9,15 @@ namespace Sub_Missions.Steps
 {
     public class StepActForward : SMissionStep
     {
+        public override bool ForceUsesVarBool() => false;
+        public override bool ForceUsesVarInt() => false;
+        public override string GetTooltip() =>
+            "Progresses the Mission ProgressID when successful.";
+
         public override string GetDocumentation()
         {
             return
-                "{  // Progresses the Mission ProgressID when successful." +
+                "{  // " + GetTooltip() +
                   "\n  \"StepType\": \"ActForward\"," +
                   "\n  \"ProgressID\": 0,             // " + StepDesc +
                   "\n  \"SuccessProgressID\": 5,      // The ProgressID the mission will be pushed to if this is successful" +

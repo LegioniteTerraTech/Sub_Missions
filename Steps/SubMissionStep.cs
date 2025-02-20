@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Sub_Missions.ManWindows;
 using TerraTechETCUtil;
 using UnityEngine.UI;
+using Sub_Missions.Steps.Acts;
 
 namespace Sub_Missions.Steps
 {
@@ -93,7 +94,7 @@ namespace Sub_Missions.Steps
         [DefaultValue(-1)]
         public int SetMissionVarIndex3 = -1;
 
-        [JsonIgnore] // the saving
+        [JsonIgnore] // When we save the mission we also save this
         public int SavedInt = 0;
 
         [JsonIgnore]
@@ -251,92 +252,75 @@ namespace Sub_Missions.Steps
                     ProgressID + ", Type " + StepType.ToString() + ", and will not be able to execute.", e); 
             }
         }
-        internal void TrySetupOnType()
+        private static Type GetMissionStepType(SMStepType type)
         {
-            switch (StepType)
+            switch (type)
             {
                 case SMStepType.Folder:
-                    stepGenerated = new StepFolder();
-                    break;
+                    return typeof(StepFolder);
                 case SMStepType.SetupResources:
-                    stepGenerated = new StepSetupResources();
-                    break;
+                    return typeof(StepSetupResources);
                 case SMStepType.SetupMM:
-                    stepGenerated = new StepSetupMM();
-                    break;
+                    return typeof(StepSetupMM);
                 case SMStepType.SetupTech:
-                    stepGenerated = new StepSetupTech();
-                    break;
+                    return typeof(StepSetupTech);
                 case SMStepType.SetupWaypoint:
-                    stepGenerated = new StepSetupWaypoint();
-                    break;
+                    return typeof(StepSetupWaypoint);
                 case SMStepType.ActSpeak:
-                    stepGenerated = new StepActSpeak();
-                    break;
+                    return typeof(StepActSpeak);
                 case SMStepType.ActBoost:
-                    stepGenerated = new StepActBoost();
-                    break;
+                    return typeof(StepActBoost);
                 case SMStepType.ActDrive:
-                    stepGenerated = new StepActDrive();
-                    break;
+                    return typeof(StepActDrive);
+                case SMStepType.ActAnchor:
+                    return typeof(StepActAnchor);
                 case SMStepType.ActRemove:
-                    stepGenerated = new StepActRemove();
-                    break;
+                    return typeof(StepActRemove);
                 case SMStepType.ActTimer:
-                    stepGenerated = new StepActTimer();
-                    break;
+                    return typeof(StepActTimer);
                 case SMStepType.ActShifter:
-                    stepGenerated = new StepActShifter();
-                    break;
+                    return typeof(StepActShifter);
                 case SMStepType.ActOptions:
-                    stepGenerated = new StepActOptions();
-                    break;
+                    return typeof(StepActOptions);
                 case SMStepType.ActForward:
-                    stepGenerated = new StepActForward();
-                    break;
+                    return typeof(StepActForward);
                 case SMStepType.ActMessagePurge:
-                    stepGenerated = new StepActMessagePurge();
-                    break;
+                    return typeof(StepActMessagePurge);
                 case SMStepType.ActWin:
-                    stepGenerated = new StepActWin();
-                    break;
+                    return typeof(StepActWin);
                 case SMStepType.ActFail:
-                    stepGenerated = new StepActFail();
-                    break;
+                    return typeof(StepActFail);
                 case SMStepType.ActRandom:
-                    stepGenerated = new StepActRandom();
-                    break;
+                    return typeof(StepActRandom);
                 case SMStepType.ActAirstrike:
-                    stepGenerated = new StepAirstrike();
-                    break;
+                    return typeof(StepAirstrike);
                 case SMStepType.CheckLogic:
-                    stepGenerated = new StepCheckLogic();
-                    break;
+                    return typeof(StepCheckLogic);
                 case SMStepType.CheckResources:
-                    stepGenerated = new StepCheckResources();
-                    break;
+                    return typeof(StepCheckResources);
                 case SMStepType.CheckHealth:
-                    stepGenerated = new StepCheckHealth();
-                    break;
+                    return typeof(StepCheckHealth);
                 case SMStepType.CheckMoney:
-                    stepGenerated = new StepCheckMoney();
-                    break;
+                    return typeof(StepCheckMoney);
                 case SMStepType.CheckDestroy:
-                    stepGenerated = new StepCheckDestroy();
-                    break;
+                    return typeof(StepCheckDestroy);
                 case SMStepType.ChangeAI:
-                    stepGenerated = new StepChangeAI();
-                    break;
+                    return typeof(StepChangeAI);
                 case SMStepType.ChangeTech:
-                    stepGenerated = new StepTransformTech();
-                    break;
+                    return typeof(StepTransformTech);
                 case SMStepType.CheckPlayerDist:
-                    stepGenerated = new StepCheckPlayerDist();
-                    break;
+                    return typeof(StepCheckPlayerDist);
                 default:
-                    stepGenerated = new StepNull();
-                    break;
+                    return typeof(StepNull);
             }
+        }
+        public static SMissionStep CreateMissionStep(SMStepType type)
+        {
+            return (SMissionStep)Activator.CreateInstance(GetMissionStepType(type));
+        }
+        internal void TrySetupOnType()
+        {
+            stepGenerated = CreateMissionStep(StepType);
         }
 
         internal static void ShowStringColorGUI(SMStepType type, string num)
@@ -407,6 +391,7 @@ namespace Sub_Missions.Steps
         ActRemove,
         ActBoost,
         ActDrive,
+        ActAnchor,
         ActTimer,
         ActOptions,
         ActMessagePurge,
