@@ -111,16 +111,7 @@ namespace Sub_Missions
             {
                 TACAIRequiredWarning();
             }
-            WorldTerraformer.InsureInit();
-            try
-            {
-                TAC_AI.KickStart.TerrainHeight = TerrainOperations.RescaleFactor * TerrainOperations.TileHeightDefault;
-                TAC_AI.KickStart.TerrainHeightOffset = TerrainOperations.TileHeightRescaled;
-            }
-            catch (Exception)
-            {
-                throw;
-            }
+            ManWorldGeneratorExt.InsureInit();
 
             ManSubMissions.inst.ReloadAllMissionTrees();
         }

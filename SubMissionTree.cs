@@ -430,8 +430,7 @@ namespace Sub_Missions
         {
             if (mission.Tree.TerrainEdits.TryGetValue(terrainName, out var terrain))
             {
-                foreach (var item in terrain)
-                    item.Value.FlushApply(1, new WorldPosition(mission.TilePos + item.Key, Vector3.zero).ScenePosition);
+                ManWorldDeformerExt.ReloadTerrainMods(terrain, mission.TilePos);
             }
             else
                 SMUtil.Error(false, "Mission Tree (Startup) ~ " + mission.Tree.TreeName,

@@ -312,7 +312,11 @@
     <Compile Include="PatchesBatched\TerrainPatches.cs" />
     <Compile Include="PatchesBatched\UIPatches.cs" />
     <Compile Include="PatchesBatched\ProgressionPatches.cs" />
-    <Compile Include="SimpleSMissions.cs" />
+    <Compile Include="SimpleMissions\PrefabCombat_Mission.cs" />
+    <Compile Include="SimpleMissions\PrefabHarvest_Mission.cs" />
+    <Compile Include="SimpleMissions\PrefabNPC_Mission.cs" />
+    <Compile Include="SimpleMissions\PrefabRewards_Mission.cs" />
+    <Compile Include="SimpleMissions\SimpleSMissions.cs" />
     <Compile Include="CustomCorpsMK2\SMCCorpLicense.cs" />
     <Compile Include="CustomCorpsMK2\ManSMCCorps.cs" />
     <Compile Include="CustomCorpsMK2\SMCCorpBlockRange.cs" />
@@ -406,9 +410,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="SimpleMissions\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>

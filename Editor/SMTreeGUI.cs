@@ -204,9 +204,11 @@ namespace Sub_Missions.Editor
         private static TreeGUIType guiTypeCache = TreeGUIType.NULL;
         private static Action actReturn;
         private static bool PlayerOption = false;
+        private static bool ReplaceConfirmation = false;
         private static bool DeleteConfirmation = false;
         private static void OnButtonClick()
         {
+            ReplaceConfirmation = false;
             DeleteConfirmation = false;
         }
 
@@ -336,7 +338,13 @@ namespace Sub_Missions.Editor
         }
 
         // The Tree
-        private static bool validNew = false;
+        private static ValidLevel validNew = ValidLevel.False;
+        internal enum ValidLevel
+        {
+            False,
+            NameShort,
+            Valid,
+        }
         private static bool delta = false;
         private static void GUIListTree()
         {
@@ -345,7 +353,7 @@ namespace Sub_Missions.Editor
             if (GUILayout.Button("Missions", AltUI.ButtonRed))
             {
                 OnButtonClick();
-                validNew = false;
+                validNew = ValidLevel.False;
                 delta = true;
                 guiType = TreeGUIType.Missions;
             }
@@ -359,7 +367,7 @@ namespace Sub_Missions.Editor
             if (GUILayout.Button("Add Techs", AltUI.ButtonRed))
             {
                 OnButtonClick();
-                validNew = false;
+                validNew = ValidLevel.False;
                 delta = true;
                 PlayerOption = false;
                 guiType = TreeGUIType.TechSelect;
@@ -367,14 +375,14 @@ namespace Sub_Missions.Editor
             if (GUILayout.Button("Monuments", AltUI.ButtonRed))
             {
                 OnButtonClick();
-                validNew = false;
+                validNew = ValidLevel.False;
                 delta = true;
                 guiType = TreeGUIType.Monuments;
             }
             if (GUILayout.Button("Terrain", AltUI.ButtonRed))
             {
                 OnButtonClick();
-                validNew = false;
+                validNew = ValidLevel.False;
                 delta = true;
                 guiType = TreeGUIType.Terrain;
             }
@@ -658,18 +666,19 @@ namespace Sub_Missions.Editor
             if (delta || SMAutoFill.AutoTextField("Name", ref nameMission, 64))
             {
                 delta = false;
-                if (nameMission.NullOrEmpty() || nameMission.Length < 3 || 
-                    tree.Missions.Exists(x => x.Name == nameMission))
-                    validNew = false;
+                if (nameMission.NullOrEmpty() || nameMission.Length < 3)
+                    validNew = ValidLevel.NameShort;
+                else if (tree.Missions.Exists(x => x.Name == nameMission))
+                    validNew = ValidLevel.False;
                 else
-                    validNew = true;
+                    validNew = ValidLevel.Valid;
             }
-            if (validNew)
+            if (validNew == ValidLevel.Valid)
             {
                 if (GUILayout.Button("Create", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
                     OnButtonClick();
-                    validNew = false;
+                    validNew = ValidLevel.False;
                     SubMission mission = new SubMission()
                     {
                         Name = nameMission,
@@ -901,31 +910,23 @@ namespace Sub_Missions.Editor
             {
                 delta = false;
                 newTech = newTech2;
-                if (newTech.NullOrEmpty() || tree.TreeTechs.Any(x => x.Key == newTech))
-                    validNew = false;
+                if (newTech.NullOrEmpty())
+                    validNew = ValidLevel.NameShort;
+                else if (tree.TreeTechs.Any(x => x.Key == newTech))
+                    validNew = ValidLevel.False;
                 else
-                    validNew = true;
+                    validNew = ValidLevel.Valid;
             }
             GUILayout.Label("Make sure your tech is posted to the Steam Workshop first!");
-            if (validNew)
+            if (validNew == ValidLevel.Valid)
             {
                 if (GUILayout.Button("Attach Snap", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
                     OnButtonClick();
                     SMissionJSONLoader.SaveNewTechSnapshot(tree, newTech, SMUtil.DisplaySelectTechImage);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Snapshot);
-                    validNew = false;
+                    validNew = ValidLevel.False;
                 }
-            }
-            else
-            {
-                GUILayout.Button("Attach Snap", AltUI.ButtonGreyLarge, GUILayout.Height(128));
-                if (Event.current.type == EventType.Repaint &&
-                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-                    AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
-            }
-            if (validNew)
-            {
                 if (GUILayout.Button("Attach Raw", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
                     OnButtonClick();
@@ -934,15 +935,30 @@ namespace Sub_Missions.Editor
                         SMissionJSONLoader.SaveNewTechRaw(tree, newTech, TechData.CreateTechData());
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Snapshot);
                     }
-                    validNew = false;
+                    validNew = ValidLevel.False;
                 }
             }
             else
             {
+                GUILayout.Button("Attach Snap", AltUI.ButtonGreyLarge, GUILayout.Height(128));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                {
+                    if (validNew == ValidLevel.False)
+                        AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+                    else
+                        AltUI.TooltipWorld("Nothing selected", false);
+                }
+
                 GUILayout.Button("Attach Raw", AltUI.ButtonGreyLarge, GUILayout.Height(128));
                 if (Event.current.type == EventType.Repaint &&
                     GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-                    AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+                {
+                    if (validNew == ValidLevel.False)
+                        AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+                    else
+                        AltUI.TooltipWorld("Nothing selected", false);
+                }
             }
             if (GUILayout.Button("Open Snapshots in Explorer", AltUI.ButtonBlue))
             {
@@ -967,19 +983,21 @@ namespace Sub_Missions.Editor
             {
                 delta = false;
                 newTech = prevTech;
-                if (newTech.NullOrEmpty() || tree.TreeTechs.Any(x => x.Key == newTech))
-                    validNew = false;
+                if (newTech.NullOrEmpty())
+                    validNew = ValidLevel.NameShort;
+                if (tree.TreeTechs.Any(x => x.Key == newTech))
+                    validNew = ValidLevel.False;
                 else
-                    validNew = true;
+                    validNew = ValidLevel.Valid;
             }
-            if (validNew)
+            if (validNew == ValidLevel.Valid)
             {
                 if (GUILayout.Button("Save To Mission", AltUI.ButtonGrey))
                 {
                     OnButtonClick();
                     SMissionJSONLoader.SaveNewPopParam(tree, newTech, newPopParam);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Snapshot);
-                    validNew = false;
+                    validNew = ValidLevel.False;
                     tech = tree.TreeTechs[newTech];
                     addNewMode = TechViewerMode.None;
                     SMissionJSONLoader.OpenInExplorer(
@@ -995,7 +1013,12 @@ namespace Sub_Missions.Editor
                 GUILayout.Button("Save To Mission", AltUI.ButtonGrey);
                 if (Event.current.type == EventType.Repaint &&
                     GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-                    AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+                {
+                    if (validNew == ValidLevel.False)
+                        AltUI.TooltipWorld("There is already a tech or param with the same name!", false);
+                    else
+                        AltUI.TooltipWorld("Nothing selected", false);
+                }
             }
             if (GUILayout.Button("Open Pop Params in Explorer", AltUI.ButtonBlue))
             {
@@ -1507,18 +1530,19 @@ namespace Sub_Missions.Editor
             if (delta || SMAutoFill.AutoTextField("Name", ref newWObject, 64))
             {
                 delta = false;
-                if (newWObject.NullOrEmpty() || newWObject.Length <= 3 ||
-                    tree.WorldObjects.Values.Any(x => x.IsNotNull() && x.Name == newWObject))
-                    validNew = false;
+                if (newWObject.NullOrEmpty() || newWObject.Length <= 3)
+                    validNew = ValidLevel.NameShort;
+                else if (tree.WorldObjects.Values.Any(x => x.IsNotNull() && x.Name == newWObject))
+                    validNew = ValidLevel.False;
                 else
-                    validNew = true;
+                    validNew = ValidLevel.Valid;
             }
-            if (validNew)
+            if (validNew == ValidLevel.Valid)
             {
                 if (GUILayout.Button("Create", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
                     OnButtonClick();
-                    validNew = false;
+                    validNew = ValidLevel.False;
                     var SMWO = new SMWorldObjectJSON()
                     {
                         Name = newWObject,
@@ -1536,7 +1560,12 @@ namespace Sub_Missions.Editor
                 GUILayout.Button("Create", AltUI.ButtonGreyLarge, GUILayout.Height(128));
                 if (Event.current.type == EventType.Repaint &&
                     GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
-                    AltUI.TooltipWorld("There is already a World Object with the same name!", false);
+                {
+                    if (validNew == ValidLevel.False)
+                        AltUI.TooltipWorld("There is already a World Object with the same name!", false);
+                    else
+                        AltUI.TooltipWorld("Name too short.  Must be longer than 3 characters.", false);
+                }
             }
         }
 
@@ -1817,7 +1846,7 @@ namespace Sub_Missions.Editor
             {
                 OnButtonClick();
                 ManTerraformTool.inst.TerrainModsEdit.Clear();
-                WorldDeformer.ResetCurrentlyTargetedTerrain();
+                ManWorldDeformerExt.ResetALLModifiedTerrain(true);
                 ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Back);
                 terrainActive = false;
             }
@@ -1827,7 +1856,7 @@ namespace Sub_Missions.Editor
 
             scrollDrag4 = GUILayout.BeginScrollView(scrollDrag4);
 
-            foreach (var item in tree.TerrainEdits.OrderBy(x => x))
+            foreach (var item in tree.TerrainEdits)
             {
                 var itemValue = item.Value;
                 if (itemValue == null)
@@ -1912,18 +1941,19 @@ namespace Sub_Missions.Editor
             if (delta || SMAutoFill.AutoTextField("Name", ref newTerrain, 64))
             {
                 delta = false;
-                if (newTerrain.NullOrEmpty() || newTerrain.Length <= 3 ||
-                    tree.TerrainEdits.Any(x => x.Value != null && !x.Key.NullOrEmpty() && x.Key == newTerrain))
-                    validNew = false;
+                if (newTerrain.NullOrEmpty() || newTerrain.Length <= 3)
+                    validNew = ValidLevel.NameShort;
+                else if (tree.TerrainEdits.Any(x => x.Value != null && !x.Key.NullOrEmpty() && x.Key == newTerrain))
+                    validNew = ValidLevel.False;
                 else
-                    validNew = true;
+                    validNew = ValidLevel.Valid;
             }
-            if (validNew)
+            if (validNew == ValidLevel.Valid)
             {
                 if (GUILayout.Button("Save Current", AltUI.ButtonOrangeLarge, GUILayout.Height(128)))
                 {
                     OnButtonClick();
-                    validNew = false;
+                    validNew = ValidLevel.False;
                     SMissionJSONLoader.SaveCurrentTerrainDelta(tree, newTerrain, false);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
                 }
@@ -1931,18 +1961,36 @@ namespace Sub_Missions.Editor
                     GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
                     AltUI.TooltipWorld("Saves ALL currently active edits in the world, excluding vanilla Set Pieces", false);
             }
-            else
+            else if (validNew == ValidLevel.False)
             {
                 if (GUILayout.Button("OVERWRITE", AltUI.ButtonOrangeLargeActive, GUILayout.Height(128)))
                 {
                     OnButtonClick();
-                    validNew = false;
+                    validNew = ValidLevel.False;
                     SMissionJSONLoader.SaveCurrentTerrainDelta(tree, newTerrain, true);
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
                 }
                 if (Event.current.type == EventType.Repaint &&
                     GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
                     AltUI.TooltipWorld("OVERWRITES the file with ALL currently active edits in the world, excluding vanilla Set Pieces", false);
+            }
+            else
+            {
+                GUILayout.Button("Save Current", AltUI.ButtonGreyLarge, GUILayout.Height(128));
+                if (Event.current.type == EventType.Repaint &&
+                    GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
+                    AltUI.TooltipWorld("Name too short.  Must be longer than 3 characters.", false);
+            }
+            if (ManTerraformTool.tool.UtilityShown)
+            {
+                if (GUILayout.Button("Close Terraformer", AltUI.ButtonBlueLargeActive))
+                {
+                    ManTerraformTool.tool.ToggleGUIDisplay();
+                }
+            }
+            else if (GUILayout.Button("Open Terraformer", AltUI.ButtonBlueLarge))
+            {
+                ManTerraformTool.tool.ToggleGUIDisplay();
             }
         }
 
@@ -1958,7 +2006,7 @@ namespace Sub_Missions.Editor
                         OnButtonClick();
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
                         ManTerraformTool.inst.TerrainModsEdit.Clear();
-                        WorldDeformer.ResetCurrentlyTargetedTerrain();
+                        ManWorldDeformerExt.ResetALLModifiedTerrain(true);
                         terrainActive = false;
                     }
                 }
@@ -1969,26 +2017,51 @@ namespace Sub_Missions.Editor
                         OnButtonClick();
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                         ManTerraformTool.inst.TerrainModsEdit.Clear();
-                        WorldDeformer.ResetCurrentlyTargetedTerrain();
+                        //WorldDeformer.ResetALLModifiedTerrain();
                         IntVector2 playerCoord = WorldPosition.FromScenePosition(Singleton.playerPos).TileCoord;
                         foreach (var item in terrainSelect)
                         {
                             ManTerraformTool.inst.TerrainModsEdit.Add(item.Key + playerCoord, item.Value);
                         }
-                        WorldDeformer.ReloadALLTerrainMods();
+                        ManWorldDeformerExt.ReloadALLTerrainMods();
+                        ManWorldDeformerExt.ReloadTerrainMods(terrainSelect, WorldPosition.FromScenePosition(
+                                    Singleton.playerTank.boundsCentreWorldNoCheck).TileCoord);
                         terrainActive = true;
                     }
                 }
-                if (GUILayout.Button("OVERWRITE", AltUI.ButtonRed))
+                GUILayoutHelpers.GUILabelDispFast("Num Edits:", terrainSelect.Count);
+                GUILayout.Label("Edited Tiles");
+                foreach (var item in terrainSelect)
                 {
-                    OnButtonClick();
-                    if (tree.TerrainEdits.Remove(terrainName))
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("[");
+                    GUILayout.Label(item.Key.x.ToString());
+                    GUILayout.Label(", ");
+                    GUILayout.Label(item.Key.y.ToString());
+                    GUILayout.Label("]");
+                    GUILayout.FlexibleSpace();
+                    GUILayout.EndHorizontal();
+                }
+
+                GUILayout.FlexibleSpace();
+                if (ReplaceConfirmation)
+                {
+                    if (GUILayout.Button("OVER-WRITE", AltUI.ButtonRedActive))
                     {
-                        SMissionJSONLoader.SaveCurrentTerrainDelta(tree, newTerrain, true);
-                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
+                        OnButtonClick();
+                        if (tree.TerrainEdits.Remove(terrainName))
+                        {
+                            SMissionJSONLoader.SaveCurrentTerrainDelta(tree, newTerrain, true);
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Craft);
+                        }
+                        else
+                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AnchorFailed);
                     }
-                    else
-                        ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AnchorFailed);
+                }
+                else if (GUILayout.Button("Over-Write", AltUI.ButtonRed))
+                {
+                    ReplaceConfirmation = true;
+                    ManSFX.inst.PlayUISFX(ManSFX.UISfxType.PopUpClose);
                 }
                 if (Event.current.type == EventType.Repaint &&
                     GUILayoutUtility.GetLastRect().Contains(Event.current.mousePosition))
@@ -1996,21 +2069,24 @@ namespace Sub_Missions.Editor
 
                 if (tree.TreeHierachy.IsEditable())
                 {
-                    if (DeleteConfirmation && GUILayout.Button("DELETE", AltUI.ButtonRedActive))
+                    if (DeleteConfirmation)
                     {
-                        OnButtonClick();
-                        if (tree.TerrainEdits.Remove(terrainName))
+                        if (GUILayout.Button("DELETE", AltUI.ButtonRedActive))
                         {
-                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
-                            WorldDeformer.ResetCurrentlyTargetedTerrain();
-                            if (File.Exists(Path.Combine(SMissionJSONLoader.MissionsDirectory, tree.TreeName, "Terrain", terrainName)))
-                                File.Delete(Path.Combine(SMissionJSONLoader.MissionsDirectory, tree.TreeName, "Terrain", terrainName));
-                            terrainActive = false;
-                            terrainSelect = null;
-                            terrainName = string.Empty;
+                            OnButtonClick();
+                            if (tree.TerrainEdits.Remove(terrainName))
+                            {
+                                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.SendToInventory);
+                                ManWorldDeformerExt.ResetALLModifiedTerrain(true);
+                                if (File.Exists(Path.Combine(SMissionJSONLoader.MissionsDirectory, tree.TreeName, "Terrain", terrainName)))
+                                    File.Delete(Path.Combine(SMissionJSONLoader.MissionsDirectory, tree.TreeName, "Terrain", terrainName));
+                                terrainActive = false;
+                                terrainSelect = null;
+                                terrainName = string.Empty;
+                            }
+                            else
+                                ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AnchorFailed);
                         }
-                        else
-                            ManSFX.inst.PlayUISFX(ManSFX.UISfxType.AnchorFailed);
                     }
                     else
                     {

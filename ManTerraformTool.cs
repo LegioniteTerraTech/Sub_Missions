@@ -7,40 +7,12 @@ using UnityEngine;
 using SafeSaves;
 using TerraTechETCUtil;
 using MonoMod.Utils;
-using static TerraTechETCUtil.WorldDeformer;
 using Newtonsoft.Json;
 using System.IO;
 using Sub_Missions.Editor;
 
 namespace Sub_Missions
 {
-    public static class ModifiedTerrainExt
-    {
-
-        private static Dictionary<IntVector2, TerrainModifier> ModsTemp =
-            new Dictionary<IntVector2, TerrainModifier>();
-        public static void ApplyAll(this Dictionary<IntVector2, TerrainModifier> Mods, 
-            IntVector2 offsetTileCoord = default)
-        {
-            foreach (var item in Mods)
-            {
-                item.Value.FlushApply(1, new WorldPosition(item.Key + offsetTileCoord, Vector3.zero).ScenePosition);
-            }
-        }
-        public static void NudgeAll(this Dictionary<IntVector2, TerrainModifier> Mods, IntVector2 vec)
-        {
-            foreach (var item in Mods)
-            {
-                ModsTemp.Add(item.Key + vec, item.Value);
-            }
-            Mods.Clear();
-            foreach (var item in ModsTemp)
-            {
-                Mods.Add(item.Key, item.Value);
-            }
-            ModsTemp.Clear();
-        }
-    }
     [AutoSaveManager]
     public class ManTerraformTool
     {
@@ -66,8 +38,6 @@ namespace Sub_Missions
         private static Dictionary<IntVector2, TerrainModifier> CurrentTerrainMods;
         public static string TerrainDirectory;
         public static WorldTerraTool tool;
-        public static MethodInfo InitWorldDeformer = typeof(WorldDeformer).GetMethod("Init", BindingFlags.Static | BindingFlags.NonPublic);
-
         public static void Init()
         {
             if (inst != null)
@@ -78,20 +48,19 @@ namespace Sub_Missions
             {
                 //AddOceanicBiomes(ManWorld.inst.CurrentBiomeMap);
             }
-            WorldDeformer.Init();
             TerrainDirectory = Path.Combine(SMissionJSONLoader.BaseDirectory, "Custom Terrain");
             inst = new ManTerraformTool();
             tool = new GameObject("TerrainToolEditor").AddComponent<WorldTerraTool>();
             TerrainModifier.TileHeight = TerrainOperations.TileHeightRescaled;
             tool.Init();
             CurrentTerrainMods = new Dictionary<IntVector2, TerrainModifier>();
-            WorldDeformer.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraSavePriority, inst.TerrainModsSave);
-            WorldDeformer.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraEditPriority, inst.TerrainModsEdit);
+            ManWorldDeformerExt.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraSavePriority, inst.TerrainModsSave);
+            ManWorldDeformerExt.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraEditPriority, inst.TerrainModsEdit);
         }
 
         public static void PrepareForSaving()
         {
-            if (inst == null || WorldDeformer.inst == null)
+            if (inst == null || ManWorldDeformerExt.inst == null)
                 return;
             if (inst.TerrainModsSave == null)
                 inst.TerrainModsSave = new Dictionary<IntVector2, TerrainModifier>();
@@ -102,13 +71,13 @@ namespace Sub_Missions
         }
         public static void FinishedSaving()
         {
-            if (inst == null || WorldDeformer.inst == null)
+            if (inst == null || ManWorldDeformerExt.inst == null)
                 return;
             //WorldDeformer.RegisterModdedTerrain(KickStart.ModID, ManTerraformToolTerraPriority, inst.TerrainModsSave);
         }
         public static void FinishedLoading()
         {
-            if (inst == null || inst.TerrainModsSave == null || WorldDeformer.inst == null)
+            if (inst == null || inst.TerrainModsSave == null || ManWorldDeformerExt.inst == null)
                 return;
         }
 
@@ -124,14 +93,15 @@ namespace Sub_Missions
 
             public TerraformerCursorState state = 0;
             private static int ToolSize = 9;
-            public static Dictionary<TerraformerType, TerrainModifier> TerrainDefaults = new Dictionary<TerraformerType, TerrainModifier>();
+            public static Dictionary<ManWorldDeformerExt.TerraformerType, TerrainModifier> TerrainDefaults = 
+                new Dictionary<ManWorldDeformerExt.TerraformerType, TerrainModifier>();
 
             private static int RescaleFactorInt = 100;
             private static int saveRadiusInt = 2;
             private static float RescaleFactor => RescaleFactorInt / (TerrainOperations.RescaleFactor * 100);
             private static float applyStrength => 0.01f * RescaleFactor;
             private static float levelingStrength => 0.1f * RescaleFactor;
-            private static TerraformerType ToolMode = TerraformerType.Circle;
+            private static ManWorldDeformerExt.TerraformerType ToolMode = ManWorldDeformerExt.TerraformerType.Circle;
             private static float cachedHeight = 0;
             private static float delayTimer = 0;
             private static float delayTimerDelay = 0.0356f;
@@ -168,11 +138,12 @@ namespace Sub_Missions
                     Vector3 terrainPosSpot;
                     if (Input.GetMouseButtonDown(2))
                     {
-                        ToolMode = (TerraformerType)Mathf.Repeat((int)ToolMode + 1, Enum.GetValues(typeof(TerraformerType)).Length);
+                        ToolMode = (ManWorldDeformerExt.TerraformerType)Mathf.Repeat((int)ToolMode + 1,
+                            Enum.GetValues(typeof(ManWorldDeformerExt.TerraformerType)).Length);
                         UIHelpersExt.BigF5broningBanner("Tool: " + ToolMode, false);
                     }
                     else if (Input.GetMouseButtonDown(0) && Input.GetKey(altHotKey) &&
-                        GrabTerrainCursorPos(out terrainPosSpot))
+                        ManWorldDeformerExt.GrabTerrainCursorPos(out terrainPosSpot))
                     {
                         var worldT = ManWorld.inst.TileManager.LookupTile(terrainPosSpot);
                         if (worldT != null)
@@ -181,7 +152,7 @@ namespace Sub_Missions
                                 (terrainPosSpot - worldT.Terrain.transform.position).ToVector2XZ() / TerrainModifier.tilePosToTileScale);
                             cachedHeight = worldT.Terrain.terrainData.GetHeight(tilePosInTile.x, tilePosInTile.y) / TerrainOperations.RescaleFactor;
                         }
-                        if (ToolMode == TerraformerType.Slope)
+                        if (ToolMode == ManWorldDeformerExt.TerraformerType.Slope)
                         {
                             ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Select);
                             if (sideStart)
@@ -191,23 +162,23 @@ namespace Sub_Missions
                             sideStart = !sideStart;
                         }
                     }
-                    if (delayTimed && GrabTerrainCursorPos(out terrainPosSpot) &&
+                    if (delayTimed && ManWorldDeformerExt.GrabTerrainCursorPos(out terrainPosSpot) &&
                         !UIHelpersExt.MouseIsOverSubMenu(MainWindow) && !ManModGUI.IsMouseOverModGUI)
                     {
                         float SFXtime = 0.75f;
                         Vector3 terrainPosSpotCorrect = terrainPosSpot -
-                            TerrainDefaults[TerraformerType.Circle].Position.GameWorldPosition;
+                            TerrainDefaults[ManWorldDeformerExt.TerraformerType.Circle].Position.GameWorldPosition;
                         Vector3 terrainPosSpotCorrectSqr = terrainPosSpot + new Vector3(ToolSize * 2, 0, -ToolSize) -
-                            TerrainDefaults[TerraformerType.Square].Position.GameWorldPosition;
+                            TerrainDefaults[ManWorldDeformerExt.TerraformerType.Square].Position.GameWorldPosition;
                         switch (ToolMode)
                         {
-                            case TerraformerType.Circle:
+                            case ManWorldDeformerExt.TerraformerType.Circle:
                                 if (Input.GetKey(altHotKey))
                                 {
                                     state = TerraformerCursorState.Up;
                                     if (Input.GetMouseButton(0))
                                     {
-                                        TerrainDefaults[ToolMode].FlushAdd(applyStrength, terrainPosSpotCorrect);
+                                        TerrainDefaults[ToolMode].FlushAdd(0, applyStrength, terrainPosSpotCorrect);
                                         SFXHelpers.TankPlayLooping(Singleton.playerTank, TechAudio.SFXType.Refinery, SFXtime, 1);
                                         deltaed = true;
                                     }
@@ -219,7 +190,7 @@ namespace Sub_Missions
                                     state = TerraformerCursorState.Down;
                                     if (Input.GetMouseButton(0))
                                     {
-                                        TerrainDefaults[ToolMode].FlushAdd(-applyStrength, terrainPosSpotCorrect);
+                                        TerrainDefaults[ToolMode].FlushAdd(0, -applyStrength, terrainPosSpotCorrect);
                                         SFXHelpers.TankPlayLooping(Singleton.playerTank, TechAudio.SFXType.GCPlasmaCutter, SFXtime, 1);
                                         deltaed = true;
                                     }
@@ -227,13 +198,13 @@ namespace Sub_Missions
                                         Vector3.up, Vector3.forward, ToolSize, Color.cyan, delayTimerDelay);
                                 }
                                 break;
-                            case TerraformerType.Square:
+                            case ManWorldDeformerExt.TerraformerType.Square:
                                 if (Input.GetKey(altHotKey))
                                 {
                                     state = TerraformerCursorState.Up;
                                     if (Input.GetMouseButton(0))
                                     {
-                                        TerrainDefaults[ToolMode].FlushAdd(applyStrength, terrainPosSpotCorrectSqr);
+                                        TerrainDefaults[ToolMode].FlushAdd(0, applyStrength, terrainPosSpotCorrectSqr);
                                         SFXHelpers.TankPlayLooping(Singleton.playerTank, TechAudio.SFXType.Refinery, SFXtime, 1);
                                         deltaed = true;
                                     }
@@ -245,7 +216,7 @@ namespace Sub_Missions
                                     state = TerraformerCursorState.Down;
                                     if (Input.GetMouseButton(0))
                                     {
-                                        TerrainDefaults[ToolMode].FlushAdd(-applyStrength, terrainPosSpotCorrectSqr);
+                                        TerrainDefaults[ToolMode].FlushAdd(0, -applyStrength, terrainPosSpotCorrectSqr);
                                         SFXHelpers.TankPlayLooping(Singleton.playerTank, TechAudio.SFXType.GCPlasmaCutter, SFXtime, 1);
                                         deltaed = true;
                                     }
@@ -253,7 +224,7 @@ namespace Sub_Missions
                                         new Vector3(ToolSize * 2, 1, ToolSize * 2), Color.cyan, delayTimerDelay);
                                 }
                                 break;
-                            case TerraformerType.Level:
+                            case ManWorldDeformerExt.TerraformerType.Level:
                                 if (Input.GetKey(altHotKey))
                                 {
                                     state = TerraformerCursorState.Leveling;
@@ -265,7 +236,7 @@ namespace Sub_Missions
                                         {
                                             DebugExtUtilities.DrawDirIndicatorCircle(terrainPosSpot + Vector3.up, Vector3.up,
                                             Vector3.forward, ToolSize, Color.black, delayTimerDelay);
-                                            TerrainDefaults[TerraformerType.Circle].FlushLevel(2, -applyStrength,
+                                            TerrainDefaults[ManWorldDeformerExt.TerraformerType.Circle].FlushLevel(2, -applyStrength,
                                                 terrainPosSpotCorrect);
                                         }
                                         else
@@ -285,7 +256,7 @@ namespace Sub_Missions
                                         deltaed = true;
                                         DebugExtUtilities.DrawDirIndicatorCircle(terrainPosSpot + Vector3.up,
                                             Vector3.up, Vector3.forward, ToolSize, Color.yellow, delayTimerDelay);
-                                        TerrainDefaults[TerraformerType.Circle].FlushLevel(2, applyStrength, terrainPosSpotCorrect);
+                                        TerrainDefaults[ManWorldDeformerExt.TerraformerType.Circle].FlushLevel(2, applyStrength, terrainPosSpotCorrect);
                                         SFXHelpers.TankPlayLooping(Singleton.playerTank, TechAudio.SFXType.GSODrillLarge, SFXtime, 1);
                                     }
                                     else
@@ -293,7 +264,7 @@ namespace Sub_Missions
                                             Vector3.up, Vector3.forward, ToolSize, Color.magenta, delayTimerDelay);
                                 }
                                 break;
-                            case TerraformerType.Reset:
+                            case ManWorldDeformerExt.TerraformerType.Reset:
                                 if (Input.GetKey(altHotKey))
                                 {
                                     state = TerraformerCursorState.Default;
@@ -305,7 +276,7 @@ namespace Sub_Missions
                                         {
                                             DebugExtUtilities.DrawDirIndicatorCircle(terrainPosSpot + Vector3.up, Vector3.up,
                                             Vector3.forward, ToolSize, Color.black, delayTimerDelay);
-                                            TerrainDefaults[TerraformerType.Circle].FlushReset(-levelingStrength,
+                                            TerrainDefaults[ManWorldDeformerExt.TerraformerType.Circle].FlushReset(-levelingStrength,
                                                 terrainPosSpotCorrect);
                                         }
                                         else
@@ -325,7 +296,7 @@ namespace Sub_Missions
                                         deltaed = true;
                                         DebugExtUtilities.DrawDirIndicatorCircle(terrainPosSpot + Vector3.up,
                                             Vector3.up, Vector3.forward, ToolSize, Color.yellow, delayTimerDelay);
-                                        TerrainDefaults[TerraformerType.Circle].FlushReset(levelingStrength, terrainPosSpotCorrect);
+                                        TerrainDefaults[ManWorldDeformerExt.TerraformerType.Circle].FlushReset(levelingStrength, terrainPosSpotCorrect);
                                         SFXHelpers.TankPlayLooping(Singleton.playerTank, TechAudio.SFXType.VENFlameThrower, SFXtime, 1);
                                     }
                                     else
@@ -333,7 +304,7 @@ namespace Sub_Missions
                                             Vector3.up, Vector3.forward, ToolSize, Color.magenta, delayTimerDelay);
                                 }
                                 break;
-                            case TerraformerType.Slope:
+                            case ManWorldDeformerExt.TerraformerType.Slope:
                                 DebugExtUtilities.DrawDirIndicatorCircle(RampStart + Vector3.up, Vector3.up,
                                             Vector3.forward, 1, new Color(0, 0, 1, 0.5f), delayTimerDelay);
                                 DebugExtUtilities.DrawDirIndicator(RampStart, RampStart + new Vector3(0, 2, 0),
@@ -366,7 +337,7 @@ namespace Sub_Missions
                                         {
                                             DebugExtUtilities.DrawDirIndicatorCircle(terrainPosSpot + Vector3.up, Vector3.up,
                                             Vector3.forward, ToolSize, Color.black, delayTimerDelay);
-                                            TerrainDefaults[TerraformerType.Circle].FlushRamp(levelingStrength,
+                                            TerrainDefaults[ManWorldDeformerExt.TerraformerType.Circle].FlushRamp(levelingStrength,
                                                RampStart, RampEnd, terrainPosSpotCorrect);
                                         }
                                         else
@@ -403,20 +374,20 @@ namespace Sub_Missions
             }
 
 
-            private static void RecalibrateTools(Dictionary<TerraformerType, TerrainModifier> tools)
+            private static void RecalibrateTools(Dictionary<ManWorldDeformerExt.TerraformerType, TerrainModifier> tools)
             {
                 int dualSize = (int)(ToolSize * 2f);
-                tools.Remove(TerraformerType.Circle);
+                tools.Remove(ManWorldDeformerExt.TerraformerType.Circle);
                 var terra = new TerrainModifier(ToolSize);
                 terra.AddHeightsAtPositionRadius(ToolSize, 1, true);
                 terra.EncapsulateRecenter();
-                tools.Add(TerraformerType.Circle, terra);
+                tools.Add(ManWorldDeformerExt.TerraformerType.Circle, terra);
 
-                tools.Remove(TerraformerType.Square);
+                tools.Remove(ManWorldDeformerExt.TerraformerType.Square);
                 terra = new TerrainModifier(ToolSize);
                 terra.AddHeightsAtPosition(Vector3.zero, new Vector2(dualSize, dualSize), 1, true);
                 terra.EncapsulateRecenter();
-                tools.Add(TerraformerType.Square, terra);
+                tools.Add(ManWorldDeformerExt.TerraformerType.Square, terra);
             }
 
 
@@ -430,11 +401,11 @@ namespace Sub_Missions
             public bool UtilityShown => showGUI;
             private static Rect MainWindow = new Rect(0, 0, 260, 200);
             private static string[] labels = new string[] {
-                TerraformerType.Circle.ToString(),
-                TerraformerType.Square.ToString(),
-                TerraformerType.Level.ToString(),
-                TerraformerType.Reset.ToString(),
-                TerraformerType.Slope.ToString(),
+                ManWorldDeformerExt.TerraformerType.Circle.ToString(),
+                ManWorldDeformerExt.TerraformerType.Square.ToString(),
+                ManWorldDeformerExt.TerraformerType.Level.ToString(),
+                ManWorldDeformerExt.TerraformerType.Reset.ToString(),
+                ManWorldDeformerExt.TerraformerType.Slope.ToString(),
             };
             internal void OnGUI()
             {
@@ -445,7 +416,7 @@ namespace Sub_Missions
             {
                 ToolARMED = AltUI.Toggle(ToolARMED, "ARMED");
 
-                ToolMode = (TerraformerType)GUILayout.Toolbar((int)ToolMode, labels);
+                ToolMode = (ManWorldDeformerExt.TerraformerType)GUILayout.Toolbar((int)ToolMode, labels);
 
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Size");
@@ -499,14 +470,21 @@ namespace Sub_Missions
                         {
                             CurrentTerrainMods.Clear();
                             IntVector2 coord = WorldPosition.FromScenePosition(pos).TileCoord;
-                            foreach (var item in coord.IterateRectVolumeCentered(IntVector2.one * saveRadiusInt))
+                            try
                             {
-                                WorldTile WT = ManWorld.inst.TileManager.LookupTile(item);
-                                if (WT != null)
+                                foreach (var item in coord.IterateRectVolumeCentered(IntVector2.one * saveRadiusInt))
                                 {
-                                    TerrainModifier TM2 = new TerrainModifier(WT, pos);
-                                    CurrentTerrainMods.Add(item, TM2);
+                                    WorldTile WT = ManWorld.inst.TileManager.LookupTile(item);
+                                    if (WT != null && TerrainModifier.TerrainHasDelta(tile))
+                                    {
+                                        TerrainModifier TM2 = new TerrainModifier(WT, pos, TerraApplyMode.FlushAutoHeightAdjust);
+                                        CurrentTerrainMods.Add(item, TM2);
+                                    }
                                 }
+                            }
+                            catch (Exception e)
+                            {
+                                Debug_SMissions.LogError("Corruption on saving terrain mods " + e);
                             }
                             ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Enter);
                         }
@@ -530,8 +508,15 @@ namespace Sub_Missions
                     var path = Path.Combine(TerrainDirectory, "TerrainDump.json");
                     if (File.Exists(path))
                     {
-                        CurrentTerrainMods = JsonConvert.DeserializeObject<Dictionary<IntVector2, TerrainModifier>>(
+                        CurrentTerrainMods.Clear();
+                        var tempMods = JsonConvert.DeserializeObject<Dictionary<string, TerrainModifier>>(
                             File.ReadAllText(path));
+                        foreach (var mod in tempMods)
+                        {
+                            int[] intArray = JsonConvert.DeserializeObject<int[]>(mod.Key);
+                            if (intArray != null && intArray.Length == 2)
+                                CurrentTerrainMods.Add(new IntVector2(intArray[0], intArray[1]), mod.Value);
+                        }
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Close);
                     }
                     else
@@ -574,17 +559,13 @@ namespace Sub_Missions
                     {
                         Vector3 pos = ManWorld.inst.TileManager.CalcTileOriginScene(WorldPosition.FromScenePosition(
                                     Singleton.playerTank.boundsCentreWorldNoCheck).TileCoord);
-                        ManWorldTileExt.ReloadTile(pos);
+                        ManWorldDeformerExt.ResetALLModifiedTerrain(true);
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Back);
                     }
                     if (GUILayout.Button("Apply"))
                     {
-                        Vector3 pos = ManWorld.inst.TileManager.CalcTileOriginScene(WorldPosition.FromScenePosition(
+                        ManWorldDeformerExt.ReloadTerrainMods(CurrentTerrainMods, WorldPosition.FromScenePosition(
                                     Singleton.playerTank.boundsCentreWorldNoCheck).TileCoord);
-                        foreach (var item in CurrentTerrainMods)
-                        {
-                            item.Value.FlushApply(1, pos);
-                        }
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Open);
                     }
                 }

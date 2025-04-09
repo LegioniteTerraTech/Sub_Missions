@@ -683,7 +683,7 @@ namespace Sub_Missions
                 Tree = JsonConvert.DeserializeObject<SubMissionTree>(output, new MissionTypeEnumConverter());
                 Tree.TreeHierachy = SMH;
                 SMH.LoadMissionTreeDataFromFile(ref Tree.MissionTextures,
-                    ref Tree.MissionMeshes, ref Tree.TreeTechs);
+                    ref Tree.MissionMeshes, ref Tree.TreeTechs, ref Tree.TerrainEdits);
             }
             catch (DirectoryNotFoundException e)
             {
@@ -1164,13 +1164,25 @@ namespace Sub_Missions
         }
         public static bool SaveCurrentTerrainDelta(SubMissionTree tree, string name, bool Overwrite)
         {
-            name = name.Replace(".json", string.Empty);
+            name = name.Replace(".json", string.Empty) + ".json";
             if (!tree.TerrainEdits.ContainsKey(name) || Overwrite)
             {
+                /*                
+                Vector3 pos = Singleton.playerTank.boundsCentreWorldNoCheck;
+                IntVector2 coord = WorldPosition.FromScenePosition(pos).TileCoord;
+                Dictionary<IntVector2, TerrainModifier> saveCurrent = new Dictionary<IntVector2, TerrainModifier>();
+                foreach (var tile in ManTerraformTool.inst.TerrainModsEdit)
+                {
+                    saveCurrent.Add(tile.Key - coord, tile.Value);
+                }
+                */
                 Vector3 pos = Singleton.playerTank.boundsCentreWorldNoCheck;
                 Dictionary<IntVector2, TerrainModifier> saveCurrent = new Dictionary<IntVector2, TerrainModifier>();
-                foreach (WorldTile tile in WorldDeformer.IterateModifiedWorldTiles())
-                    saveCurrent.Add(tile.Coord, new TerrainModifier(tile, pos));
+                foreach (WorldTile tile in ManWorldDeformerExt.IterateModifiedWorldTiles())
+                {
+                    if (tile != null && TerrainModifier.TerrainHasDelta(tile))
+                        saveCurrent.Add(tile.Coord, new TerrainModifier(tile, pos, TerraApplyMode.FlushAutoHeightAdjust));
+                }
                 var dataString = JsonConvert.SerializeObject(saveCurrent);
                 if (!DirectoryExists(Path.Combine(MissionsDirectory, tree.TreeName, "Terrain")))
                     Directory.CreateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Terrain"));

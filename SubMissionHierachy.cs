@@ -6,6 +6,7 @@ using System.IO;
 using UnityEngine;
 using TerraTechETCUtil;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Utilities;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json.Serialization;
 using Newtonsoft.Json.Converters;
@@ -13,6 +14,7 @@ using System.Collections;
 using System.Xml.Linq;
 using TAC_AI.Templates;
 using Sub_Missions.ModularMonuments;
+using System.Runtime.Remoting.Messaging;
 
 namespace Sub_Missions
 {
@@ -95,7 +97,8 @@ namespace Sub_Missions
         internal abstract string LoadMissionTreeTrunkFromFile();
         internal abstract void LoadMissionTreeDataFromFile(
             ref Dictionary<string, Texture> album, ref Dictionary<string, Mesh> models,
-            ref Dictionary<string, SpawnableTech> techs);
+            ref Dictionary<string, SpawnableTech> techs,
+            ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> terras);
         internal abstract string LoadMissionTreeMissionFromFile(string MissionName);
         internal abstract string LoadMissionTreeWorldObjectFromFile(string ObjectName);
 
@@ -145,13 +148,15 @@ namespace Sub_Missions
         }
         internal override void LoadMissionTreeDataFromFile(
                     ref Dictionary<string, Texture> album, ref Dictionary<string, Mesh> models,
-                    ref Dictionary<string, SpawnableTech> techs)
+                    ref Dictionary<string, SpawnableTech> techs,
+            ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> terras)
         {
             try
             {
                 LoadTreePNGs(ref album);
                 LoadTreeMeshes(ref models);
                 LoadTreeTechs(ref album, ref techs);
+                LoadTreeTerrains(ref terras);
 
                 Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json  for " + TreeName + " successfully.");
             }
@@ -361,7 +366,8 @@ namespace Sub_Missions
         }
         internal override void LoadMissionTreeDataFromFile(
             ref Dictionary<string, Texture> album, ref Dictionary<string, Mesh> models,
-            ref Dictionary<string, SpawnableTech> techs)
+            ref Dictionary<string, SpawnableTech> techs,
+            ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> terras)
         {
             SMissionJSONLoader.ValidateDirectory(TreeDirectory);
             try
@@ -369,6 +375,7 @@ namespace Sub_Missions
                 LoadTreePNGs(ref album);
                 LoadTreeMeshes(ref models);
                 LoadTreeTechs(ref album, ref techs);
+                LoadTreeTerrains(ref terras);
 
                 Debug_SMissions.Log(KickStart.ModID + ": Loaded MissionTree.json  for " + TreeName + " successfully.");
             }
@@ -611,6 +618,36 @@ namespace Sub_Missions
         {
             return LegacyBlockLoader.FastObjImporter.Instance.ImportFileFromPath(TreeDirectory);
         }
+        /// <summary>
+        /// Does not work
+        /// </summary>
+        public class IntVec2Converter : JsonConverter
+        {
+            public override object ReadJson(JsonReader reader, Type type, object instance, JsonSerializer serial)
+            {
+                if (reader.TokenType == JsonToken.String)
+                {
+                    int[] intArray = JsonConvert.DeserializeObject<int[]>(reader.Value.ToString());
+                    if (intArray != null && intArray.Length == 2)
+                    {
+                        return new IntVector2(intArray[0], intArray[1]);
+                    }
+                    throw new InvalidCastException("Expected an IntVector2 with 2 output integers.  Got " + intArray.Length);
+                }
+                throw new InvalidCastException("Expected an IntVector2 with 2 output integers.  Got nothing");
+            }
+            public override void WriteJson(JsonWriter writer, object instance, JsonSerializer serial)
+            {
+                writer.WriteValue(instance.ToString());
+            }
+            public override bool CanConvert(Type type)
+            {
+                if (type == typeof(IntVector2))
+                    return true;
+                return false;
+            }
+        }
+
         internal override void LoadTreeTerrains(ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> dictionary)
         {
             dictionary.Clear();
@@ -635,8 +672,15 @@ namespace Sub_Missions
                             {
                                 try
                                 {
-                                    dictionary.Add(name, JsonConvert.DeserializeObject<Dictionary<IntVector2, TerrainModifier>>(
-                                        File.ReadAllText(str)));
+                                    Dictionary<IntVector2, TerrainModifier> Terrains = new Dictionary<IntVector2, TerrainModifier>();
+                                    foreach (var pair in JsonConvert.DeserializeObject<Dictionary<string, TerrainModifier>>(
+                                        File.ReadAllText(str)))
+                                    {
+                                        int[] intArray = JsonConvert.DeserializeObject<int[]>(pair.Key);
+                                        if (intArray != null && intArray.Length == 2)
+                                            Terrains.Add(new IntVector2(intArray[0], intArray[1]), pair.Value);
+                                    }
+                                    dictionary.Add(name, Terrains);
                                 }
                                 catch (Exception e)
                                 {
