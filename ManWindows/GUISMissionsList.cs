@@ -4,101 +4,122 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using TerraTechETCUtil;
 
 namespace Sub_Missions.ManWindows
 {
-    public class GUISMissionsList : IGUIFormat
+    public class GUISMissionsList : GUIMiniMenu<GUISMissionsList>
     {
-        public GUIPopupDisplay Display { get; set; }
-        public Vector2 scrolll = new Vector2(10, 0);
+        private Vector2 scrolll = new Vector2(0, 0);
+        public float scrolllSize = 50;
         public Texture CachedPic;
+        private bool showAnon = true;
+        private bool showActive = true;
 
-        public void Setup(GUIPopupDisplay display)
+        private const int buttonSideSpacing = 40;
+        private const int buttonWidth = 350;
+
+        public override void Setup(GUIDisplayStats stats)
         {
-            Display = display;
+            GUIDisplayStatsLegacy stats2 = (GUIDisplayStatsLegacy)stats;
             ManSubMissions.Board = this;
         }
-        public void RunGUI(int ID)
+        public override void OnOpen()
         {
-            GUI.BeginScrollView(new Rect(40, 40, (Display.Window.width / 2), Display.Window.height - 80), scrolll, new Rect(50, 50, (Display.Window.width / 2), (Display.Window.height / 2)));
+        }
+
+        public override void RunGUI(int ID)
+        {
+            scrolll = GUI.BeginScrollView(new Rect(20, 60, (Display.Window.width / 2.1f), Display.Window.height - 120), scrolll, new Rect(0, 0, (Display.Window.width / 3), scrolllSize ));
             int posLerp = 0;
             if (ManSubMissions.AnonSubMissions.Count > 0)
             {
-                if (GUI.Button(new Rect(70 + 50, (posLerp * 55) + 70, 300, 50), "<b>Sub Mission Board</b>", WindowManager.styleHugeFont))
+                if (GUI.Button(new Rect(buttonSideSpacing, (posLerp * 55) + 20, buttonWidth, 50), "<b>Sub Mission Board</b>", WindowManager.styleButtonHugeFont))
                 {
+                    showAnon = !showAnon;
                 }
                 posLerp++;
-                foreach (SubMissionStandby active in ManSubMissions.AnonSubMissions)
+                if (showAnon)
                 {
-                    string buttonText;
-                    if (active == ManSubMissions.SelectedAnon)
+                    foreach (SubMissionStandby active in ManSubMissions.AnonSubMissions)
                     {
-                        buttonText = "<b><color=#f23d3dff>" + active.Name + "</color></b>";
-                    }
-                    else
-                        buttonText = "<b>" + active.Name + "</b>";
-                    if (GUI.Button(new Rect(70 + 50, (posLerp * 55) + 70, 300, 50), buttonText, WindowManager.styleHugeFont))
-                    {   // Select
-                        ManSubMissions.SelectedIsAnon = true;
-                        ManSubMissions.SelectedAnon = active;
-                        ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
-                    }
-                    //GUI.Label(new Rect(40, posLerp * 25, 300, 25), charI.GetCharacterFullName());
-                    //GUI.DrawTexture(new Rect(70, (posLerp * 55) + 70, 50, 50), charI.Look);
-                    if (GUI.Button(new Rect(420, (posLerp * 55) + 70, 50, 50), "<b>A</b>", WindowManager.styleHugeFont))
-                    {   // accept the mission
-                        ManSubMissions.SelectedIsAnon = true;
-                        ManSubMissions.SelectedAnon = active;
-                        ButtonAct.inst.Invoke("AcceptSMission", 0);
-                        ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
+                        string buttonText;
+                        if (active == ManSubMissions.SelectedAnon)
+                        {
+                            buttonText = "<b><color=#f23d3dff>" + active.AltName + "</color></b>";
+                        }
+                        else
+                            buttonText = "<b>" + active.AltName + "</b>";
+                        if (GUI.Button(new Rect(buttonSideSpacing, (posLerp * 55) + 20, buttonWidth, 50), buttonText, WindowManager.styleButtonHugeFont))
+                        {   // Select
+                            ManSubMissions.SelectedIsAnon = true;
+                            ManSubMissions.SelectedAnon = active;
+                            ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
+                        }
+                        //GUI.Label(new Rect(40, posLerp * 25, 300, 25), charI.GetCharacterFullName());
+                        //GUI.DrawTexture(new Rect(70, (posLerp * 55) + 20, 50, 50), charI.Look);
+                        if (GUI.Button(new Rect(buttonSideSpacing + buttonWidth, (posLerp * 55) + 20, 50, 50), "<b>A</b>", WindowManager.styleButtonHugeFont))
+                        {   // accept the mission
+                            ManSubMissions.SelectedIsAnon = true;
+                            ManSubMissions.SelectedAnon = active;
+                            ButtonAct.inst.Invoke("AcceptSMission", 0);
+                            ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
+                        }
+                        posLerp++;
                     }
                     posLerp++;
                 }
-                posLerp++;
             }
-            if (GUI.Button(new Rect(70 + 50, (posLerp * 55) + 70, 300, 50), "<b>Active Sub Missions</b>", WindowManager.styleHugeFont))
-            {   
+            if (GUI.Button(new Rect(buttonSideSpacing, (posLerp * 55) + 20, buttonWidth, 50), "<b>Active Sub Missions</b>", WindowManager.styleButtonHugeFont))
+            {
+                showActive = !showActive;
             }
             posLerp++;
-            foreach (SubMission active in ManSubMissions.ActiveSubMissions)
+            if (showActive)
             {
-                string buttonText;
-                if (active == ManSubMissions.Selected)
+                foreach (SubMission active in ManSubMissions.GetActiveSubMissions)
                 {
-                    buttonText = "<b><color=#f23d3dff>" + active.Name + "</color></b>";
+                    string buttonText;
+                    if (active == ManSubMissions.Selected)
+                    {
+                        buttonText = "<b><color=#f23d3dff>" + active.SelectedAltName + "</color></b>";
+                    }
+                    else
+                        buttonText = "<b>" + active.SelectedAltName + "</b>";
+                    if (GUI.Button(new Rect(buttonSideSpacing, (posLerp * 55) + 20, buttonWidth, 50), buttonText, WindowManager.styleButtonHugeFont))
+                    {   // Select
+                        ManSubMissions.SelectedIsAnon = false;
+                        ManSubMissions.Selected = active;
+                        ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
+                    }
+                    //GUI.Label(new Rect(40, posLerp * 25, 300, 25), charI.GetCharacterFullName());
+                    //GUI.DrawTexture(new Rect(70, (posLerp * 55) + 20, 50, 50), charI.Look);
+                    if (active.CanCancel)
+                    {
+                        if (GUI.Button(new Rect(buttonSideSpacing + buttonWidth, (posLerp * 55) + 20, 50, 50), "<b>D</b>", WindowManager.styleButtonHugeFont))
+                        {   // Remove this mission
+                            ManSubMissions.SelectedIsAnon = false;
+                            ManSubMissions.Selected = active;
+                            ButtonAct.inst.Invoke("RequestCancelSMission", 0);
+                            ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
+                        }
+                    }
+                    posLerp++;
                 }
-                else
-                    buttonText = "<b>" + active.Name + "</b>";
-                if (GUI.Button(new Rect(70 + 50, (posLerp * 55) + 70, 300, 50), buttonText, WindowManager.styleHugeFont))
-                {   // Select
-                    ManSubMissions.SelectedIsAnon = false;
-                    ManSubMissions.Selected = active;
-                    ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
-                }
-                //GUI.Label(new Rect(40, posLerp * 25, 300, 25), charI.GetCharacterFullName());
-                //GUI.DrawTexture(new Rect(70, (posLerp * 55) + 70, 50, 50), charI.Look);
-                if (GUI.Button(new Rect(420, (posLerp * 55) + 70, 50, 50), "<b>D</b>", WindowManager.styleHugeFont))
-                {   // Remove this mission
-                    ManSubMissions.SelectedIsAnon = false;
-                    ManSubMissions.Selected = active;
-                    ButtonAct.inst.Invoke("RequestCancelSMission", 0);
-                    ButtonAct.inst.Invoke("UpdateAllWindowsNow", 0);
-                }
-                posLerp++;
             }
             GUI.EndScrollView();
-            scrolll.y = GUI.VerticalScrollbar(new Rect(25, 40, 30, Display.Window.height - 160), scrolll.y, Display.Window.height - 80, 0, posLerp * 55);
+            float height = (posLerp * 55) + 20;
+            scrolllSize = height;
 
-            if (GUI.Button(new Rect((Display.Window.width / 2) + 20, 60, 20, (Display.Window.height) - 120), "", WindowManager.styleHugeFont))
-            {   // DIVIDER
-            }
-            if (GUI.Button(new Rect((Display.Window.width / 6) - 70, Display.Window.height - 60, 140, 40), "<b>CHECK</b>", WindowManager.styleHugeFont))
+            GUI.Label(new Rect((Display.Window.width / 2) + 20, 60, 20, (Display.Window.height) - 120), "", WindowManager.styleButtonHugeFont);// DIVIDER
+            
+            if (GUI.Button(new Rect((Display.Window.width / 6) - 70, Display.Window.height - 60, 140, 40), "<b>CHECK</b>", WindowManager.styleButtonHugeFont))
             {
                 ButtonAct.inst.Invoke("UpdateMissions", 0);
             }
             //if (int.TryParse(GUI.TextField(new Rect(((Display.Window.width / 6) * 3) - 70, Display.Window.height - 60, 140, 40), Core.BribeValue.ToString()), out int result))
             //    Core.BribeValue = result;
-            if (GUI.Button(new Rect(((Display.Window.width / 6) * 2) - 50, Display.Window.height - 60, 140, 40), "<b>CLOSE</b>", WindowManager.styleHugeFont))
+            if (GUI.Button(new Rect(((Display.Window.width / 6) * 2) - 50, Display.Window.height - 60, 140, 40), "<b>CLOSE</b>", WindowManager.styleButtonHugeFont))
             {
                 Singleton.Manager<ManSFX>.inst.PlayUISFX(ManSFX.UISfxType.Close);
                 WindowManager.HidePopup(Display);
@@ -111,23 +132,24 @@ namespace Sub_Missions.ManWindows
                 if (ManSubMissions.SelectedIsAnon)
                 {
                     //GUI.DrawTexture(new Rect((Display.Window.width / 2) + 100, 40, 240, 240),);
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>" + ManSubMissions.SelectedAnon.Name + "</b>", WindowManager.styleLargeFont);
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 60, 280, 180, 20), "<b>Faction: " + ManSubMissions.SelectedAnon.Faction + "</b>");
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 240, 280, 180, 20), "<b>Grade: " + ManSubMissions.SelectedAnon.GradeRequired + "</b>");
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 60, 300, 360, 140), ManSubMissions.SelectedAnon.Desc);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 200, 360, 40), "<b>" + ManSubMissions.SelectedAnon.AltName + "</b>", WindowManager.styleBlackLargeFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>Distance: Waiting for request...</b>", WindowManager.styleBlackLargeFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 280, 180, 20), "<b>Faction: " + ManSubMissions.SelectedAnon.Faction + "</b>", WindowManager.styledFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 240, 280, 180, 20), "<b>Grade: " + ManSubMissions.SelectedAnon.GradeRequired + "</b>", WindowManager.styledFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 300, 360, 140), ManSubMissions.SelectedAnon.Desc, WindowManager.styledFont);
                     if (ManSubMissions.SelectedAnon.Rewards != null)
                     {
                         SubMissionReward Rewards = ManSubMissions.SelectedAnon.Rewards;
-                        GUI.TextField(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "----Rewards----");
+                        GUI.Label(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "----Rewards----", WindowManager.styledFont);
                         if (Rewards.EXPGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "EXP: " + Rewards.EXPGain );
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "EXP: " + Rewards.EXPGain, WindowManager.styledFont);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "No EXP");
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "No EXP", WindowManager.styledFont);
 
                         if (Rewards.MoneyGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "¥¥: " + Rewards.MoneyGain);
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "¥¥: " + Rewards.MoneyGain, WindowManager.styledFont);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "No ¥¥");
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "No ¥¥", WindowManager.styledFont);
 
                         int blocks;
                         if (Rewards.BlocksToSpawn != null)
@@ -135,73 +157,72 @@ namespace Sub_Missions.ManWindows
                         else
                             blocks = Rewards.RandomBlocksToSpawn;
                         if (blocks > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "Blocks: " + blocks);
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "Blocks: " + blocks, WindowManager.styledFont);
                         else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "No Blocks");
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "No Blocks", WindowManager.styledFont);
                         if (Rewards.AddProgressX > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), ManSubMissions.SelectedAnon.Tree.ProgressXName + ": " + Rewards.AddProgressX);
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), ManSubMissions.SelectedAnon.Tree.ProgressXName + ": " + Rewards.AddProgressX, WindowManager.styledFont);
                         if (Rewards.AddProgressY > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.SelectedAnon.Tree.ProgressYName + ": " + Rewards.AddProgressY);
-                    }
-                }
-                else if (!ManSubMissions.SelectedIsAnon)
-                {
-                    //GUI.DrawTexture(new Rect((Display.Window.width / 2) + 100, 40, 240, 240),);
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>" + ManSubMissions.Selected.Name + "</b>", WindowManager.styleLargeFont);
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 60, 280, 180, 20), "<b>Faction: " + ManSubMissions.Selected.Faction + "</b>");
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 240, 280, 180, 20), "<b>Grade: " + ManSubMissions.Selected.GradeRequired + "</b>");
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 60, 300, 360, 140), ManSubMissions.Selected.Description);
-                    if (ManSubMissions.Selected.Rewards != null)
-                    {
-                        SubMissionReward Rewards = ManSubMissions.Selected.Rewards;
-                        GUI.TextField(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "----Rewards----");
-                        if (Rewards.EXPGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "EXP: " + Rewards.EXPGain);
-                        else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "No EXP");
-
-                        if (Rewards.MoneyGain > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "¥¥: " + Rewards.MoneyGain);
-                        else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "No ¥¥");
-
-                        int blocks;
-                        if (Rewards.BlocksToSpawn != null)
-                            blocks = Rewards.RandomBlocksToSpawn + Rewards.BlocksToSpawn.Count;
-                        else
-                            blocks = Rewards.RandomBlocksToSpawn;
-                        if (blocks > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "Blocks: " + blocks);
-                        else
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "No Blocks");
-                        if (Rewards.AddProgressX > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), ManSubMissions.Selected.Tree.ProgressXName + ": " + Rewards.AddProgressX);
-                        if (Rewards.AddProgressY > 0)
-                            GUI.TextField(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.Selected.Tree.ProgressYName + ": " + Rewards.AddProgressY);
+                            GUI.Label(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.SelectedAnon.Tree.ProgressYName + ": " + Rewards.AddProgressY, WindowManager.styledFont);
                     }
                 }
                 else
                 {
-                    GUI.TextField(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>No mission selected</b>", WindowManager.styleLargeFont);
+                    //GUI.DrawTexture(new Rect((Display.Window.width / 2) + 100, 40, 240, 240),);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 200, 360, 40), "<b>" + ManSubMissions.Selected.SelectedAltName + "</b>", WindowManager.styleBlackLargeFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>Distance: " + ManSubMissions.Selected.MissionDist + "</b>", WindowManager.styleBlackLargeFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 280, 180, 20), "<b>Faction: " + ManSubMissions.Selected.Faction + "</b>", WindowManager.styledFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 240, 280, 180, 20), "<b>Grade: " + ManSubMissions.Selected.GradeRequired + "</b>", WindowManager.styledFont);
+                    GUI.Label(new Rect((Display.Window.width / 2) + 60, 300, 360, 140), ManSubMissions.Selected.Description, WindowManager.styledFont);
+                    if (ManSubMissions.Selected.Rewards != null)
+                    {
+                        SubMissionReward Rewards = ManSubMissions.Selected.Rewards;
+                        GUI.Label(new Rect((Display.Window.width / 2) + 60, 440, 360, 25), "----Rewards----", WindowManager.styledFont);
+                        if (Rewards.EXPGain > 0)
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "EXP: " + Rewards.EXPGain, WindowManager.styledFont);
+                        else
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 465, 360, 25), "No EXP", WindowManager.styledFont);
+
+                        if (Rewards.MoneyGain > 0)
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "¥¥: " + Rewards.MoneyGain, WindowManager.styledFont);
+                        else
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 490, 360, 25), "No ¥¥", WindowManager.styledFont);
+
+                        int blocks;
+                        if (Rewards.BlocksToSpawn != null)
+                            blocks = Rewards.RandomBlocksToSpawn + Rewards.BlocksToSpawn.Count;
+                        else
+                            blocks = Rewards.RandomBlocksToSpawn;
+                        if (blocks > 0)
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "Blocks: " + blocks, WindowManager.styledFont);
+                        else
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 515, 360, 25), "No Blocks", WindowManager.styledFont);
+                        if (Rewards.AddProgressX > 0)
+                            GUI.Label(new Rect((Display.Window.width / 2) + 60, 540, 180, 25), ManSubMissions.Selected.Tree.ProgressXName + ": " + Rewards.AddProgressX, WindowManager.styledFont);
+                        if (Rewards.AddProgressY > 0)
+                            GUI.Label(new Rect((Display.Window.width / 2) + 240, 540, 180, 25), ManSubMissions.Selected.Tree.ProgressYName + ": " + Rewards.AddProgressY, WindowManager.styledFont);
+                    }
                 }
             }
             catch
             {
-                GUI.TextField(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>No mission selected</b>", WindowManager.styleLargeFont);
+                GUI.Label(new Rect((Display.Window.width / 2) + 60, 240, 360, 40), "<b>No mission selected</b>", WindowManager.styleLabelLargerFont);
             }
             GUI.DragWindow();
+            WindowManager.KeepWithinScreenBoundsNonStrict(Display);
         }
-        public void DelayedUpdate()
+        public override void DelayedUpdate()
         {
             BuildStatus();
         }
-        public void FastUpdate()
+        public override void FastUpdate()
         {
+            this.UpdateTransparency(0.4f);
         }
 
         public void BuildStatus()
         {
         }
-        public void OnRemoval() { }
+        public override void OnRemoval() { }
     }
 }
