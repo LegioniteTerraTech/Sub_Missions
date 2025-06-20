@@ -195,7 +195,7 @@ namespace Sub_Missions
                  "\n*         If a Step's ProgressID is set to:" +
                  "\n*         - alwaysRunValue (" + alwaysRunValue + ") - Update all the time regardless of the CurrentProgressID." +
                  "\n*         - missionCancelledValue (" + missionCancelledValue + ") - Updated once on Mission Cancelled" +
-                 "\n*         - missionFailedValue (" + missionFailedValue + ") - Updated once on Mission Fail.").StringBuild(null, null, SB);
+                 "\n*         - missionFailedValue (" + missionFailedValue + ") - Updated once on Mission Fail.").StringBuild(null, null, SB, SlashState.Slash);
             return SB.ToString();
             /*
             return

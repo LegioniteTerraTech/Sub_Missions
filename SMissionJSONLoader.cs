@@ -1201,7 +1201,10 @@ namespace Sub_Missions
             public BaseTerrain Terrain;
             public HashSet<BasePurpose> Purposes;
             public RawTechOffset Offset;
-            public int MaxGrade;
+            /// <summary>
+            /// DO NOT GIVE THIS A VALUE IF Faction IS UNSET - IT WILL NOT BE RESPECTED
+            /// </summary>
+            public int TargetFactionGrade;
             public int MaxPrice;
             public bool IsPopulation;
             public bool SpawnCharged;
@@ -1219,7 +1222,7 @@ namespace Sub_Missions
                 Terrain = param.Terrain;
                 Purposes = param.Purposes;
                 Offset = param.Offset;
-                MaxGrade = param.MaxGrade;
+                TargetFactionGrade = param.TargetFactionGrade;
                 MaxPrice = param.MaxPrice;
                 IsPopulation = param.IsPopulation;
                 SpawnCharged = param.SpawnCharged;
@@ -1235,7 +1238,7 @@ namespace Sub_Missions
                     Terrain = Terrain,
                     Purposes = Purposes,
                     Offset = Offset,
-                    MaxGrade = MaxGrade,
+                    TargetFactionGrade = TargetFactionGrade,
                     MaxPrice = MaxPrice,
                     IsPopulation = IsPopulation,
                     SpawnCharged = IsPopulation,
@@ -1280,7 +1283,7 @@ namespace Sub_Missions
                     Faction = data.Faction,
                     ForceCompleted = data.ForceCompleted,
                     IsPopulation = data.IsPopulation,
-                    MaxGrade = data.MaxGrade,
+                    TargetFactionGrade = data.TargetFactionGrade,
                     MaxPrice = data.MaxPrice,
                     Offset = data.Offset,
                     Progression = data.Progression,

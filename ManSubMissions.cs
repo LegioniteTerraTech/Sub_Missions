@@ -163,26 +163,14 @@ namespace Sub_Missions
                     {
                         m_BehindSpeakerImage = AllSpeakers[defaultIndex].m_BehindSpeakerImage,
                         m_InFrontOfSpeakerImage = AllSpeakers[defaultIndex].m_InFrontOfSpeakerImage,
-                        m_SpeakerTitle = new LocalisedString
-                        {
-                            m_Bank = "NULL",
-                            m_Id = "MOD",
-                            m_GUIExpanded = true,
-                            m_InlineGlyphs = emptyGlyphs,
-                        },
+                        m_SpeakerTitle = "NULL".CreateLocalisedString(),
                         m_SpeakerImage = AllSpeakers[defaultIndex].m_SpeakerImage,
                     };
                     AllSpeakers[(int)RightCustomSpeaker] = new ManOnScreenMessages.SpeakerData
                     {
                         m_BehindSpeakerImage = AllSpeakers[defaultIndex].m_BehindSpeakerImage,
                         m_InFrontOfSpeakerImage = AllSpeakers[defaultIndex].m_InFrontOfSpeakerImage,
-                        m_SpeakerTitle = new LocalisedString
-                        {
-                            m_Bank = "NULL",
-                            m_Id = "MOD",
-                            m_GUIExpanded = true,
-                            m_InlineGlyphs = emptyGlyphs,
-                        },
+                        m_SpeakerTitle = "NULL".CreateLocalisedString(),
                         m_SpeakerImage = AllSpeakers[defaultIndex].m_SpeakerImage,
                     };
 

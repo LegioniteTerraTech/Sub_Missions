@@ -809,7 +809,7 @@ namespace Sub_Missions.Editor
             TeamSkins = true,
             ForceCompleted = true,
             IsPopulation = false,
-            MaxGrade = 4,
+            TargetFactionGrade = 5,
             MaxPrice = int.MaxValue,
             ForceAnchor = true,
             Offset = RawTechOffset.OnGround,
