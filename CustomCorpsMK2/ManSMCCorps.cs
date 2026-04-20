@@ -264,10 +264,10 @@ namespace Sub_Missions
                 return lice.Lore;
             return WikiPageCorp.GetDescriptionDefault(faction);
         }
-        public static void GetCorpLoresExtended(WikiPageCorp WPC)
+        public static void GetCorpLoresExtended(FactionSubTypes faction)
         {
-            if (TryGetSMCCorpLicense(WPC.corpID, out var lice))
-                WPC.infoExtra = lice.GetAdditionalLore;
+            if (TryGetSMCCorpLicense((int)faction, out var lice))
+                lice.GetAdditionalLore();
         }
 
 

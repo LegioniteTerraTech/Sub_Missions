@@ -224,7 +224,7 @@ namespace Sub_Missions
                 Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions initated");
                 ResourcesHelper.ModsPostLoadEvent.Subscribe(ExtendSpeakers);
                 WikiPageCorp.GetCorpDescription = ManSMCCorps.GetCorpLores;
-                WikiPageCorp.OnWikiPageMade.Subscribe(ManSMCCorps.GetCorpLoresExtended);
+                WikiPageCorp.AdditionalDisplayOnUI.Subscribe(ManSMCCorps.GetCorpLoresExtended);
             }
             Active = true;
         }
@@ -272,6 +272,7 @@ namespace Sub_Missions
             if (Subscribed)
             {
                 PurgeAllTrees();
+                WikiPageCorp.AdditionalDisplayOnUI.Unsubscribe(ManSMCCorps.GetCorpLoresExtended);
                 ManSMCCorps.DeInit();
                 //WindowManager.DeInit();
                 Singleton.Manager<ManWorldTreadmill>.inst.RemoveListener(inst);

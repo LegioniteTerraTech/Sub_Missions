@@ -47,8 +47,8 @@ namespace Sub_Missions.ManWindows
             {
                 if (currentMission != null)
                 {
-                    if (currentMission.Name != Display.context)
-                        Display.context = currentMission.Name;
+                    if (currentMission.Name != Display.Header)
+                        Display.Header = currentMission.Name;
 
                     try
                     {
@@ -76,7 +76,7 @@ namespace Sub_Missions.ManWindows
                 throw e;
             }
             if (CurrentMissionName != "<b>Not Selected</b>")
-                Display.context = "<b>Not Selected</b>";
+                Display.Header = "<b>Not Selected</b>";
             GUILayout.Label("New Sub Missions\nAvailable", WindowManager.styleLabelLargerFont);
         }
         public override void OnRemoval() { }

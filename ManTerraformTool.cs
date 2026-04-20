@@ -163,7 +163,7 @@ namespace Sub_Missions
                         }
                     }
                     if (delayTimed && ManWorldDeformerExt.GrabTerrainCursorPos(out terrainPosSpot) &&
-                        !UIHelpersExt.MouseIsOverSubMenu(MainWindow) && !ManModGUI.IsMouseOverModGUI)
+                        !UIHelpersExt.MouseIsOverGUIMenu(MainWindow) && !ManModGUI.IsMouseOverModGUI)
                     {
                         float SFXtime = 0.75f;
                         Vector3 terrainPosSpotCorrect = terrainPosSpot -
@@ -579,7 +579,7 @@ namespace Sub_Missions
             }
             public void ToggleGUIDisplay()
             {
-                UIHelpersExt.ClampMenuToScreen(ref MainWindow, false);
+                UIHelpersExt.ClampGUIToScreen(ref MainWindow, false);
                 showGUI = !showGUI;
                 if (!showGUI)
                     ToolARMED = false;

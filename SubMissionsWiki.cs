@@ -13,7 +13,7 @@ using System.IO;
 
 namespace Sub_Missions
 {
-    internal class SubMissionsWiki : TinySettings
+    internal class SubMissionsWiki : ITinySettings
     {
         public static SubMissionsWiki inst = new SubMissionsWiki();
         public string DirectoryInExtModSettings => KickStart.ModID;

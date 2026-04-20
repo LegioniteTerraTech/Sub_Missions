@@ -115,8 +115,9 @@
     <Reference Include="System.Xml">
       <Private>False</Private>
     </Reference>
-    <Reference Include="TerraTechETCUtil">
-      <HintPath>..\..\TTETCUtil\TerraTechETCUtil\TerraTechETCUtil\obj\Steam\TerraTechETCUtil.dll</HintPath>
+    <Reference Include="TerraTechETCUtil, Version=1.4.109.25, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\TTETCUtil\TerraTechETCUtil\TerraTechETCUtil\bin\Steam\TerraTechETCUtil.dll</HintPath>
     </Reference>
     <Reference Include="TimeOfDay">
       <HintPath>..\..\..\..\..\..\..\Program Files (x86)\Steam\steamapps\common\TerraTech\TerraTechWin64_Data\Managed\TimeOfDay.dll</HintPath>

@@ -6,6 +6,7 @@ using System.Reflection;
 using UnityEngine;
 using Sub_Missions.ManWindows;
 using TerraTechETCUtil;
+using HarmonyLib;
 
 namespace Sub_Missions
 {
@@ -70,7 +71,7 @@ namespace Sub_Missions
         }
         public void UpdateAllWindowsNow()
         {
-            WindowManager.UpdateAllPopups();
+            AccessTools.Method(typeof(ManModGUI), "UpdateAllPopups").Invoke(null, Array.Empty<object>());
         }
         public void SaveThisGameAnyways()
         {
