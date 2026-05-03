@@ -6,7 +6,6 @@ using UnityEngine;
 using TerraTechETCUtil;
 using Sub_Missions.Steps;
 using Sub_Missions.ManWindows;
-using TerraTechETCUtil;
 
 namespace Sub_Missions.Editor
 {

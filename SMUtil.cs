@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
-using TAC_AI.Templates;
-using Sub_Missions.Steps;
-using Sub_Missions.ManWindows;
-using System.IO;
 using Snapshots;
-using TerraTechETCUtil;
+using Sub_Missions.ManWindows;
+using Sub_Missions.Steps;
 using TAC_AI.AI.Enemy;
+using TAC_AI.Templates;
+using TerraTechETCUtil;
+using UnityEngine;
 
 namespace Sub_Missions
 {
@@ -103,7 +104,7 @@ namespace Sub_Missions
                 {
                     ManSFX.inst.PlayUISFX(ManSFX.UISfxType.MissionFailed);
                     WindowManager.AddPopupMessageError("SubMissions Error", Errors);
-                    WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
+                    ManModGUI.ShowPopup(new Vector2(0.5f, 0.5f));
                     repeatingInfo = false;
                     repeatingLog = false;
                     repeatingErrored = false;
@@ -112,7 +113,7 @@ namespace Sub_Missions
                 else
                 {
                     WindowManager.AddPopupMessage("SubMissions Error", "No errors reported.");
-                    WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
+                    ManModGUI.ShowPopup(new Vector2(0.5f, 0.5f));
                 }
             }
         }
@@ -727,6 +728,27 @@ namespace Sub_Missions
             if (TT == null)
             {
                 mission.TrackedTechs.Add(new TrackedTech(tech.name, tech.name, FileTechName, tech.IsPopulation));
+            }
+        }
+
+        public static void ComplainNoTrackedTech(this SubMissionStep SMission, string techName)
+        {
+            try
+            {
+                foreach (TrackedTech tech in SMission.Mission.TrackedTechs)
+                    SB.AppendLine(tech.FileTechName);
+                Error(true, SMission.LogName,
+                    KickStart.ModID + ": Tech of name " + techName + " not referenced or missing in " + SMission.Mission.Name +
+                    " | Step type " + SMission.StepType.ToString() + " - Check your TrackedTechs, Tech names, " +
+                    "and missions for consistancy errors.\nAvailable options are:\n" + SB.ToString());
+                /*
+                throw new NullReferenceException("Tracked tech of name " + techName + " does not exist. There are " +
+                    SMission.Mission.TrackedTechs.Count + " techs assigned to the mission.\n" +
+                    "Available options are:\n" + SB.ToString());//*/
+            }
+            finally
+            {
+                SB.Clear();
             }
         }
 

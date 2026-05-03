@@ -1,14 +1,15 @@
-﻿using Ionic.Zlib;
-using Newtonsoft.Json;
-using Sub_Missions.ManWindows;
-using Sub_Missions.Steps;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using UnityEngine;
+using Ionic.Zlib;
+using Newtonsoft.Json;
 using SafeSaves;
+using Sub_Missions.ManWindows;
+using Sub_Missions.Steps;
+using TerraTechETCUtil;
+using UnityEngine;
 
 namespace Sub_Missions
 {
@@ -342,6 +343,8 @@ namespace Sub_Missions
                         //}
                         //else
                         //{
+                            if (mission.Name.ToLower().EndsWith(".json"))
+                                throw new InvalidOperationException("got .json when we expected no json in mission name: " + mission.Name);
                             SubMission add = SMissionJSONLoader.MissionLoader(missionTree, mission.Name);
                             if (add == null)
                             {
@@ -371,9 +374,9 @@ namespace Sub_Missions
             {
                 ManSubMissions.IgnoreSaveThisSession = true;
                 WindowManager.AddPopupMessage("<b>Missing Sub Missions!</b>", missingTrees.ToString() + "\n" + missingMissions.ToString() + "\n Please add back in these Custom SMissions to prevent loss of Sub Missions save data!");
-                WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
+                ManModGUI.ShowPopup(new Vector2(0.5f, 0.5f));
                 WindowManager.AddPopupButtonDual("<b>Save Anyways?</b>", "Yes", true, "SaveThisGameAnyways");
-                WindowManager.ShowPopup(new Vector2(0.5f, 1));
+                ManModGUI.ShowPopup(new Vector2(0.5f, 1));
             }
 
             if (save.SavedModLicences == null)

@@ -51,7 +51,8 @@ namespace Sub_Missions.Steps
                 }
                 if (SMUtil.DoesTrackedTechExist(ref SMission, SMission.InputString))
                 {
-                    TrackedTech tech = SMUtil.GetTrackedTechBase(ref SMission, SMission.InputString);
+                    if (!SMUtil.GetTrackedTechBase(ref SMission, SMission.InputString, out TrackedTech tech))
+                        SMission.ComplainNoTrackedTech(SMission.InputString);
                     if (tech.destroyed)
                     {
                         Mission.VarIntsActive[SMission.SetMissionVarIndex1] = 0;
@@ -64,10 +65,7 @@ namespace Sub_Missions.Steps
                         Mission.VarIntsActive[SMission.SetMissionVarIndex1] = tech.TechAuto.blockman.blockCount;
                 }
                 else
-                    SMUtil.Error(true, SMission.LogName, 
-                        KickStart.ModID + ": Tech not referenced or missing in " + Mission.Name + 
-                        " | Step type " + SMission.StepType.ToString() + " - Check your TrackedTechs, Tech names, " +
-                        "and missions for consistancy errors");
+                    SMission.ComplainNoTrackedTech(SMission.InputString);
             }
             catch (IndexOutOfRangeException e)
             {

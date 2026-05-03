@@ -140,7 +140,7 @@ namespace Sub_Missions
                     {
                         ToolMode = (ManWorldDeformerExt.TerraformerType)Mathf.Repeat((int)ToolMode + 1,
                             Enum.GetValues(typeof(ManWorldDeformerExt.TerraformerType)).Length);
-                        UIHelpersExt.BigF5broningBanner("Tool: " + ToolMode, false);
+                        UIHelpersExt.BigF5broningBannerSP("Tool: " + ToolMode, false);
                     }
                     else if (Input.GetMouseButtonDown(0) && Input.GetKey(altHotKey) &&
                         ManWorldDeformerExt.GrabTerrainCursorPos(out terrainPosSpot))
@@ -224,6 +224,7 @@ namespace Sub_Missions
                                         new Vector3(ToolSize * 2, 1, ToolSize * 2), Color.cyan, delayTimerDelay);
                                 }
                                 break;
+                                /*
                             case ManWorldDeformerExt.TerraformerType.Level:
                                 if (Input.GetKey(altHotKey))
                                 {
@@ -263,7 +264,7 @@ namespace Sub_Missions
                                         DebugExtUtilities.DrawDirIndicatorCircle(terrainPosSpot + Vector3.up,
                                             Vector3.up, Vector3.forward, ToolSize, Color.magenta, delayTimerDelay);
                                 }
-                                break;
+                                break;//*/
                             case ManWorldDeformerExt.TerraformerType.Reset:
                                 if (Input.GetKey(altHotKey))
                                 {
@@ -403,7 +404,7 @@ namespace Sub_Missions
             private static string[] labels = new string[] {
                 ManWorldDeformerExt.TerraformerType.Circle.ToString(),
                 ManWorldDeformerExt.TerraformerType.Square.ToString(),
-                ManWorldDeformerExt.TerraformerType.Level.ToString(),
+                //ManWorldDeformerExt.TerraformerType.Level.ToString(),
                 ManWorldDeformerExt.TerraformerType.Reset.ToString(),
                 ManWorldDeformerExt.TerraformerType.Slope.ToString(),
             };
@@ -557,8 +558,9 @@ namespace Sub_Missions
                 {
                     if (GUILayout.Button("Default Terrain"))
                     {
+                        /*
                         Vector3 pos = ManWorld.inst.TileManager.CalcTileOriginScene(WorldPosition.FromScenePosition(
-                                    Singleton.playerTank.boundsCentreWorldNoCheck).TileCoord);
+                                    Singleton.playerTank.boundsCentreWorldNoCheck).TileCoord);*/
                         ManWorldDeformerExt.ResetALLModifiedTerrain(true);
                         ManSFX.inst.PlayUISFX(ManSFX.UISfxType.Back);
                     }

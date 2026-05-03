@@ -1415,7 +1415,7 @@ namespace Sub_Missions.Editor
             loader.Hide();
             loader = null;
             ManSFX.inst.PlayUISFX(ManSFX.UISfxType.LevelUp);
-            WindowManager.ShowPopup(ManSubMissions.Editor.Display);
+            ManModGUI.ShowPopup(ManSubMissions.Editor.Display);
             SelectorRendIndex = -1;
         }
 

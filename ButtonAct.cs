@@ -100,7 +100,7 @@ namespace Sub_Missions
             else
             {
                 WindowManager.AddPopupButtonDual("<b>Drop Mission?</b>", "<b>Ok</b>", true, "CancelSMission", WindowManager.TinyWideWindow);
-                WindowManager.ShowPopup(new Vector2(0.5f, 0.5f));
+                ManModGUI.ShowPopup(new Vector2(0.5f, 0.5f));
             }
         }
         public void CancelSMission()

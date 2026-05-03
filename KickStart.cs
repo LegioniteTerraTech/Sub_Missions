@@ -51,6 +51,7 @@ namespace Sub_Missions
 
         private static bool launchedOptions = false;
 
+        [Obsolete]
         public static void Main()
         {
             Debug_SMissions.Log(KickStart.ModID + ": MAIN (TTMM Version) startup");
@@ -106,6 +107,7 @@ namespace Sub_Missions
             };
             ManSubMissions.Initiate();
             ButtonAct.Initiate();
+            ManModGUI.RequestInit(KickStartSubMissions.mInst);
 
             if (!isTACAIPresent)
             {
@@ -221,6 +223,7 @@ namespace Sub_Missions
             ManSubMissions.Subscribe();
             BlockIndexer.ConstructBlockLookupListDelayed();
             ManModGUI.RequestInit(KickStartSubMissions.mInst);
+            Debug_TTExt.LogAll = true;
 
             if (!isTACAIPresent)
             {
@@ -422,13 +425,13 @@ namespace Sub_Missions
                     {
                         if (KickStart.Debugger && SubMissionsWiki.inst.ShowButtons)
                         {
-                            WindowManager.ShowPopup(ManSubMissions.Button);
-                            WindowManager.ShowPopup(ManSubMissions.SideUI);
+                            ManModGUI.ShowPopup(ManSubMissions.Button);
+                            ManModGUI.ShowPopup(ManSubMissions.SideUI);
                         }
                         else if (!ManGameMode.inst.IsCurrent<ModeMain>())
                         {
-                            WindowManager.HidePopup(ManSubMissions.Button);
-                            WindowManager.HidePopup(ManSubMissions.SideUI);
+                            ManModGUI.HidePopup(ManSubMissions.Button);
+                            ManModGUI.HidePopup(ManSubMissions.SideUI);
                         }
                     }
                     catch { }

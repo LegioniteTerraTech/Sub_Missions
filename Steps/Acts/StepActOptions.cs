@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using UnityEngine;
 using Sub_Missions.ManWindows;
+using TerraTechETCUtil;
+using UnityEngine;
 
 namespace Sub_Missions.Steps
 {
@@ -65,9 +66,9 @@ namespace Sub_Missions.Steps
         }
         public override void FirstSetup()
         {
-            WindowManager.AddPopupButtonDual(SMission.InputString, SMission.InputStringAux, true, this, windowOverride: WindowManager.WideWindow);
-            SMission.AssignedWindow = WindowManager.GetCurrentPopup();
-            WindowManager.ChangePopupPositioning(new Vector2(0.5f, 0.5f), SMission.AssignedWindow);
+            WindowManager.AddPopupButtonDual(SMission.InputString, SMission.InputStringAux, true, this, windowOverride: ManModGUI.WideWindow);
+            SMission.AssignedWindow = ManModGUI.GetCurrentPopup();
+            ManModGUI.ChangePopupPositioning(new Vector2(0.5f, 0.5f), SMission.AssignedWindow);
             SMission.SavedInt = 0;
         }
 
@@ -92,11 +93,11 @@ namespace Sub_Missions.Steps
             {
                 if (SMUtil.BoolOut(ref SMission))
                 {   // Start speaking
-                    WindowManager.ShowPopup(SMission.AssignedWindow);
+                    ManModGUI.ShowPopup(SMission.AssignedWindow);
                 }
                 else
                 {   // Stop the speaking when the bool is false
-                    WindowManager.HidePopup(SMission.AssignedWindow);
+                    ManModGUI.HidePopup(SMission.AssignedWindow);
                 }
             }
             catch

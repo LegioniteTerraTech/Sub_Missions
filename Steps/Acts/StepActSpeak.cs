@@ -102,9 +102,9 @@ namespace Sub_Missions.Steps
                 SMission.Mission.Tree.GetSpeakerTex(SMission.InputString);
                 //TryFetchImage();
                 if (Mathf.Approximately(SMission.Position.z - Mission.ScenePosition.z, 0))
-                    WindowManager.ChangePopupPositioning(new Vector2(0.5f, 1), SMission.AssignedWindow);
+                    ManModGUI.ChangePopupPositioning(new Vector2(0.5f, 1), SMission.AssignedWindow);
                 else
-                    WindowManager.ChangePopupPositioning(new Vector2(Mathf.Clamp(SMission.Position.x - Mission.ScenePosition.x, -1, 1), Mathf.Clamp(SMission.Position.y - Mission.ScenePosition.y, -1, 1)), SMission.AssignedWindow);
+                    ManModGUI.ChangePopupPositioning(new Vector2(Mathf.Clamp(SMission.Position.x - Mission.ScenePosition.x, -1, 1), Mathf.Clamp(SMission.Position.y - Mission.ScenePosition.y, -1, 1)), SMission.AssignedWindow);
             }*/
         }
         public override void Trigger()
@@ -136,7 +136,7 @@ namespace Sub_Missions.Steps
                             winClosed = false;
                         }
                     //else
-                    //    WindowManager.ShowPopup(SMission.AssignedWindow);
+                    //    ManModGUI.ShowPopup(SMission.AssignedWindow);
                 }
                 else
                 {   // Stop the speaking when the bool is false

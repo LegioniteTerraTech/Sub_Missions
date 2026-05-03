@@ -246,11 +246,11 @@ namespace Sub_Missions
                 WindowManager.AddPopupMissionsDEVControl();
 
                 if (KickStart.Debugger)
-                    WindowManager.ShowPopup(new Vector2(0.8f, 1));
+                    ManModGUI.ShowPopup(new Vector2(0.8f, 1));
 
                 //TerraTechETCUtil.DebugExtUtilities.AllowEnableDebugGUIMenu_KeypadEnter = KickStart.Debugger;
 
-                Button = WindowManager.GetCurrentPopup();
+                Button = ManModGUI.GetCurrentPopup();
 
                 WindowManager.AddPopupMissionsList();
                 WindowManager.AddPopupMissionEditor();
@@ -258,9 +258,9 @@ namespace Sub_Missions
                 WindowManager.AddPopupMessageSide();
 
                 if (KickStart.Debugger)
-                    WindowManager.ShowPopup(new Vector2(1, 0.1f));
+                    ManModGUI.ShowPopup(new Vector2(1, 0.1f));
 
-                SideUI = WindowManager.GetCurrentPopup();
+                SideUI = ManModGUI.GetCurrentPopup();
 
                 Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions subscribed");
                 ManSMCCorps.Subscribe();
@@ -500,22 +500,22 @@ namespace Sub_Missions
         {
             if (Board.Display.isOpen)
             {
-                WindowManager.HidePopup(Board.Display);
+                ManModGUI.HidePopup(Board.Display);
             }
             else
             {
-                WindowManager.ShowPopup(new Vector2(0.5f, 0.5f), Board.Display);
+                ManModGUI.ShowPopup(Board.Display, new Vector2(0.5f, 0.5f));
             }
         }
         internal static void ToggleEditor()
         {
             if (Editor.Display.isOpen)
             {
-                WindowManager.HidePopup(Editor.Display);
+                ManModGUI.HidePopup(Editor.Display);
             }
             else
             {
-                WindowManager.ShowPopup(new Vector2(0.5f, 0.5f), Editor.Display);
+                ManModGUI.ShowPopup(Editor.Display, new Vector2(0.5f, 0.5f));
             }
         }
         private void CheckKeyCombos()
@@ -742,14 +742,14 @@ namespace Sub_Missions
             if (SubMissionsWiki.inst.ShowButtons)
             {
                 Debug_SMissions.Assert(Button == null, "UI Mission menu Button is null");
-                WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                ManModGUI.ShowPopup(Button, new Vector2(0.8f, 1));
                 Debug_SMissions.Assert(SideUI == null, "UI Mission side panel is null");
-                WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+                ManModGUI.ShowPopup(SideUI, new Vector2(1, 0.1f));
             }
             else
             {
-                WindowManager.HidePopup(Button);
-                WindowManager.HidePopup(SideUI);
+                ManModGUI.HidePopup(Button);
+                ManModGUI.HidePopup(SideUI);
             }
         }
         private static void ModeLoad(Mode mode)
@@ -768,17 +768,17 @@ namespace Sub_Missions
                 if (SubMissionsWiki.inst.ShowButtons)
                 {
                     Debug_SMissions.Assert(Button == null, "UI Mission menu Button is null");
-                    WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
+                    ManModGUI.ShowPopup(Button, new Vector2(0.8f, 1));
                     Debug_SMissions.Assert(SideUI == null, "UI Mission side panel is null");
-                    WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+                    ManModGUI.ShowPopup(SideUI, new Vector2(1, 0.1f));
                 }
             }
             else
             {
                 if (!KickStart.Debugger || !SubMissionsWiki.inst.ShowButtons)
                 {
-                    WindowManager.HidePopup(Button);
-                    WindowManager.HidePopup(SideUI);
+                    ManModGUI.HidePopup(Button);
+                    ManModGUI.HidePopup(SideUI);
                 }
             }
         }
@@ -830,16 +830,16 @@ namespace Sub_Missions
                 inst.GetAllPossibleMissions();
                 if (KickStart.Debugger && SubMissionsWiki.inst.ShowButtons)
                 {
-                    WindowManager.ShowPopup(new Vector2(0.8f, 1), Button);
-                    WindowManager.ShowPopup(new Vector2(1, 0.1f), SideUI);
+                    ManModGUI.ShowPopup(Button, new Vector2(0.8f, 1));
+                    ManModGUI.ShowPopup(SideUI, new Vector2(1, 0.1f));
                 }
             }
             else
             {
                 if (!KickStart.Debugger || !SubMissionsWiki.inst.ShowButtons)
                 {
-                    WindowManager.HidePopup(Button);
-                    WindowManager.HidePopup(SideUI);
+                    ManModGUI.HidePopup(Button);
+                    ManModGUI.HidePopup(SideUI);
                 }
             }
         }

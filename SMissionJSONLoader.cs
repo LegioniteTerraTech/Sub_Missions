@@ -25,9 +25,9 @@ namespace Sub_Missions
     {
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            if (value is SubMissionStep)
+            if (value is SubMissionStep step)
             {
-                writer.WriteValue(Enum.GetName(typeof(SubMissionStep), (SubMissionStep)value));
+                writer.WriteValue(Enum.GetName(typeof(SubMissionStep), step));
                 return;
             }
 
@@ -281,6 +281,8 @@ namespace Sub_Missions
             List<string> names = GetCleanedNamesInDirectory(Path.Combine(tree.TreeName, "Missions"), true);
             foreach (string name in names)
             {
+                if (name.ToLower().EndsWith(".json"))
+                    throw new InvalidOperationException("got .json when we expected no json in mission name: " + name);
                 var mission = MissionLoader(tree, name);
                 if (mission == null)
                 {
@@ -293,10 +295,12 @@ namespace Sub_Missions
         }
         public static IEnumerable<SubMissionStandby> LoadAllMissionsToStandby(SubMissionTree tree)
         {
-            ValidateDirectory(MissionsDirectory);
+            ValidateDirectory(Path.Combine(MissionsDirectory, tree.TreeName, "Missions"));
             List<string> names = GetCleanedNamesInDirectory(Path.Combine(tree.TreeName, "Missions"), true);
             foreach (string name in names)
             {
+                if (name.ToLower().EndsWith(".json"))
+                    throw new InvalidOperationException("got .json when we expected no json in mission name: " + name);
                 var mission = MissionLoader(tree, name);
                 if (mission == null)
                 {
@@ -474,12 +478,13 @@ namespace Sub_Missions
             }
             if (doJSON)
             {
-                if (!final.ToString().Contains(".json"))
+                if (!final.ToString().ToLower().EndsWith(".json"))
                 {
                     output = "error";
                     return false;
                 }
-                final.Remove(final.Length - 5, 5);// remove ".json"
+                while(final.ToString().ToLower().EndsWith(".json"))
+                    final.Remove(final.Length - 5, 5);// remove ".json"
             }
             output = final.ToString();
             //Debug_SMissions.Log(KickStart.ModID + ": Cleaning Name " + output);
@@ -492,7 +497,7 @@ namespace Sub_Missions
         public static void ValidateDirectory(string DirectoryIn)
         {
             if (!GetName(DirectoryIn, out string name))
-                return;// error
+                throw new Exception("Failed to get name");
             if (!Directory.Exists(DirectoryIn))
             {
                 Debug_SMissions.Log(KickStart.ModID + ": Generating " + name + " folder.");
@@ -699,13 +704,15 @@ namespace Sub_Missions
                 throw new MandatoryException("Encountered exception not properly handled", e);
             }
         }
-        public static SubMission MissionLoader(SubMissionTree tree, string MissionName)
+        public static SubMission MissionLoader(SubMissionTree tree, string MissionNameNoExt)
         {
             try
             {
-                string output = tree.TreeHierachy.LoadMissionTreeMissionFromFile(MissionName);
+                if (MissionNameNoExt.ToLower().EndsWith(".json"))
+                    throw new InvalidOperationException("got .json when we expected no json in mission name: " + MissionNameNoExt);
+                string output = tree.TreeHierachy.LoadMissionTreeMissionFromFile(MissionNameNoExt);
                 if (output == null)
-                    throw new NullReferenceException("MissionName " + MissionName + " is the name of the mission INSIDE the json, " +
+                    throw new NullReferenceException("MissionName " + MissionNameNoExt + " is the name of the mission INSIDE the json, " +
                         "but not the actual name of the json itself.  They must match!");
                 SubMission mission = JsonConvert.DeserializeObject<SubMission>(output, JSONSaverMission);
                 mission.Tree = tree;
@@ -713,9 +720,9 @@ namespace Sub_Missions
             }
             catch (DirectoryNotFoundException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Check your Mission file names, cases where you referenced " +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionNameNoExt, KickStart.ModID + ": Check your Mission file names, cases where you referenced " +
                     "the names and make sure they match!!!  Tree: " +
-                    tree.TreeName + ", Mission: " + MissionName, e);
+                    tree.TreeName + ", Mission: " + MissionNameNoExt, e);
                 return null;
             }
             catch (Exception e)

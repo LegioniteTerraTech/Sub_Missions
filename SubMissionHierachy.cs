@@ -99,7 +99,7 @@ namespace Sub_Missions
             ref Dictionary<string, Texture> album, ref Dictionary<string, Mesh> models,
             ref Dictionary<string, SpawnableTech> techs,
             ref Dictionary<string, Dictionary<IntVector2, TerrainModifier>> terras);
-        internal abstract string LoadMissionTreeMissionFromFile(string MissionName);
+        internal abstract string LoadMissionTreeMissionFromFile(string MissionNameNoExt);
         internal abstract string LoadMissionTreeWorldObjectFromFile(string ObjectName);
 
 
@@ -360,7 +360,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                throw new MandatoryException("Encountered exception not properly handled", e);
+                throw new MandatoryException("(DIRECTORY) Encountered exception not properly handled", e);
             }
             return null;
         }
@@ -403,47 +403,48 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                throw new MandatoryException("Encountered exception not properly handled", e);
+                throw new MandatoryException("(DIRECTORY) Encountered exception not properly handled", e);
             }
         }
-        internal override string LoadMissionTreeMissionFromFile(string MissionName)
+        internal override string LoadMissionTreeMissionFromFile(string MissionNameNoExt)
         {
             string destination = Path.Combine(TreeDirectory, "Missions");
 
             SMissionJSONLoader.ValidateDirectory(destination);
+            MissionNameNoExt = MissionNameNoExt.Replace(".json", string.Empty);
             try
             {
-                string output = File.ReadAllText(Path.Combine(destination, MissionName + ".json"));
-                Debug_SMissions.Log(KickStart.ModID + ": Loaded Mission.json for " + MissionName + " successfully.");
+                string output = File.ReadAllText(Path.Combine(destination, MissionNameNoExt + ".json"));
+                Debug_SMissions.Log(KickStart.ModID + ": Loaded Mission.json for " + MissionNameNoExt + " successfully.");
                 return output;
             }
             catch (UnauthorizedAccessException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionNameNoExt, KickStart.ModID + ": Could not read " + MissionNameNoExt + ".json for " + TreeName + "." +
                     "\n - TerraTech + SubMissions was not permitted to access the MissionTree.json  destination", e);
             }
             catch (PathTooLongException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionNameNoExt, KickStart.ModID + ": Could not read " + MissionNameNoExt + ".json for " + TreeName + "." +
                     "\n - File MissionTree.json  is located in a directory that makes it too deep and long" +
                     " for the OS to navigate correctly", e);
             }
             catch (FileNotFoundException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
-                    "\n - File " + MissionName + ".json is not at destination, this needs to have " +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionNameNoExt, KickStart.ModID + ": Could not read " + MissionNameNoExt + ".json for " + TreeName + "." +
+                    "\n - File " + MissionNameNoExt + ".json is not at destination, this needs to have " +
                     "both main Name and the file's name should match, minus the \".json\" for " +
                     "the Name within the file", e);
                 //Debug_SMissions.Log(e);
             }
             catch (IOException e)
             {
-                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionName, KickStart.ModID + ": Could not read " + MissionName + ".json for " + TreeName + "." +
+                SMUtil.Assert(false, "Mission (Loading) ~ " + MissionNameNoExt, KickStart.ModID + ": Could not read " + MissionNameNoExt + ".json for " + TreeName + "." +
                     "\n - File MissionTree.json  is not accessable because IOException(?) was thrown!", e);
             }
             catch (Exception e)
             {
-                throw new MandatoryException("Encountered exception not properly handled", e);
+                throw new MandatoryException("(DIRECTORY) Encountered exception not properly handled", e);
             }
             return null;
         }
@@ -483,7 +484,7 @@ namespace Sub_Missions
             }
             catch (Exception e)
             {
-                throw new MandatoryException("Encountered exception not properly handled", e);
+                throw new MandatoryException("(DIRECTORY) Encountered exception not properly handled", e);
             }
             return null;
         }

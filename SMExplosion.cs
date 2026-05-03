@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using TerraTechETCUtil;
 using UnityEngine;
 
 public class SMExplosion : Sub_Missions.SMExplosion { }
@@ -69,6 +70,7 @@ namespace Sub_Missions
         private static Transform explosionMain = null;
         private void ForceExplodeCopy(Vector3 pos)
         {
+            /*
             if (explosionMain == null)
             {
                 TankBlock TB = ManSpawn.inst.GetBlockPrefab(BlockTypes.GSOBigBertha_845);
@@ -100,6 +102,9 @@ namespace Sub_Missions
                 main.startSpeedMultiplier *= 2f;
             }
             boom2.gameObject.SetActive(true);
+            */
+            ExplosionHelper.SpawnExplosionByStrength(ExplosionHelper.Type.Explosive, 
+                pos, true, 750, true, 2500);
         }
         internal struct QueuedBomb
         {

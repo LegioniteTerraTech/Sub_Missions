@@ -26,7 +26,7 @@ namespace Sub_Missions.ManWindows
             if (windowOverride != null)
                 DSL.windowSize = (Rect)windowOverride;
             else
-                DSL.windowSize = WindowManager.TinyWindow;
+                DSL.windowSize = TinyWindow;
             DSL.val1 = buttonLabel; DSL.val2 = removeOnPress; DSL.val3 = libFunctionName; 
             return AddPopupStackable<GUIButtonWindow>(title, DSL);
         }
@@ -35,7 +35,7 @@ namespace Sub_Missions.ManWindows
             if (windowOverride != null)
                 DSL.windowSize = (Rect)windowOverride;
             else
-                DSL.windowSize = WindowManager.TinyWideWindow;
+                DSL.windowSize = TinyWideWindow;
             DSL.val1 = buttonLabel; DSL.val2 = removeOnPress; DSL.val3 = libFunctionName;
             return AddPopupStackable<GUIDualButton>(title, DSL);
         }
@@ -44,7 +44,7 @@ namespace Sub_Missions.ManWindows
             if (windowOverride != null)
                 DSL.windowSize = (Rect)windowOverride;
             else
-                DSL.windowSize = WindowManager.TinyWideWindow;
+                DSL.windowSize = TinyWideWindow;
             DSL.val1 = buttonLabel; DSL.val2 = removeOnPress; DSL.val3 = options;
             return AddPopupStackable<GUIDualButton>(title, DSL);
         }
@@ -52,17 +52,17 @@ namespace Sub_Missions.ManWindows
 
         public static bool AddPopupMissionsDEVControl()
         {
-            DSL.windowSize = WindowManager.TinyWideWindow;
-            return AddPopupSingle<GUIDevControl>(string.Empty, DSL);
+            DSL.windowSize = TinyWideWindow;
+            return AddPopupSingle<GUIDevControl>("DEV CONTROL", DSL);
         }
         public static bool AddPopupMissionsList()
         {
-            DSL.windowSize = WindowManager.LargeWindow;
+            DSL.windowSize = LargeWindow;
             return AddPopupSingle<GUISMissionsList>("<b>-- Sub Missions DEBUG --</b>", DSL);
         }
         public static bool AddPopupMissionEditor()
         {
-            DSL.windowSize = WindowManager.LargeWindow;
+            DSL.windowSize = LargeWindow;
             return AddPopupSingle<GUISMissionEditor>("<b>-- Sub Mission Editor --</b>", DSL);
         }
         public static bool AddPopupMessageScroll(string title, string message, float scrollSpeed = 0.02f, bool Dual = false, SMissionStep missionStep = null, object windowOverride = null)

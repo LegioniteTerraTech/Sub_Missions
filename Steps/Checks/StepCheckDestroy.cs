@@ -88,7 +88,9 @@ namespace Sub_Missions.Steps
             }
             else
             {   //Run the single-tech
-                if (SMUtil.GetTrackedTechBase(ref SMission, SMission.InputString).destroyed)
+                if (!SMUtil.GetTrackedTechBase(ref SMission, SMission.InputString, out TrackedTech trackedTech))
+                    SMission.ComplainNoTrackedTech(SMission.InputString);
+                if ( trackedTech.destroyed)
                 {   // target destroyed
                     SMUtil.ConcludeGlobal1(ref SMission);
                 }

@@ -22,7 +22,7 @@ namespace Sub_Missions
         }
         public override void GUICall()
         {
-            GUILayout.Label(info, WindowManager.styleScrollFont);
+            GUILayout.Label(info, ManModGUI.styleScrollFont);
         }
         public override string ToString()
         {
@@ -46,7 +46,7 @@ namespace Sub_Missions
             {
                 if (GUILayout.Button(title, AltUI.ButtonBlueActive))
                     shown = false;
-                GUILayout.Label(info, WindowManager.styleScrollFont);
+                GUILayout.TextArea(info, ManModGUI.styleScrollFont);
             }
             else
             {
@@ -76,7 +76,7 @@ namespace Sub_Missions
             {
                 if (GUILayout.Button(title, AltUI.ButtonOrangeLargeActive, GUILayout.ExpandWidth(true)))
                     shown = false;
-                GUILayout.Label(info, WindowManager.styleScrollFont);
+                GUILayout.TextArea(info, ManModGUI.styleScrollFont);
             }
             else
             {
@@ -119,12 +119,12 @@ namespace Sub_Missions
             {
                 if (GUILayout.Button(title, AltUI.ButtonRedActive, GUILayout.ExpandWidth(true), GUILayout.Height(46)))
                     shown = false;
-                GUILayout.Label(info, WindowManager.styleScrollFont);
+                GUILayout.TextArea(info, ManModGUI.styleScrollFont);
                 if (exShown)
                 {
                     if (GUILayout.Button("Stack Trace", AltUI.ButtonGreen))
                         exShown = false;
-                    GUILayout.Label(StackTrace, WindowManager.styleScrollFont);
+                    GUILayout.TextArea(StackTrace, WindowManager.styleScrollFont);
                 }
                 else
                 {

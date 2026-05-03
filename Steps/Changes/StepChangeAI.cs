@@ -52,6 +52,8 @@ namespace Sub_Missions.Steps
             try
             {
                 TrackedTech tTech = SMUtil.GetTrackedTechBase(ref Mission, SMission.InputString);
+                if (tTech == null)
+                    SMission.ComplainNoTrackedTech(SMission.InputString);
                 if (tTech.TechAuto.GetComponent<EnemyMind>())
                 {
                     EnemyMind mind = tTech.TechAuto.GetComponent<EnemyMind>();
@@ -72,6 +74,8 @@ namespace Sub_Missions.Steps
                 try
                 {
                     TrackedTech tTech = SMUtil.GetTrackedTechBase(ref Mission, SMission.InputString);
+                    if (tTech == null)
+                        SMission.ComplainNoTrackedTech(SMission.InputString);
                     if (tTech.TechAuto.GetComponent<EnemyMind>())
                     {
                         EnemyMind mind = tTech.TechAuto.GetComponent<EnemyMind>();

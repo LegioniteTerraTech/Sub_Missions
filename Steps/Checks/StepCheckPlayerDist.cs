@@ -85,20 +85,28 @@ namespace Sub_Missions.Steps
                 if (SMission.InputNum > 0)
                 {
                     if (SMUtil.GetTrackedTech(ref SMission, SMission.InputString, out Tank target))
+                    {
                         if (SMUtil.IsPlayerInRangeOfPos(target.boundsCentreWorld, SMission.InputNum))
                         {
                             Debug_SMissions.Log(KickStart.ModID + ": ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Enemy - Within) has triggered");
                             SMUtil.ConcludeGlobal1(ref SMission);
                         }
+                    }
+                    else
+                        SMission.ComplainNoTrackedTech(SMission.InputString);
                 }
                 else
                 {   //invert detection trigger
                     if (SMUtil.GetTrackedTech(ref SMission, SMission.InputString, out Tank target))
+                    {
                         if (!SMUtil.IsPlayerInRangeOfPos(target.boundsCentreWorld, -SMission.InputNum))
                         {
                             Debug_SMissions.Log(KickStart.ModID + ": ProceedID - Mission " + Mission.Name + "'s CheckPlayerDist(Enemy - Outside) has triggered");
                             SMUtil.ConcludeGlobal1(ref SMission);
                         }
+                    }
+                    else
+                        SMission.ComplainNoTrackedTech(SMission.InputString);
                 }
             }
         }

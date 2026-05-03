@@ -1,17 +1,18 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
-using System.IO;
-using UnityEngine;
-using TAC_AI.Templates;
-using Sub_Missions.Steps;
+using System.Xml.Linq;
 using Newtonsoft.Json;
-using System.Reflection;
-using TerraTechETCUtil;
+using Sub_Missions.Steps;
 using TAC_AI.AI.Enemy;
-using System.Collections;
+using TAC_AI.Templates;
+using TerraTechETCUtil;
+using UnityEngine;
 #if !STEAM
 using Nuterra.BlockInjector;
 #endif
@@ -788,6 +789,8 @@ namespace Sub_Missions
         private bool DeployMission(string treeName, SubMissionStandby toDeploy, out SubMission Deployed, Encounter Enc = null)
         {   // Because each mission takes up an unholy amount of memory, we want to 
             //   only load the entire thing when nesseary
+            if (toDeploy.Name.ToLower().EndsWith(".json"))
+                throw new InvalidOperationException("got .json when we expected no json in mission name: " + toDeploy.Name);
             Deployed = SMissionJSONLoader.MissionLoader(this, toDeploy.Name);
             if (Deployed == null)
             {

@@ -582,6 +582,12 @@ namespace Sub_Missions
                     CheckList.Clear();
             }
             catch { };
+            if (ManQuestLog.inst == null)
+                throw new NullReferenceException(nameof(ManQuestLog.inst));
+            if (FakeEncounter == null)
+                throw new NullReferenceException(nameof(FakeEncounter));
+            if (FakeEncounter.EncounterDef == null)
+                throw new NullReferenceException(nameof(FakeEncounter.EncounterDef));
             ManQuestLog.inst.HideMissionTimerUI(FakeEncounter.EncounterDef);
             RunWaypoint(false);
             if (!isWorldUnloading)
@@ -611,6 +617,8 @@ namespace Sub_Missions
                     catch { }
                 }
             }
+            if (TrackedMonuments == null)
+                throw new NullReferenceException(nameof(TrackedMonuments));
             foreach (SMWorldObject WO in TrackedMonuments)
             {
                 try
