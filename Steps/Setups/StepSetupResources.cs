@@ -47,10 +47,9 @@ namespace Sub_Missions.Steps
 
         public override void FirstSetup()
         {   // Spawn a single resource
-            if (Enum.TryParse(SMission.InputString, out SceneryTypes result) && SMission.InputNum >= 1)
+            if (!SMission.InputString.NullOrEmpty() && SMission.InputNum >= 1)
             {
-                ResourceDispenser RD = SpawnHelper.SpawnResourceNode(SMission.Position, Quaternion.identity, 
-                    result, ManWorld.inst.GetBiomeWeightsAtScenePosition(SMission.Position).Biome(0).name);
+                ResourceDispenser RD = SpawnHelper.SpawnResourceNode(SMission.InputString, SMission.Position, Quaternion.identity);
                 SMission.AssignedTracked = new TrackedVisible(RD.visible.ID, RD.visible, ObjectTypes.Scenery, RadarTypes.Hidden);
             }
             else

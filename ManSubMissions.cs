@@ -222,7 +222,7 @@ namespace Sub_Missions
             {
                 inst = Instantiate(new GameObject("ManSubMissions")).AddComponent<ManSubMissions>();
                 Debug_SMissions.Log(KickStart.ModID + ": ManSubMissions initated");
-                ResourcesHelper.ModsPostLoadEvent.Subscribe(ExtendSpeakers);
+                InvokeHelper.ModsPostLoadEvent.Subscribe(ExtendSpeakers);
                 WikiPageCorp.GetCorpDescription = ManSMCCorps.GetCorpLores;
                 WikiPageCorp.AdditionalDisplayOnUI.Subscribe(ManSMCCorps.GetCorpLoresExtended);
             }
