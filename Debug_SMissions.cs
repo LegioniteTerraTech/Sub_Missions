@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TerraTechETCUtil;
 using UnityEngine;
 
 namespace Sub_Missions
@@ -92,5 +93,7 @@ namespace Sub_Missions
             UnityEngine.Debug.Log(KickStart.ModID + ": ENCOUNTERED CRITICAL ERROR: " + e);
             UnityEngine.Debug.Log(KickStart.ModID + ": MAY NOT WORK PROPERLY AFTER THIS ERROR, PLEASE REPORT!");
         }
+        internal static void PopupDebugInfo(string text, WorldPosition pos) => AltUI.PopupDebugInfo(text, pos);
+        internal static void PopupDebugInfo(string text, Vector3 scenePos) => AltUI.PopupDebugInfo(text, scenePos);
     }
 }
