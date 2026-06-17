@@ -11,7 +11,7 @@ namespace Sub_Missions
     public class MissionChecklist
     {
         [JsonIgnore]
-        internal SubMission mission;
+        internal SubMission mission { get; set; } = null;
 
         public string ListArticle = "unset";
         public VarType ValueType = VarType.Bool;
@@ -20,10 +20,7 @@ namespace Sub_Missions
         public int GlobalIndex2 = 0;
 
         [JsonIgnore]
-        public StringBuilder builder = new StringBuilder();
-
-        [JsonIgnore]
-        private int tickdown = 2;
+        private float tickdown = 2;
         [JsonIgnore]
         private bool setToRemove = false;
 
@@ -35,11 +32,11 @@ namespace Sub_Missions
                 switch (ValueType)
                 {
                     case VarType.Bool:
-                        if (mission.VarTrueFalse[GlobalIndex])
+                        if (mission.VarTrueFalseActive[GlobalIndex])
                             triggerCountdownRemoval = true;
                         break;
                     case VarType.IntOverInt:
-                        if (mission.VarInts[GlobalIndex] > mission.VarInts[GlobalIndex2])
+                        if (mission.VarIntsActive[GlobalIndex] >= mission.VarIntsActive[GlobalIndex2])
                             triggerCountdownRemoval = true;
                         break;
                 }
@@ -54,61 +51,122 @@ namespace Sub_Missions
                     {
                         mission.CheckList.Remove(this);
                     }
-                    tickdown--;
+                    tickdown -= Time.deltaTime;
                 }
             }
-            catch 
+            catch (IndexOutOfRangeException e)
             {
-                SMUtil.Assert(false, "SubMissions: MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
+                SMUtil.Error(false, "Mission (Checklist) ~" + mission.Name, KickStart.ModID + ": MissionChecklist - Error detected at " + ListArticle + ", mission " + mission.Name + ". Check your syntax!");
 
                 switch (ValueType)
                 {
                     case VarType.Bool:
-                        SMUtil.Assert(true, "SubMissions: Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
+                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, KickStart.ModID + ": Make sure the GlobalIndex is set properly and it's index exists in VarTrueFalse!");
                         break;
                     case VarType.IntOverInt:
-                        SMUtil.Assert(true, "SubMissions: Make sure both GlobalIndexes are set properly and exist in VarInts!");
+                        SMUtil.Error(true, "Mission (Checklist) ~" + mission.Name, KickStart.ModID + ": Make sure both GlobalIndexes are set properly and exist in VarInts!");
                         break;
-                    case VarType.Unset:
-                        SMUtil.Assert(true, "SubMissions: Internal issue!  Contact Legionite!");
-                        break;
+                    default:
+                        throw new MandatoryException(e);
                 }
+            }
+            catch (Exception e)
+            {
+                throw new MandatoryException(e);
+                //SMUtil.Assert(true, KickStart.ModID + ": Internal issue!  Contact Legionite!", e);
             }
             return triggerCountdownRemoval;
         }
-        public bool GetStatus(out string output)
+        public bool GetStatusGUI()
         {
-            if (BoolToEnable > 0)
+            if (mission == null)
             {
-                if (!mission.VarTrueFalse[BoolToEnable])
+                //throw new NullReferenceException("mission is null somehow - this should not be possible");
+                //GUILayout.Label("<b>!! MISSION NULL !!</b>");
+                GUILayout.Label("<b>Too Far From \nMission</b>");
+                GUILayout.FlexibleSpace();
+                return false;
+            }
+            else
+            {
+                if (BoolToEnable != -1 && BoolToEnable < mission.VarTrueFalseActive.Count)
                 {
-                    output = "";
-                    return false;
+                    if (!mission.VarTrueFalseActive[BoolToEnable])
+                    {
+                        return false;
+                    }
                 }
             }
-            builder.Clear();
-            builder.Append(ListArticle + "| ");
+            GUILayout.BeginHorizontal(GUILayout.Height(38));
+            GUILayout.Label(ListArticle == null ? "" : ListArticle);
+            GUILayout.FlexibleSpace();
+            GUILayout.Label("|");
+            ShowEntryData();
+            GUILayout.EndHorizontal();
+            return true;
+        }
+
+        public void ShowEntryData()
+        {
             switch (ValueType)
             {
                 case VarType.Bool:
-                    if (mission.VarTrueFalse[GlobalIndex])
-                        builder.Append("<b>✓</b>");
+                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarTrueFalseActive.Count)
+                    {
+                        GUILayout.Label("<b>ER</b>");
+                    }
                     else
-                        builder.Append("<b>!</b>");
+                    {
+                        if (mission.VarTrueFalseActive[GlobalIndex])
+                            GUILayout.Label("<b>✓</b>");
+                        else
+                            GUILayout.Label("<b>!</b>");
+                    }
                     break;
                 case VarType.IntOverInt:
-                    if (mission.VarInts[GlobalIndex] > mission.VarInts[GlobalIndex2])
-                        builder.Append("<b>✓</b>");
+                    if (GlobalIndex == -1 || GlobalIndex >= mission.VarIntsActive.Count ||
+                        GlobalIndex2 == -1 || GlobalIndex2 >= mission.VarIntsActive.Count)
+                    {
+                        GUILayout.Label("<b>ER</b>");
+                    }
                     else
-                        builder.Append("<b>"+ mission.VarInts[GlobalIndex] + "/" + mission.VarInts[GlobalIndex2] + "</b>");
+                    {
+                        if (mission.VarIntsActive[GlobalIndex] >= mission.VarIntsActive[GlobalIndex2])
+                            GUILayout.Label("<b>✓</b>");
+                        else
+                        {
+                            GUILayout.Label(mission.VarIntsActive[GlobalIndex].ToString());
+                            GUILayout.Label(" / ");
+                            GUILayout.Label(mission.VarIntsActive[GlobalIndex2].ToString());
+                        }
+                    }
                     break;
                 default:
-                    builder.Append("<b>O</b>");
+                    GUILayout.Label("<b>O</b>");
                     break;
 
             }
-            output = builder.ToString();
-            return true;
+        }
+
+
+        public bool GetNumber(out int output)
+        {
+            switch (ValueType)
+            {
+                case VarType.Bool:
+                    output = 0;
+                    return false;
+                case VarType.IntOverInt:
+                    if (GlobalIndex < 0 || GlobalIndex >= mission.VarIntsActive.Count)
+                        throw new Exception("Checklist entry set to IntOverInt but GlobalIndex is set to [" +
+                            GlobalIndex + "] which is outside the range of present Ints and not the -1" +
+                            " always active value: [0 -> " + (mission.VarIntsActive.Count - 1).ToString() + "]");
+                    output = mission.VarIntsActive[GlobalIndex];
+                    return true;
+                default:
+                    output = 0;
+                    return false;
+            }
         }
     }
     public enum VarType

@@ -15,14 +15,16 @@ namespace Sub_Missions
         [JsonIgnore]
         public SubMission mission;
 
+        public BlockTypes BlockID = BlockTypes.GSOAIController_111;
         public string BlockName = "";
-        public int blockID = 0;
+        public int VisID = 0;
 
-        [JsonIgnore]
         public bool loaded = false;
 
         [JsonIgnore]
         private TankBlock block;
+        [JsonIgnore]
+        public TankBlock blockInst => block;
 
         [JsonIgnore]
         public TankBlock Block
@@ -32,7 +34,7 @@ namespace Sub_Missions
                 if (!loaded)
                 {
                     if (!mission.GetBlockPos(BlockName, out Vector3 pos))
-                        Debug.Log("SubMissions: Block in TrackedBlocks list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
+                        Debug_SMissions.Log(KickStart.ModID + ": Block in TrackedBlocks list but was never called in any Step!!!  In " + mission.Name + " of " + mission.Tree.TreeName + ".");
                     //block = SMUtil.SpawnTechAuto(ref mission, pos);
                     loaded = true;
                 }
@@ -44,8 +46,24 @@ namespace Sub_Missions
             {
                 block = value;
                 BlockName = value.name;
-                blockID = value.visible.ID;
+                VisID = value.visible.ID;
+                loaded = true;
             }
+        }
+        public bool SpawnBlock(Vector3 scenePos)
+        {
+            if (Block)
+                return true;
+            if ((int)BlockID < 1)
+            {
+                BlockName = ManSpawn.inst.GetBlockPrefab(BlockID).name;
+            }
+            else
+            {
+                BlockID = (BlockTypes)ManMods.inst.GetBlockID(BlockName);
+            }
+            Block = ManLooseBlocks.inst.HostSpawnBlock(BlockID, scenePos, Quaternion.identity, true);
+            return block;
         }
         public TankBlock TryFindMatchingBlock()
         {
@@ -53,12 +71,31 @@ namespace Sub_Missions
             {
                 if (!(bool)vis.block)
                     continue;
-                if (vis.name == BlockName && vis.block.visible.ID == blockID)
+                if (vis.name == BlockName && vis.block.visible.ID == VisID)
                 {
                     return vis.block;
                 }
             }
+            Visible blockUnloaded = ManSaveGame.inst.LookupSerializedVisible(VisID);
+            if (blockUnloaded)
+            {
+                if (!(bool)blockUnloaded.block)
+                {
+                    SMUtil.Error(false, "Mission(TrackedBlock) ~ " + mission.Name + ", " + BlockName, 
+                        KickStart.ModID + ": TrackedBlock - ID DOES NOT MATCH SUBJECT TARGET");
+                    return null;
+                }
+                if (blockUnloaded == block.visible)
+                return blockUnloaded.block;
+            }
             return null;
+        }
+        public void Remove()
+        {
+            if (block)
+            {
+                ManLooseBlocks.inst.HostDestroyBlock(block);
+            }
         }
     }
 }
